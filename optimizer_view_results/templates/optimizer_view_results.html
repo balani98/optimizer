@@ -1,0 +1,404 @@
+{% extends 'home/base.html' %} {%load static%} {%block content%}
+
+<style>
+.hide_scroller {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+}
+.hide_scroller::-webkit-scrollbar { 
+    display: none;  /* Safari and Chrome */
+}
+
+.optimiser-date-input{
+  border-color: #4b4343;
+  padding: 10px;
+  width: 100%;
+  margin-bottom: 10px;
+  height: 20%;
+}
+
+.tooltip_outer_div{
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+}
+#searchBox{
+  width:90%;
+  height:2.5rem;
+}
+#searchBox-table{
+  width:70%;
+  height:2.5rem;
+}
+
+
+
+.tooltiptext{
+  width: 15rem;
+  padding: 10px;
+  position: fixed;
+  visibility: hidden;
+  left: 16rem;
+  background-color: #a7a7a6;;
+  color: #fff;
+  text-align: center;
+  padding: 5px 0;
+  z-index: 100;
+}
+
+.tooltip_outer_div:hover .tooltiptext{
+  visibility: visible;
+}
+
+.icons {
+  color: red;
+}
+#optimizer__left_panel_dimension_name_for_min_max{
+  width: 100%;
+  margin-bottom: 10px;
+  background-color: #4b4343;
+  border: #4b4343;
+  padding: 5px;
+  color: #fff;
+  text-align: center;
+}
+
+#optimizer__sum_outerdiv{
+  display: flex;
+  flex-direction: row;
+}
+
+
+</style> 
+
+
+
+<div class="container-fluid">
+  <div class="row">
+   <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4" style="display: block; align-items: center;">
+    <div id="right_div" style="display: none; align-items: center;">
+      <div style="background-color: #c4c4c41c; padding: 20px; margin-bottom: 10px; margin-top: 20px;box-shadow:rgb(0 0 0 / 24%) 0px 10px 20px">
+        <h5>
+          Media Investment Plan 
+        </h5>
+        <div style="margin-top: 30px; display: flex; align-items: center; justify-content: center; width: 100%;">
+          <table class="table table-bordered" class="table_1_optimizer" id ="table_1_optimizer">
+            <thead style="text-align: center;">
+              <tr>
+                <th scope="col">
+                  <div class="mb-3 searchbox_div" style="align-items:stretch">
+                    <i class="fa fa-search" style="color:#4b4343;font-size:1rem"></i>
+                    <input type="text" id ="searchBox-table" placeholder="Search ..." name="search" 
+                          oninput = "search_dimensions_table(this)" >
+                  </div>
+                  Dimension
+                </th>
+                {% if is_weekly_selected == 1 %}
+                  <th scope="col">Recommended Budget/week</th>
+                  <th scope="col">Original Budget/week</th>
+                {% else %}
+                  <th scope="col">Recommended Budget/day</th>
+                  <th scope="col">Original Budget/day</th>
+                {% endif %}
+                <th scope="col">Total Recommended Budget Allocation</th>
+                <th scope="col">Total Original Budget Allocation</th>
+                <th scope="col">Total Estimated Conversions</th>
+                <th scope="col">Budget Allocation New</th>
+                <th scope="col">Budget Allocation Original</th>
+              </tr>
+            </thead>
+            <tbody style="text-align: center;" class="table_body_1_optimizer">
+              {% comment %} <tr scope="column">
+                <td>A</td>
+                <td>4000</td>
+                <td>20</td>
+              </tr> {% endcomment %}
+
+            </tbody>
+          </table>
+        </div>
+        {% comment %} <div id="optimizer__sum_outerdiv">
+          <div id="optimizer__total_1">
+            <p>Total 1</p> : <p id="optimizer__total_1_value"></p>
+          <div>
+          <div id="optimizer__total_1">
+            <p>Total 1</p> : <p id="optimizer__total_1_value"></p>
+          <div>
+        </div>  {% endcomment %}
+
+        <!-- <div style="display: flex; justify-content:flex-end">
+          <div>
+            {% comment %} <input type="hidden" id="or__csv-data" class="or__csv-data" value={{optimizer_download_csv_data}} /> {% endcomment %}
+            <button type="button" name="Submit" class="btn explorer-sidebar-submit-btn"
+                onclick="optimizer_download_csv_fn()"> 
+                <i class="fa fa-download fa-lg" aria-hidden="true" style="color: white; margin-right: 10px;"></i>
+                CSV Download
+            </button>
+          </div>
+        </div> -->
+
+        {% comment %} pie chart  {% endcomment %}
+        <br>
+        <br>
+        <br>
+        <h4>% Distribution Between Channels</h4>
+        <br>
+        <div
+          style="display: flex; align-items: center; justify-content: center; flex-direction: column; width:100%;margin: auto;">
+          <canvas id="optimizer_bar_chart"></canvas>
+        </div>
+        <br>      
+        <br>
+        <br>
+      </div>
+    </div>
+
+
+  </main>
+  <div id = 'spinner-optimizer'class="spinner-border" 
+      style ="display:none;left:54%;top:40%;width:5rem;height:5rem;position:fixed">
+  </div>
+</div>
+
+
+
+<script>
+  $(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+})
+// function to search dimensions in table 
+function search_dimensions_table(this_value){
+  let filter = this_value.value;
+  table = document.getElementById("table_1_optimizer");
+  tr = table.getElementsByTagName("tr");
+  for(let i = 1 ; i < tr.length ; i++){
+    td = tr[i].getElementsByTagName('td')[0];
+    console.log(td)
+    txtValue = td.textContent || td.innerText;
+    if(txtValue.indexOf(filter) > -1)
+      tr[i].style.display = "table-row";
+    else 
+      tr[i].style.display = "none";
+  }
+}
+
+  // DOM Selectors
+  let table_body_1_optimizer = document.querySelector(".table_body_1_optimizer");
+  let table_body_2_optimizer = document.querySelector(".table_body_2_optimizer");
+
+
+{% comment %} global variables  {% endcomment %}
+  let global_chart_colors = ["#45B8AC", "#EFC050", "#5B5EA6", "#9B2335", "#DFCFBE", "#98B4D4", "#34568B", "#6B5B95","#88B04B","#F7CAC9","#92A8D1", "#955251", "#B565A7", "#009B77", "#DD4124", "#D65076"];
+
+{% comment %} Graphs and Charts variables  {% endcomment %}
+  global_my_optimizer_bar_chart = 0
+  global_my_optimizer_line_chart = 0
+{% comment %} get the plan id {% endcomment %}
+plan_id = {{plan_id}}
+</script>
+
+
+{% comment %} on submit {% endcomment %}
+<script>
+ {% comment %} Download CSV  {% endcomment %}
+  function optimizer_download_csv_fn(){
+    console.log("optimizer_download_csv_fn");
+    // console.log(global_optimizer_download_csv_json);
+    
+    //optimizer_download_csv_data = "test, fgsdg ,sdfgsd,fgsdf,gsgdfg"
+    //optimizer_download_csv_json = $("#or__csv-data").val()
+    optimizer_download_csv_json = global_optimizer_download_csv_json
+    optimizer_download_csv_data = JSON.parse(optimizer_download_csv_json)
+    //console.log("optimizer_download_csv_data", optimizer_download_csv_data)
+
+    let element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(optimizer_download_csv_data));
+    element.setAttribute('download', 'Optimized plan.csv');
+    element.style.display = 'none';
+    if (typeof element.download != "undefined") {
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+    }
+    else {
+        //browser does not support - alert the user
+        alert('This functionality is not supported by the current browser, recommend trying with Google Chrome instead.');
+    }
+
+  }
+
+  {% comment %} Start : Populate Table  1 {% endcomment %}
+  function populate_table_1(json_table_1_data){
+    json_table_1_data = JSON.parse(json_table_1_data)
+    table_body_1_optimizer.innerHTML = ""
+    for (const key in json_table_1_data) {
+      value = json_table_1_data[key]
+      // console.log(`${key} : ${value}`);
+      tableRow = document.createElement("tr");
+
+      td1 = document.createElement("td");
+      textNode1 = document.createTextNode(value["dimension"]);
+      td1.appendChild(textNode1);
+      
+      td2 = document.createElement("td");
+      textNode2 = document.createTextNode(`$ ${value["recommended_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+      td2.appendChild(textNode2);
+
+      td3 = document.createElement("td");
+      textNode3 = document.createTextNode(`$ ${value["curr_spend_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+      td3.appendChild(textNode3);
+
+      td4 = document.createElement("td");
+      textNode4 = document.createTextNode(`$ ${value["recommended_budget_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+      td4.appendChild(textNode4);
+
+      td5 = document.createElement("td");
+      textNode5 = document.createTextNode(`$ ${value["curr_spend_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+      td5.appendChild(textNode5);
+
+      td6 = document.createElement("td");
+      textNode6 = document.createTextNode(`${value["est_opt_target_for_n_days"]}`);
+      td6.appendChild(textNode6);
+
+      td7 = document.createElement("td");
+      textNode7 = document.createTextNode(value["buget_allocation_new"]+" %");
+      td7.appendChild(textNode7);
+
+      td8 = document.createElement("td");
+      textNode8 = document.createTextNode(value["buget_allocation_old"]+" %");
+      td8.appendChild(textNode8);
+
+      tableRow.appendChild(td1)
+      tableRow.appendChild(td2)
+      tableRow.appendChild(td3)
+      tableRow.appendChild(td4)
+      tableRow.appendChild(td5)
+      tableRow.appendChild(td6)
+      tableRow.appendChild(td7)
+      tableRow.appendChild(td8)
+
+      table_body_1_optimizer.appendChild(tableRow)
+
+
+    }
+  }
+  {% comment %} End : Populate Table  1 {% endcomment %}
+
+  {% comment %} Start : Populate Donut Chart{% endcomment %}
+  function populate_grouped_bar_chart(dict_donut_chart_data){
+    dict_donut_chart_data = JSON.parse(dict_donut_chart_data)  
+    console.log("populate_grouped_bar_chart")
+      let xValues = dict_donut_chart_data['dimension']
+      let buget_allocation_old = dict_donut_chart_data['buget_allocation_old']
+      let buget_allocation_new = dict_donut_chart_data['buget_allocation_new']
+      let barColors = global_chart_colors
+      ctx = "optimizer_bar_chart"
+      config = {
+        type: "bar",
+        data: {
+          labels: xValues,
+          datasets: [
+            {
+              label: 'Buget Allocation Original',
+              data: buget_allocation_old,
+              backgroundColor: '#a7a7a6',
+
+            },
+            {
+              label: 'Buget Allocation New',
+              data: buget_allocation_new,
+              backgroundColor: '#9A3334',
+            }],
+        },
+        options: {
+          responsive: true,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          stacked: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Distribution Between Channels',
+              position: 'bottom'
+            },
+            tooltip : {
+              callbacks: {
+                label: function(context) {
+                    let label = context.dataset.label || '';
+
+                    if (label) {
+                        label += ': ';
+                    }
+                    label += context.parsed.y + '%';
+                    return label;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Dimension',
+              },
+              ticks: {
+                // Shorten the label If it has more than 10 characters  
+                callback: function(value, index) {  
+                  return this.getLabelForValue(value).length > 10 ?  
+                          this.getLabelForValue(value).substr(0,10) : this.getLabelForValue(value) ;
+                }
+              }
+            },
+            y: {
+              display: true ,
+              title: {
+                display: true,
+                text: '',
+              },
+              ticks:{
+                callback: function(value, index) {  
+                  return value + '%'
+                }
+              }
+            }
+          },
+        },
+      }
+      global_my_optimizer_bar_chart = new Chart(ctx, config);
+      console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
+    
+      
+  }
+  {% comment %} End : Populate Donut Chart {% endcomment %}
+// run this function onload 
+function on_load_optimizer_view_results(){
+    // ajax call to get data for table and 
+    console.log("on_load_optimizer_view_results_plan_id",plan_id)
+    $.ajax({
+      url: '/optimizer_view_results/ajax/table_and_chart_results',
+      data :{
+        plan_id : parseInt(plan_id)
+      },
+      success : function(data){
+       plan_result_table = JSON.parse(data['plan_result_table'])
+       plan_result_donut_chart = JSON.parse(data['plan_result_donut_chart'])
+       populate_table_1(plan_result_table)
+       populate_grouped_bar_chart(plan_result_donut_chart)
+       document.getElementById('right_div').style.display="block";
+      },
+      error : function(error){
+        console.log(error)
+      }
+    })
+    
+}
+
+    window.onload = on_load_optimizer_view_results;
+
+
+</script>
+{%endblock%}

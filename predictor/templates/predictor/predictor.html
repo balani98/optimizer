@@ -1,0 +1,1926 @@
+{% extends 'home/base.html' %} {%load static%} {%block content%}
+
+<style>
+   .bg {
+    /* The image used */
+    background-image: url("{% static '/assets/solid-grey.jpg' %}");
+    /* Full height */
+    height: 100%;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    /* Center and scale the image nicely */
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    position: fixed;
+    opacity:0.30
+  }
+  .hide_scroller {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+}
+.hide_scroller::-webkit-scrollbar { 
+    display: none;  /* Safari and Chrome */
+}
+.multi_line_chart_scrollbar::-webkit-scrollbar {
+    width: 1em;
+}
+ 
+.multi_line_chart_scrollbar::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+}
+.multi_line_chart_scrollbar::-webkit-scrollbar-thumb {
+  background-color: darkgrey;
+  outline: 1px solid slategrey;
+}
+
+.optimiser-date-input{
+  border-color: #4b4343;
+  padding: 10px;
+  width: 100%;
+  margin-bottom: 10px;
+  height: 20%;
+}
+
+.tooltip_outer_div{
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+}
+.tooltip_outer_div_smape_additional_styles{
+  position:relative;
+}
+.tooltiptext{
+  width: 15rem;
+  padding: 10px;
+  position: fixed;
+  visibility: hidden;
+  left: 16rem;
+  background-color: #a7a7a6;
+  color:black;
+  text-align: center;
+  padding: 5px 0;
+  z-index: 100;
+}
+.tooltiptext_smape_additional_styles{
+  position:absolute;
+}
+.tooltip_outer_div:hover .tooltiptext{
+  visibility: visible;
+}
+  .disabled,.disabled:hover {
+   pointer-events: none;
+   background-color: #264143;
+    color:white;
+  }
+  .hide_scroller {
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+    scrollbar-width: none; /* Firefox */
+  }
+  .hide_scroller::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+  }
+
+  .predictor_cpm_check_status_text,
+  .predictor_select_seasonality_label {
+    font-size: large;
+    color: white;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .predictordate {
+    width: 50%;
+    margin-bottom: 30px;
+    background-color:#fff;
+    padding: 5px;
+    color: black;
+    text-align: center;
+    height:2.5rem;
+  }
+  .active {
+    animation: progress-bar-stripes 1s linear infinite;
+    border: none;
+  }
+  .holder {
+    z-index: 1002;
+    position: fixed;
+  }
+  .highlight {
+    box-shadow: 0 0 0 9999999px rgba(50, 50, 50, 0.8);
+  }
+  #outer-progressbarDiv {
+    display: none;
+    flex-direction: column;
+    top: 40%;
+    left: 20%;
+    background-color: eee;
+    height: 8rem;
+    width: 60%;
+    padding: 20px;
+    margin-top: 10px;
+    opacity: 1;
+  }
+  #inner-progressbarDiv {
+    background-color:#9A3334;
+    height:1.5rem;
+    width:2%;
+    color:#fff;
+    text-align:center
+  }
+  .cancel-btn{
+    background-color: #9A3334;
+    color:#fff;
+    padding: 8px 40px;
+    align-self:center;
+    margin-top:10px;
+  }
+  .pridictor_pridict_section_outer_div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 20px;
+  }
+  .pridictor_pridict_section_inputs {
+    border-color: #4b4343;
+    padding: 10px;
+  }
+  .hide {
+    display: none;
+  }
+  .white {
+    color: #fff;
+  }
+  .sidebar{
+    background-color:#9A3334;
+    z-index:1020;
+  }
+  .hide_scroller {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .hide_scroller::-webkit-scrollbar { 
+    display: none;  /* Safari and Chrome */
+  }
+  .y_scroll{
+  overflow-y: auto;
+  }
+  img{
+        width:4.8rem;
+        height:5rem;
+  }
+  .grid line {
+  stroke: lightgrey;
+  stroke-opacity: 0.1;
+  shape-rendering: crispEdges;
+}
+.grid path {
+  stroke-width: 0;
+}
+.w3-display-right {
+    position: absolute;
+    top: 57%;
+    right: 3.5%;
+    transform: translate(0%,-50%);
+    -ms-transform: translate(0%,-50%);
+}
+.w3-display-left {
+    position: absolute;
+    top: 57%;
+    left: 3.5%;
+    transform: translate(0%,-50%);
+    -ms-transform: translate(-0%,-50%);
+}
+.w3-black, .w3-hover-black:hover {
+    color: black;
+    border:none;
+    font-size:2rem;
+    background-color:#fff
+}
+.channel-date-range{
+  display:flex;
+  justify-content:space-between;
+}
+</style>
+
+<div id="container" class="container-fluid" style="position: relative">
+  <div class="bg"></div>
+  <div class="row">
+    <nav id="sidebarMenu" class="col-md-2 col-lg-2 d-md-block sidebar collapse"
+      style="width: 15rem">
+      <div class="position-sticky pt-3  y_scroll hide_scroller" style="max-height:44rem">
+        <a class="explorer-nav-link xm-logo"><img src="{% static '/assets/Redboxlogo-black.png' %}" alt="CROSSMEDIA"></a>
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div style="margin-bottom: 10px; width: 100%">
+            <p class="predictor_cpm_check_status_text" id="cpm_check">
+              {{cpm_message}}
+            </p>
+          </div>
+          <div class="tooltip_outer_div">
+            <i class="fa fa-book fa-lg" aria-hidden="true" style="color: white; margin-right: 10px"></i>
+            <span class="tooltiptext">
+              <h5>Seasonality</h5>
+              Seasonal option does not exist for weekly data.
+              Daily data has both Seasonal as well as Non-seasonal options.  
+              Data can be subset for non-seasonal models using the date range 
+            </span>
+          </div>
+          <div class="dropdown" style="margin-bottom: 10px; width: 100%">
+            <p class="predictor_select_seasonality_label" for="cars">
+              Include Seasonal Effects ?
+            </p>
+            <select
+              name="select_seasonality_name"
+              class="btn dropdown-toggle explorer-sidebar-dropdown"
+              onchange="selectSeasonality(this)"
+              id="select_seasonality"
+            >
+              <option value="No">No</option>
+              {% if is_weekly_selected != 1 %}
+                <option value="Yes">Yes</option>
+              {% endif %}
+
+            </select>
+          </div>
+          <div id="channel_grouping">
+            <button class="btn" style="border:0;outline:0"
+                  type="button" 
+                  onclick = "show_channel_date_ranges()"> 
+            <i id ="plus-icon"class="fa fa-plus-square fa-2x"style="color:#fff"></i> 
+            <p style="color:white">Enter date range for each channel (optional)</p>
+          </button>
+            <div id="channel_grouping_with_search_box"style="display:none">
+              <div class="ml-1 searchbox_div">
+                <input type="text" id ="searchBox" placeholder="Search Dimension.."  class="btn predictordate" style="width:100%"name="search" 
+                      oninput = "search_dimension_names(this)" >
+              </div>
+              <div id="channel_grouping_inner_div">
+                {% for value in unique_dimensions %}
+                  <div id="channel-daterange-div" class="channel-date-range">
+                    <label for='{{value}}' style="color:#fff;width:48%;overflow-wrap:break-word;">{{value}}</label>
+                    <input
+                    id='{{value}}'
+                    type="text"
+                    class="btn predictordate" 
+                    name= "predictordaterange"
+                    value=""
+                  />
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          <div style="margin: auto">
+            <button
+              type="button"
+              name="Submit"
+              class="btn explorer-sidebar-submit-btn"
+              id="submit_btn"
+              onclick="submit_predictor_chart_inputs()"
+            >
+              Submit
+            </button>
+          </div>
+          <br />
+          <br />
+          <div style="display: none" id="drop_dimension_outer_div">
+            <div class="tooltip_outer_div">
+              <i class="fa fa-book fa-lg" aria-hidden="true" style="color: white; margin-right: 10px"></i>
+              <span class="tooltiptext">
+                <h5>Discarded Dimension</h5>
+                Some channels may be dropped if there is little or no media spend
+                or if there is not enough data to build a response curve
+              </span>
+            </div>
+            <h5 class="white mt-2">List of Discarded Dimensions : </h5>
+            <div
+              class="hide_scroller"
+              id="drop_dimension_inner_div"
+              style="overflow-y: scroll; height: 25rem"
+            ></div>
+          </div>
+        </form>
+      </div>
+    </nav>
+  </div>
+
+  <main
+    class="col-md-9 ms-sm-auto col-lg-10 px-md-4"
+    style="display: block; align-items: center"
+  >
+    <!-- <nav
+      class="nav-pills flex-column flex-sm-row"
+      style="padding: 30px 80px; display: none"
+    >
+      <a
+        id = "explorer-btn"
+        class="flex-sm-fill text-sm-center explorer-btn"
+        href="{%url 'home'%}"
+        style="margin-right: 5px"
+        >Explorer</a
+      >
+      <a
+        id = "predictor-btn"
+        class="flex-sm-fill text-sm-center explorer-btn active"
+        href="#"
+        style="margin-right: 5px"
+        >Predictor</a
+      >
+      <a
+        id = "optimizer-btn"
+        class="flex-sm-fill text-sm-center explorer-btn"
+        href="{% url 'optimizer_home_page' %}"
+        >Optimizer</a
+      >
+    </nav> -->
+
+    <div id="right_div" style="display: none; align-items: center">
+      <div class="explorer-chart mb-5" id="multi_line_chart_with_checkboxes" style="margin-top:20px;padding:1.5rem;position:relative;background-color:#fff">
+        <div class="piemultiselect">
+          <div class="pieselectBox" id="pieselectBox" onclick="showMenu()">
+            <select class="btn btn-secondary dropdown-toggle explorer-sidebar-dropdown">
+              <option id="pie_selected_value"hidden>Dimension Selector</option>
+            </select>
+            <div class="pieoverSelect"></div>
+          </div>
+          <div id="menu" class="mb-3 hide_scroller"
+          style="display:none;flex-direction:row;justify-content:space-between;background-color:#fff;position:absolute;width:12.5rem
+          ;overflow-y:scroll;max-height:20rem"></div>
+          </div>
+      </div>
+       
+      
+      <div class="explorer-chart" style ="padding:1.5rem;background-color:#fff">
+        <a href="{% url 'download_pdf' %}" class = "btn float-right btn-secondary" 
+        style="background-color:#9A3334;border-color:#9A3334">
+        
+        <i class="fa fa-download" aria-hidden="true" style="color:#fff; margin-right: 10px;"></i> Download</a>
+        <div class="dropdown">
+          <select
+            id="dimensionValueSelector"
+            name="dimensionValueSelector"
+            class="btn dropdown-toggle explorer-sidebar-dropdown"
+            style="padding: 10px"
+            onchange="fn_dimension_value_selector(this.value)"
+          >
+            <option value="0">Dimension Value Selector</option>
+            <option value="{{default_dim}}" selected>{{ default_dim }}</option>
+            {% for row in dimension_value_selector %}
+            <option class="dimensionValueSelectorAutoPopulate" value="{{row}}">
+              {{ row }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      <div
+        id = "scatter_plot_div"
+        style="
+          background-color: #c4c4c41c;
+          padding: 20px;
+          margin-bottom: 10px;
+          margin-top: 20px;
+        "
+      >
+        <div
+          id="scatterplotchartcontainer"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            width: 100%;
+            margin: 0 auto;
+          "
+        >
+          <canvas id="scatterplotchart"></canvas>
+        </div>
+      </div>
+      <div id = "seasonality_plots_div"  
+           style="background-color: #c4c4c41c;
+                  padding: 20px;
+                  margin-bottom: 10px;
+                  margin-top: 20px;
+                  display:none;
+                  flex-direction:row;
+                  justify-content:space-between;"
+       >
+        <div id = 'seasonalitychartcontainer' style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        width: 50%;
+        margin: 0 auto;
+        ">
+          <canvas id="seasonalityweeklychart"></canvas>
+        </div>
+        <div id = 'monthlyseasonalitychartcontainer' style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        width: 50%;
+        margin: 0 auto;
+        ">
+          <canvas id="seasonalitymonthlychart"></canvas>
+        </div>
+      </div>
+      <button class="w3-button w3-black w3-display-left" id="left-arrow-button" onclick="plusDivs(1)">&#10094;</button>
+      <button class="w3-button w3-black w3-display-right" id="right-arrow-button" onclick="plusDivs(0)">&#10095;</button>
+      </div>
+        <div
+          class="explorer-chart"
+          style="
+            margin-top: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            background-color:#fff;
+          "
+        >
+          <table
+            class="table table-bordered"
+            class="table_consideration_metrics"
+          >
+            <thead style="text-align: center">
+              <tr>
+                <th scope="col">Considerations</th>
+                <th scope="col">Metrics</th>
+              </tr>
+            </thead>
+            <tbody
+              style="text-align: center"
+              class="table_body_consideration_metrics"
+            >
+              <!-- <tr scope="column">
+                                <td>Model-Rsq</td>
+                                <td>55%</td>
+                            </tr> -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pridictor_pridict_section_outer_div">
+          <input
+            type="text"
+            name="budget"
+            class="pridictor_pridict_section_inputs"
+            id="predictor_budget"
+            placeholder="Enter Budget"
+            onblur="get_values()"
+            onkeyup = "add_commas()"
+            oninput = "check_keys()"
+          />
+          <input
+            type="number"
+            name="cpmbudget"
+            class="pridictor_pridict_section_inputs hide"
+            id="predictor_cpm_budget"
+            placeholder="Enter CPM Budget"
+            onblur="get_values()"
+          />
+          {% if is_weekly_selected != 1 and convert_to_weekly_data != 1 %}
+          <input
+            type="number"
+            name="predictor_total_days"
+            id="predictor_predict_section_total_days"
+            class="pridictor_pridict_section_inputs"
+            placeholder="Total No. of Days"
+          />
+          {% else %}
+          <input
+            type="number"
+            name="predictor_total_days"
+            id="predictor_predict_section_total_days"
+            class="pridictor_pridict_section_inputs"
+            placeholder="Total No. of Weeks"
+          />
+          {% endif %}
+          <input
+            type="text"
+            name="daterange"
+            id="predictor_predict_section_daterange"
+            class="pridictor_pridict_section_inputs"
+          />
+
+          <button
+            style="
+              padding: 10px 65px;
+              background-color: #000000;
+              align-items: center;
+              border-color:#000000;
+              box-shadow: 2px 2px 5px grey;
+            "
+            type="submit"
+            class="btn btn-secondary"
+            onclick="predict_submit()"
+          >
+            Predict
+          </button>
+          <input
+            readonly
+            type="text"
+            name="budget"
+            style="border-color: #4b4343; padding: 10px"
+            id="predicted_value"
+            placeholder="Predicted Value"
+          />
+        </div>
+
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            width: 100%;
+            margin-top: 20px;
+          "
+        >
+          <!-- <button
+                        style="padding: 5px65; background-color: #289217; align-items: center; border-color: #289217; box-shadow: 2px 2px 5px grey;"
+                        type="submit" class="btn btn-secondary" onclick="save_plan()">Save</button> -->
+          <button
+            style="
+              padding: 10px 65px;
+              background-color: #9A3334;
+              border-color: #9A3334;
+              box-shadow: 2px 2px 5px grey;
+            "
+            type="submit"
+            class="btn btn-secondary"
+            onclick="discard_plan()"
+          >
+            Discard
+          </button>
+        </div>
+      
+    </div>
+  </main>
+</div>
+<div id="outer-progressbarDiv" class="progress holder highlight">
+  <div id="inner-progressbarDiv"class="porgress-bar progress-bar-striped active">2%</div>
+    <button type="button" name="Submit" id="submit_btn" class ="btn cancel-btn"
+            onclick="on_cancel_progress_bar()">Cancel</button>
+  </div>
+  <div id = 'spinner-optimizer'class="spinner-border" 
+  style ="display:none;left:54%;top:40%;width:5rem;height:5rem;position:fixed">
+</div>
+</div>
+<script>
+  //  DOM Selectors
+  let table_body_consideration_metrics_TBody = document.querySelector(
+    ".table_body_consideration_metrics"
+  );
+  let predictor_cpm_budget = document.getElementById("predictor_cpm_budget");
+  let predicted_value_node = document.getElementById("predicted_value");
+  let drop_dimension_outer_div = document.getElementById(
+    "drop_dimension_outer_div"
+  );
+  let predictor__datepicker_outer_div = document.getElementById(
+    "predictor__datepicker-outer-div"
+  );
+  let scatterplotchartcontainer = document.getElementById(
+    "scatterplotchartcontainer"
+  );
+  let seasonalitychartcontainer = document.getElementById(
+    "seasonalitychartcontainer"
+  );
+  let seasonalitymonthlychartcontainer = document.getElementById(
+    "monthlyseasonalitychartcontainer"
+  );
+  // Global variable
+  let select_seasonality_userselection = 0;
+  let global_seasonality_from_session = 0;
+  let discarded_items = [];
+  {% if is_weekly_selected == 1 and convert_to_weekly_data == 1 %}
+    let global_y_axis  = window.localStorage.getItem('target_selector') +" per Week"
+    let global_x_axis  = "Investment per Week"
+  {% else %}  
+    let global_y_axis  = window.localStorage.getItem('target_selector') + " per day"
+    let global_x_axis  = "Investment per day"
+  {% endif %}
+  let multi_line_chart_data2 = {}
+  let unchecked_dimensions = []
+  let expanded = false; 
+  let global_unique_dimensions_json = {}  
+  // Initiaze the datarange picker
+  $('input[name="predictordaterange"]').daterangepicker()
+  getPredictorStartAndEndDates()
+  // function to display menu 
+  function showMenu(){
+    let element = document.getElementById("menu")
+    if(!expanded){
+      element.style.display = "block"
+      expanded = true;  
+    }else{ 
+      element.style.display="none"
+      expanded = false;
+    }
+  }
+  // function to perform sliding between divs 
+  function plusDivs(index){
+    if(index == 0){
+     $('#scatter_plot_div').css('display','none')
+     $('#seasonality_plots_div').css('display','flex')
+    }else{
+      $('#scatter_plot_div').css('display','flex')
+     $('#seasonality_plots_div').css('display','none')
+    }
+  }
+  // Fuction to get start and End date
+  function getPredictorStartAndEndDates() {
+    console.log("addStartAndEndDate");
+     // Ajax Call
+    // make the sppinner visible
+    $("#container").css("pointer-events", "none");
+    $("#container").css("opacity", 0.5);
+    $("body").css("background-color", "#cecece");
+    $("#spinner-optimizer").css("display", "flex");
+    console.log("inputs submitted"); 
+     $.ajax({
+      url: "/predictor/ajax/get_predictor_start_and_end_dates/",
+      success: function (data) {
+        $("#container").css("pointer-events", "auto");
+        $("#container").css("opacity", 1);
+        $("body").css("background-color", "#fff");
+        $("#spinner-optimizer").css("display", "none");
+        console.log("success in '/predictor/ajax/get_predictor_start_and_end_dates/'");
+        unique_dimensions_json = data.unique_dimensions_json;
+        global_unique_dimensions_json = unique_dimensions_json
+        unique_dimensions_json_keys = Object.keys(unique_dimensions_json)
+        unique_dimensions_json_keys.forEach((key)=>{
+         const element = document.getElementById(key)
+          $(element).daterangepicker({
+            startDate: unique_dimensions_json[key][0],
+            endDate: unique_dimensions_json[key][1],
+            locale: { 
+              format: 'MM/DD/YY'
+            }
+          })
+        })
+        
+      },
+      error: function (error_data) {
+        console.log(
+          "error in '/predictor/ajax/date_dimension_onchange/'",
+          error_data
+        );
+      },
+    });
+    
+  }
+  function onChangeHelperFunction() {
+    console.log("onChangeHelperFunction");
+    let dimensionValueSelector = document.getElementById(
+      "dimensionValueSelector"
+    ).value;
+    data_to_submit = {
+      seasonality: global_seasonality_from_session,
+      dimension_value_selector: dimensionValueSelector,
+      // start_date: startDate,
+      // end_date: endDate,
+    }
+    console.log("data_to_submit", data_to_submit)
+    //Clear all the old Data
+    clearOldData();
+
+    // Ajax Call
+    $.ajax({
+      url: "/predictor/ajax/date_dimension_onchange/",
+      data: data_to_submit,
+      success: function (data) {
+        console.log("success in '/predictor/ajax/date_dimension_onchange/'");
+        scatterplot_data = data.scatterplot_data;
+        weekly_predictions_json = data.weekly_predictions_json;
+        monthly_predictions_json = data.monthly_predictions_json;
+        predictor_table_data = data.predictor_table_data[0];
+        enter_cpm = data.enter_cpm;
+        console.log(
+          `\n scatterplot_data, ${scatterplot_data} 
+          \n predictor_table_data, ${predictor_table_data} 
+          \n enter_cpm, ${enter_cpm}`
+        );
+        scatter_plot_chart(data);
+        if(global_seasonality_from_session){
+          plot_weekly_seasonality(weekly_predictions_json)
+          plot_monthly_seasonality(monthly_predictions_json)
+        }
+          addDataToTable(predictor_table_data);
+        enter_cpm ? addDataToCPMSelector(enter_cpm) : null;
+      },
+      error: function (error_data) {
+        console.log(
+          "error in '/predictor/ajax/date_dimension_onchange/'",
+          error_data
+        );
+      },
+    });
+  }
+
+  // Function to select Seasonality
+  function selectSeasonality(this_object) {
+    let value = this_object.value;
+    console.log("Select seasonality", value);
+    select_seasonality_userselection = value == "No" ? 0 : 1;
+    select_seasonality_userselection
+      ? $("#channel_grouping").hide()
+      : $("#channel_grouping").show();
+  }
+
+  // Function to clear the old data on Change and on Submit as well
+  function clearOldData() {
+    console.log("clearOldData")
+    $("#predictor_budget").val(null);
+    $("#predicted_value").val(null);
+    $("#predictor_predict_section_total_days").val(null);
+    table_body_consideration_metrics_TBody.innerHTML = "";
+    scatterplotchartcontainer.innerHTML = "&nbsp;";
+    seasonalitychartcontainer.innerHTML = "&nbsp;";
+    seasonalitymonthlychartcontainer.innerHTML = "&nbsp;";
+  }
+  // Function to reset date ranges for predictor_predict date ranger 
+  function setnewDateRangerDates(){
+    $('#predictor_predict_section_daterange').daterangepicker({
+      startDate: moment(),
+      opens:'left',
+      endDate: moment().add(5, 'day'),
+      locale: { 
+          format: 'MM/DD/YYYY'
+      }
+    });
+  }
+  // Fucntion to take data from backend and add it to tables
+  function addDataToTable(predictor_table_data) {
+    console.log("addDataToTable")
+    table_body_consideration_metrics_TBody.innerHTML = "";
+    for (const key in predictor_table_data) {
+      console.log(`${key}: ${predictor_table_data[key]}`);
+      cmTableRow = document.createElement("tr");
+      // cmTableRow.className = "myStyle";
+      cmTdLeft = document.createElement("td");
+      cmTdRight = document.createElement("td");
+      cmValueTextLeft = document.createTextNode(key);
+      if(key != 'SMAPE' && key != 'correlation')
+        cmValueTextRight = document.createTextNode(predictor_table_data[key]);
+      else 
+        cmValueTextRight = document.createTextNode(Math.round(predictor_table_data[key]*100) + '%');
+      if(key == '%_of_data_points_discarded_during_outlier_treatment')
+      cmValueTextRight = document.createTextNode(predictor_table_data[key] + '%');
+      cmTdLeft.appendChild(cmValueTextLeft);
+      cmTdRight.appendChild(cmValueTextRight);
+      cmTableRow.appendChild(cmTdLeft);
+      cmTableRow.appendChild(cmTdRight);
+      if(key == "SMAPE"){
+        var span = document.createElement('span');
+        span.classList.add('tooltiptext','tooltiptext_smape_additional_styles')
+        span.style.left = "60%";
+        icon = '<i class="fa fa-info-circle" style="font-size:1.5em;color:#9A3334"></i>'
+        cmTdLeft.innerHTML += icon;
+        span.innerHTML = "SMAPE is an accuracy measure based on percentage (or relative) errors. The lower the SMAPE value, the higher its accuracy.";
+        cmTdLeft.classList.add('tooltip_outer_div','tooltip_outer_div_smape_additional_styles')
+        cmTdLeft.appendChild(span)
+      }
+      table_body_consideration_metrics_TBody.appendChild(cmTableRow);
+    }
+  }
+
+  // Function to add CPM value to CPM selector
+  function addDataToCPMSelector(enter_cpm) {
+    // populate the cpm value in UI
+    console.log("enter_cpm", enter_cpm);
+    predictor_cpm_budget.value = enter_cpm;
+  }
+</script>
+
+<!-- ------------------on change------------------ -->
+<script>
+  function fn_dimension_value_selector(value) {
+    onChangeHelperFunction();
+  }
+</script>
+<!-------------------------on submit------------------>
+<script>
+  // function to get cookies 
+  function getCookie(name) {
+    if (!document.cookie) {
+      return null;
+    }
+
+    const xsrfCookies = document.cookie.split(';')
+      .map(c => c.trim())
+      .filter(c => c.startsWith(name + '='));
+
+    if (xsrfCookies.length === 0) {
+      return null;
+    }
+    return decodeURIComponent(xsrfCookies[0].split('=')[1]);
+  }
+
+  // setting initial variables
+  var progInterval = setInterval(() => {}, 1000);
+  var mainRequest = $.ajax({}); 
+  var previousPercentage = 0;
+  function submit_predictor_chart_inputs() {
+    // empty the discarde_items list 
+    discarded_items = [];
+    // If user presses submit then freeze the screen
+    $("#container").css("pointer-events", "none");
+    $("#container").css("opacity", 0.5);
+    $("body").css("background-color", "#cecece");
+    $("#outer-progressbarDiv").css("display", "flex");
+    console.log("inputs submitted"); 
+   
+    // var startDate = $("#predictordate")
+    //   .data("daterangepicker")
+    //   .startDate.format("MM-DD-YY");
+    // var endDate = $("#predictordate")
+    //   .data("daterangepicker")
+    //   .endDate.format("MM-DD-YY");
+    // console.log(startDate, "this is start date");
+    // console.log(endDate, "this is end date");
+    setnewDateRangerDates();
+    data = null;
+    // appending start and end dates to global_dimensions_json 
+    var children = Array.prototype.slice.call(document.getElementById("channel_grouping_inner_div").children); 
+    children.forEach((element)=>{
+      var inputelement = element.children[1]
+      // 0 --> start date and 1 --> end date
+      global_unique_dimensions_json[inputelement.id][0] = inputelement.value.split("-")[0].replace(' ','').trim();
+      global_unique_dimensions_json[inputelement.id][1] = inputelement.value.split("-")[1].replace(' ','').trim();
+    })
+    var predictor_left_hand_dimensions_start_and_end_dates = JSON.stringify(global_unique_dimensions_json)
+    window.localStorage.setItem('predictor_left_hand_dimensions_start_and_end_dates',predictor_left_hand_dimensions_start_and_end_dates) 
+    // updating the seasonality on user selection or by session 
+    select_seasonality_userselection = document.getElementById('select_seasonality').value == "No" ? 0 : 1;
+    if (select_seasonality_userselection) {
+      data = {
+        seasonality: select_seasonality_userselection,
+      };
+    } else {
+      data = {
+        seasonality: select_seasonality_userselection,
+        stringified_unique_dimensions_json : JSON.stringify(global_unique_dimensions_json),
+      };
+    }
+    mainRequest = $.ajax({
+      url: "/predictor/ajax/left_panel_submit/",
+      data: JSON.stringify(data),
+      async: true,
+      type : 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      contentType: 'application/json; charset=utf-8',
+      success: function (data) {
+        // clear the running setInnterval if running
+        clearInterval(progInterval);
+        //Clear all the old Data
+        clearOldData();
+        // set all the properties of screen back and hide the progress bar
+        $("#container").css("pointer-events", "auto");
+        $("#container").css("opacity", 1);
+        $("body").css("background-color", "#fff");
+        $("#outer-progressbarDiv").css("display", "none");
+        document.getElementById("right_div").style.display = "block";
+        predictor_table_data = data.predictor_table_data[0];
+        enter_cpm = data.enter_cpm;
+        drop_dimension = data.drop_dimension;
+        default_dimension = data.default_dimension;
+        dimension_value_selector = data.dimension_value_selector;
+        global_seasonality_from_session = data.seasonality;
+        weekly_predictions_json = data.weekly_predictions_json
+        multi_line_chart_data2 = data.multi_line_chart_data2;
+        monthly_predictions_json = data.monthly_predictions_json
+        // make progress bar settings as before
+        $("#inner-progressbarDiv").animate(
+          {
+            width: 100 * 0.02 + "%",
+          },
+          100
+        );
+        $("#inner-progressbarDiv").text("2%");
+        previousPercentage = 0;
+
+        //addOnApplyFuncnalityToDataRangePicker();
+        if (global_seasonality_from_session) {
+          $("#predictor_predict_section_daterange").show();
+          $("#predictor_predict_section_total_days").hide();
+        } else {
+          $("#predictor_predict_section_total_days").show();
+          $("#predictor_predict_section_daterange").hide();
+        }
+        // Start : Updating Drop dimension
+        if (drop_dimension) {
+          $("#drop_dimension_outer_div").css("display", "flex");
+          $("#drop_dimension_outer_div").css("flex-direction", "column");
+          $("#drop_dimension_inner_div").css("display", "flex");
+          $("#drop_dimension_inner_div").css("flex-direction", "column");
+          $("#drop_dimension_inner_div").empty();
+          $.each(drop_dimension, function (key, value) {
+            $("#drop_dimension_inner_div").append(
+              `<span style="color:#fff;">${value}</span>`
+            );
+          });
+        }
+        // End : Updating Drop dimension
+
+        console.log("this is the selected type");
+        console.log("drop_dimension", drop_dimension);
+        enter_cpm ? console.log("enter_cpm", enter_cpm) : null;
+        console.log("default_dimension", default_dimension);
+        console.log("dimension_value_selector", dimension_value_selector);
+        console.log(data.predictor_table_data);
+        var option = new Option(
+          default_dimension,
+          default_dimension,
+          true,
+          true
+        );
+        $("#dimensionValueSelector").empty(option);
+        $("#dimensionValueSelector").append(option);
+        // $(".dimensionValueSelectorAutoPopulate").remove();
+        $.each(dimension_value_selector, function (key, valueSelector) {
+          console.log(valueSelector);
+          //Use the Option() constructor to create a new HTMLOptionElement.
+          var option = new Option(valueSelector, valueSelector);
+          //Convert the HTMLOptionElement into a JQuery object that can be used with the append method.
+          $(option).html(valueSelector);
+          $("#dimensionValueSelector").append(option);
+        });
+        // resetting the seasonality 
+        get_seasonality_from_session()
+        scatter_plot_chart(data);
+        // plot weekly and monthly seasonality 
+        if(global_seasonality_from_session){
+          plot_weekly_seasonality(weekly_predictions_json);
+          plot_monthly_seasonality(monthly_predictions_json);
+        }
+        plot_multi_line_chart_checkboxes(multi_line_chart_data2, data.cpm_message ,data.max_spend, data.max_predictions)
+        if (data.cpm_message == "cpm selected") {
+          document.getElementById("predictor_cpm_budget").style.display =
+            "block";
+        }
+        const table_body_consideration_metrics_TBody = document.querySelector(
+          ".table_body_consideration_metrics"
+        );
+        // table_body_consideration_metrics_TBody.remove();
+        $(".myStyle").parent().parent().remove();
+        // table_body_consideration_metrics_TBody = document.querySelector(".table_body_consideration_metrics");
+        addDataToTable(predictor_table_data);
+        enter_cpm ? addDataToCPMSelector(enter_cpm) : null;
+        let buttons_to_disable = JSON.parse(window.localStorage.getItem('buttons_to_disable'));
+   
+        if(buttons_to_disable['optimizer'] == true){
+          $('#optimizer-btn').fadeTo("fast", 1).removeClass('disabled');
+          buttons_to_disable['optimizer'] = false;
+          window.localStorage.setItem('buttons_to_disable',JSON.stringify(buttons_to_disable))
+        }
+        if(buttons_to_disable['goalseek'] == true){
+          $('#goalseek-btn').fadeTo("fast", 1).removeClass('disabled');
+          buttons_to_disable['goalseek'] = false;
+          window.localStorage.setItem('buttons_to_disable',JSON.stringify(buttons_to_disable))
+        }
+      },
+      error: function (error_data) {
+        console.log(
+          "error in '/predictor/ajax/left_panel_submit/'",
+          error_data
+        );
+        // clear the running setInnterval if running
+        clearInterval(progInterval);
+        // set all the properties of screen back and hide the progress bar
+        $("#container").css("pointer-events", "auto");
+        $("#container").css("opacity", 1);
+        $("body").css("background-color", "#fff");
+        $("#outer-progressbarDiv").css("display", "none");
+        alert(error_data.responseJSON.error)
+      },
+    });
+    // setinterval function to get the status of previous ajax call
+    // Both the ajax calls will run asynchronously and simultaneously
+    progInterval = setInterval(() => {
+      $.ajax({
+        url: "/predictor/ajax/progress_bar_var/",
+        type: "GET",
+        async: true,
+        success: function (response) {
+          total_steps = response["prog_variables"][1];
+          ongoing_step = response["prog_variables"][0];
+          console.log(response["prog_variables"]);
+          frac_of_req_loaded = ongoing_step / total_steps;
+          console.log("diff", frac_of_req_loaded - previousPercentage);
+
+          if (
+            frac_of_req_loaded * 100 >= 2 &&
+            frac_of_req_loaded * 100 < 99 &&
+            frac_of_req_loaded - previousPercentage > 0
+          ) {
+            $("#inner-progressbarDiv").animate(
+              {
+                width: 100 * frac_of_req_loaded + "%",
+              },
+              100
+            );
+            $("#inner-progressbarDiv").text(
+              Math.round(frac_of_req_loaded * 100) + "%"
+            );
+            previousPercentage = frac_of_req_loaded;
+          }
+        },
+        error: function (error_data) {
+          console.log(
+            "error in '/predictor/ajax/progress_bar_var/'",
+            error_data
+          );
+        },
+      });
+    }, 2000);
+  }
+  // function gets called when user cancels the progress bar
+  function on_cancel_progress_bar() {
+    // properties to set back
+    // abort the ajax request which is ongoing
+    mainRequest.abort();
+    console.log("request aborted");
+    $("#outer-progressbarDiv").css("display", "none");
+    // clear the interval of ajax requests which is running in backgound
+    clearInterval(progInterval);
+    $("#container").css("pointer-events", "auto");
+    $("#container").css("opacity", 1);
+    $("body").css("background-color", "#fff");
+    // if user cancels make right div invisible back
+    $("#right_div").css("display", "none");
+    $("#inner-progressbarDiv").text("2%");
+    // setting the progress bar again to 2%
+    $("#inner-progressbarDiv").animate(
+      {
+        width: 100 * 0.02 + "%",
+      },
+      100
+    );
+    previousPercentage = 0;
+  }
+</script>
+
+{% comment %} scatter plot and multi line hart {% endcomment %}
+<script>
+// plot multiple line charts with checkboxes
+function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,max_predictions,dimension_to_uncheck=[],to_be_checked=true){
+    // set the dimensions and margins of the graph
+    if (cpm_message == "cpm selected"){
+      x_label = 'Impression'
+    }else 
+      x_label = 'Investment'
+    var margin = {top: 10, right: 50, bottom: 50, left: 70},
+    currentWidth = parseInt(d3.select('#multi_line_chart_with_checkboxes').style('width'))
+    width = currentWidth - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+       //initialize scales
+    // If dropdown exist before then remove all children
+    const element = document.getElementById('menu');
+    while (element.firstChild) {
+      element.removeChild(element.firstChild);
+    }
+    // If svg exists before remove
+    d3.select("#multi_line_chart_with_checkboxes").select("svg").remove();
+    var svg = d3.select("#multi_line_chart_with_checkboxes")
+    .append("svg")
+    .attr("viewBox",
+    `0 0 ${width + margin.left + margin.right} ${
+    height + margin.top + margin.bottom}`)
+    .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")")
+    .style("fill", "#ced4da");
+    const dimension_groups = multi_line_chart_data2.map((obj)=>{
+        return obj.name
+    })
+    var myColor = d3.scaleOrdinal(d3.schemeDark2)
+                    .domain(dimension_groups)
+                    //.range(d3.schemeSet1)
+    var x = d3.scaleLinear()
+              .domain( [0,max_spend + 0.1 *max_spend])
+              .range([0,width])
+    
+        svg.append("g")
+        .attr("transform","translate(0," + height + ")")
+        .call(d3.axisBottom(x)
+                .tickFormat(function(d){
+                   if(x_label != 'Impression')
+                    return "＄" + d.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+                   else 
+                    return d.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+                })
+            )
+      
+        // text label for x axis
+    svg.append("text")             
+      .attr("transform",
+            "translate(" + (width/2) + " ," + 
+                           (height + margin.top + 30) + ")")
+      .style("text-anchor", "middle")
+      .style("fill", "black")
+      .text(x_label);
+
+  // text label for the y axis
+  svg.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0 - margin.left)
+      .attr("x",0 - (height / 2))
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .style("fill", "black")
+      .text("predictions");      
+
+    var y = d3.scaleLinear()
+              .domain( [0,max_predictions + 0.1 * max_predictions])
+              .range([height,0]);
+        svg.append("g")
+            .call(d3.axisLeft(y))
+    
+    var line = d3.line()
+                 .x(function(d){ 
+                if (cpm_message == "cpm selected")       
+                  return x(d.impression) 
+                else 
+                  return x(d.spend) 
+                }).y(function(d){
+                  return y(d.predictions)
+                })
+      svg.selectAll("myLines")
+          .data(plotting_data)
+          .join("path")
+          .attr('id', function(d){ 
+            return 'line-' + d.name.replace(/\s/g, '').replace(/[^\w\s]/gi, '').replace("/",""); 
+          })
+          .attr("d", function(d){ 
+            return line(d.values)
+          })
+          .attr("stroke", function(d){
+            return myColor(d.name)
+          })
+          .style("stroke-width",3)
+            .style("fill","none")
+            .style("sharp-rendering",'auto')
+     // Add the label at the end of each line
+        svg
+          .selectAll("myLabels")
+          .data(plotting_data)
+          .enter()
+          .append("g")
+          .append("text")
+          .attr("class",function(d){
+              return d.name;
+          })
+          .attr('id', function(d){ 
+            return 'text-' + d.name.replace(/\s/g, '').replace(/[^\w\s]/gi, '').replace("/",""); 
+          })
+          .datum(function(d){
+            return {
+              name:d.name,
+              value : d.values[d.values.length-1]  // keep only the last values of each time series 
+            };
+          })
+          .attr("transform",function(d){
+            if (cpm_message == "cpm selected")
+              return "translate(" + x(d.value.impression) + "," + y(d.value.predictions) + ")"; // put the text at the position of last point
+            else 
+              return "translate(" + x(d.value.spend) + "," + y(d.value.predictions) + ")";
+            })
+          .attr("x", 12) // shift the text a bit more right 
+          .text(function(d){
+            return d.name
+          })
+          .style("fill",function(d){
+              return myColor(d.name)
+          })
+          .style("font-size", 15)
+      // creating the searchbox
+      var searchBox = document.createElement('input');
+      searchBox.type = 'text';
+			searchBox.id = 'searchBox';
+      searchBox.placeholder = "Search Dimension"
+      searchBox.name = "Search"
+      // styles of search box
+      searchBox.style = "width:100%;min-height: calc(1.5em + (0.5rem + 2px));padding: 0.25rem 0.5rem;font-size: .875rem;border-radius: 0.2rem;"
+      // event related to searching
+      searchBox.addEventListener("input",function(){ 
+        // searching event 
+        var checkboxes = Array.from( document.querySelectorAll('input[type="checkbox"]'));
+        checkboxes.forEach((element)=>{
+            if(element.value.includes(this.value))
+              element.parentElement.style.display = "block"
+            else if(element.type == 'checkbox')
+              element.parentElement.style.display = "none"
+         })
+      })
+      // appending the searchbox to menu div
+      document.getElementById("menu").appendChild(searchBox);
+      // creating the select All box
+      var selectAllCheckbox = document.createElement('input')
+      selectAllCheckbox.type = 'checkbox'
+      selectAllCheckbox.class = 'check'
+      selectAllCheckbox.name = 'Select All'
+      selectAllCheckbox.value = 'Select All'
+      if(to_be_checked == true)
+        selectAllCheckbox.checked = true
+    else 
+        selectAllCheckbox.checked = false
+      // creating a label related to it  
+      var labelSelectAll = document.createElement('label');
+      labelSelectAll.appendChild(document.createTextNode('Select All'));
+      var divcheckSelectAll = document.createElement('div');
+      divcheckSelectAll.class = "dimension";
+      divcheckSelectAll.style = "margin-left:10px";
+      divcheckSelectAll.appendChild(selectAllCheckbox);
+			divcheckSelectAll.appendChild(labelSelectAll);
+			document.getElementById("menu").appendChild(divcheckSelectAll);
+      selectAllCheckbox.addEventListener("click",function(){
+          var last_plotting_data = []
+              if(this.checked == true){
+                last_plotting_data = [...multi_line_chart_data2]
+                unchecked_dimensions = []
+                }else{
+                last_plotting_data = [];
+                unchecked_dimensions = [...dimension_groups];
+               }
+               arr = changexydomain(last_plotting_data, cpm_message)
+               d3.select("#multi_line_chart_with_checkboxes").select("svg").remove();
+               const element = document.getElementById('menu');
+               while (element.firstChild) {
+                element.removeChild(element.firstChild);
+              }
+              plot_multi_line_chart_checkboxes(last_plotting_data, cpm_message, arr[0],arr[1],unchecked_dimensions,this.checked)
+      })
+      for(let i = 0 ; i < dimension_groups.length ; i++){
+          var tick = document.createElement('input');
+          tick.type = 'checkbox';
+				  tick.id = 'myCheckbox';
+          tick.class = "check"
+				  tick.name = dimension_groups[i];
+				  tick.value = dimension_groups[i];
+          if(dimension_to_uncheck.indexOf(dimension_groups[i])>-1)
+            tick.checked = false;
+          else 
+            tick.checked = true;
+          var label = document.createElement('label');
+          label.appendChild(document.createTextNode(dimension_groups[i]));
+          var divcheck = document.createElement('div');
+          divcheck.class = "dimension";
+          divcheck.style = "margin-left:10px";
+          divcheck.appendChild(tick);
+				  divcheck.appendChild(label);
+				  document.getElementById("menu").appendChild(divcheck);
+          //event listener related to this checkbox 
+          tick.addEventListener("click",function(){
+              var lineSelected = this.value;
+              var svgline = d3.select('#line-' + lineSelected.replace(/\s/g, '').replace(/[^\w\s]/gi, '').replace("/",""));
+					    var textline = d3.select('#text-' + lineSelected.replace(/\s/g, '').replace(/[^\w\s]/gi, '').replace("/",""));
+              var last_plotting_data = []
+              if(this.checked==true){
+                last_plotting_data = [...plotting_data]
+                filtered_array = multi_line_chart_data2.filter(a => a.name == this.value)
+                last_plotting_data.push(...filtered_array)
+                unchecked_dimensions.splice(unchecked_dimensions.indexOf(this.value),1)
+                }else{
+                last_plotting_data = plotting_data.filter(a => a.name != this.value);
+                unchecked_dimensions.push(this.value)
+               }
+               arr = changexydomain(last_plotting_data, cpm_message)
+               d3.select("#multi_line_chart_with_checkboxes").select("svg").remove();
+               const element = document.getElementById('menu');
+               while (element.firstChild) {
+                element.removeChild(element.firstChild);
+              }
+              plot_multi_line_chart_checkboxes(last_plotting_data,cpm_message, arr[0], arr[1], unchecked_dimensions,false)
+          })
+    var x_range = d3.scaleLinear().range([0, width]);
+    var y_range = d3.scaleLinear().range([height, 0]);
+    svg.append("g")			
+      .attr("class", "grid")
+      .attr("transform", "translate(0," + height + ")")
+      .call(make_x_gridlines(x_range)
+      .tickSize(-height)
+      .tickFormat("")
+      )
+
+  // add the Y gridlines
+    svg.append("g")			
+      .attr("class", "grid")
+      .call(make_y_gridlines(y_range)
+      .tickSize(-width)
+      .tickFormat("")
+      )
+    }
+}
+
+
+// change xy domain
+function changexydomain(plotting_data,cpm_message){
+    let max_spend = 0;
+    let max_predictions = 0;
+    x_label = cpm_message == "cpm selected" ? 'impression' : 'spend';
+      
+    const dimension_groups = plotting_data.map((obj)=>{
+        return obj.name
+    })
+    dimension_groups.forEach((dim,index)=>{
+        plotting_data[index]['values'].forEach((obj)=>{
+            if(obj[x_label] > max_spend)
+                max_spend = obj[x_label]
+            if(obj['predictions'] > max_predictions )
+              max_predictions = obj['predictions']
+          })
+      })
+    arr = [max_spend,max_predictions]
+ return arr;
+}
+// Make x grid lines
+function make_x_gridlines(x) {		
+    return d3.axisBottom(x)
+        .ticks(10)
+}
+
+// gridlines in y axis function
+function make_y_gridlines(y) {		
+    return d3.axisLeft(y)
+        .ticks(10)
+}
+function plot_monthly_seasonality(monthly_predictions_json){
+  const dimension = [];
+  const months_of_year = [];
+  const monthly_predictions_array = [];
+  monthly_predictions_json.forEach((obj)=>{
+    dimension.push(obj.dimension)
+    months_of_year.push(obj.month_)
+    monthly_predictions_array.push(obj.monthly_prediction)
+  })
+  seasonalitymonthlychartcontainer.innerHTML = "&nbsp;";
+  seasonalitymonthlychartcontainer.innerHTML =
+      '<canvas id="seasonalitymonthlychart"></canvas>';
+  var ctx = document.getElementById("seasonalitymonthlychart");
+  const data = {
+    labels: months_of_year,
+    datasets: [{
+      label: 'Predictions',
+      borderColor:'#a7a7a6',
+      backgroundColor:'#9A3334',
+      data: monthly_predictions_array,
+    }]
+  };
+
+  const config = {
+    type: 'line',
+    data: data,
+    options: {
+        responsive: true,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        stacked: false,
+        plugins: {
+            title: {
+              display: true,
+              text: 'Monthly Seasonality'
+            },
+          },
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Months of Year',
+              },
+            },
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              title: {
+                display: true,
+                text: global_y_axis
+              },
+            }
+          }
+        }
+      };
+  const myChart = new Chart(
+    ctx,
+    config
+  );
+} 
+function plot_weekly_seasonality(weekly_predictions_json){
+  const dimension = [];
+  const days_of_week = [];
+  const weekly_predictions_array = [];
+  weekly_predictions_json.forEach((obj)=>{
+    dimension.push(obj.dimension)
+    days_of_week.push(obj.weekday_)
+    weekly_predictions_array.push(obj.weekly_prediction)
+  })
+  seasonalitychartcontainer.innerHTML = "&nbsp;";
+  seasonalitychartcontainer.innerHTML =
+      '<canvas id="seasonalityweeklychart"></canvas>';
+  var ctx = document.getElementById("seasonalityweeklychart");
+  const data = {
+    labels: days_of_week,
+    datasets: [{
+      label: 'Predictions',
+      borderColor:'#a7a7a6',
+      backgroundColor:'#9A3334',
+      data: weekly_predictions_array,
+    }]
+  };
+
+  const config = {
+    type: 'line',
+    data: data,
+    options: {
+        responsive: true,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        stacked: false,
+        plugins: {
+            title: {
+              display: true,
+              text: 'Weekly Seasonality'
+            },
+          },
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Days of week',
+              },
+            },
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              title: {
+                display: true,
+                text: global_y_axis
+              },
+            }
+          }
+        }
+      };
+  const myChart = new Chart(
+    ctx,
+    config
+  );
+} 
+function scatter_plot_chart(data) {
+    const date = [];
+    const spend = [];
+    const target = [];
+    const dimension = [];
+    const predictions = [];
+    const impression = [];
+    let x = spend;
+    let x_label = global_x_axis;
+    var scatter_data = data.scatterplot_data;
+    console.log(scatter_data)
+    console.log("cpm_message", data.cpm_message);
+    // scatter_data = JSON.parse(scatter_data);
+    if (data.cpm_message == "cpm selected") {
+      console.log("cpm selected");
+      scatter_data.forEach(function (item, index) {
+        date.push(item.date);
+        spend.push(Math.round(item.spend));
+        target.push(item.target);
+        dimension.push(item.dimension);
+        if(global_seasonality_from_session == 1)
+          predictions.push(item.spend_prediction);
+        else 
+          predictions.push(item.predictions);
+        impression.push(item.impression);
+      });
+      x = impression;
+      x_label = "Impression";
+    } else {
+      scatter_data.forEach(function (item, index) {
+        date.push(item.date);
+        spend.push(Math.round(item.spend));
+        target.push(item.target);
+        dimension.push(item.dimension);
+        if(global_seasonality_from_session == 1)
+          predictions.push(item.spend_prediction);
+        else 
+          predictions.push(item.predictions);
+      });
+    }
+
+    console.log(`this is spend/impression \n${x}`);
+    scatterplotchartcontainer.innerHTML = "&nbsp;";
+    scatterplotchartcontainer.innerHTML =
+      '<canvas id="scatterplotchart"></canvas>';
+    var ctx = document.getElementById("scatterplotchart");
+
+    var chart = new Chart(ctx, {
+      data: {
+        // labels: makeLabels().labels,
+
+        labels: x, //x-axis
+        datasets: [
+          {
+            type: "bubble",
+            label: "Data",
+            data: target,
+            backgroundColor: '#a7a7a6',
+            borderColor: "transparent",
+          },
+          {
+            type: "line",
+            label: "Predictions",
+            data: predictions,
+            fill: false,
+            backgroundColor: "#9A3334",
+            borderColor: "#9A3334",
+            pointRadius: 0,
+          },
+        ],
+      },
+      options: {
+        scales: {
+          xAxes: {
+            display: true,
+            title: {
+              display: true,
+              text: x_label,
+            },
+            ticks: {
+              // Add commas in currency with dollars
+              callback: function (value, index, ticks) {
+                if(x_label != 'Impression')
+                    return "＄" + value.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+                   else 
+                    return value.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+              },
+            },
+          },
+          yAxes: {
+            //   data:target,
+            beginAtZero: true,
+            display: true,
+            title: {
+              display: true,
+              text: global_y_axis,
+            },
+          },
+        },
+      },
+    });
+  }
+</script>
+
+{% comment %} get values for prediction {% endcomment %}
+<script>
+  let budget = []
+  let startDate
+  let endDate
+  let channel_grouping_div_open = true
+  function get_values(value) {
+      // while sending the values to backend , remove all commas and convert to integer
+      budget = parseInt(document.getElementById('predictor_budget').value.replace(/,/g, '').replace('$',''));
+      console.log(budget)
+  }
+  function add_commas(value) {
+      // this function rns on onkeyup which means when user releases a key
+      budgetHTML = document.getElementById('predictor_budget');
+      // removing all placed previous commas 
+      var temp = budgetHTML.value.replace(/,/g, '').replace('$','');
+      // place new commas as per US format
+      budgetHTML.value = '$' + temp.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+  }
+  function check_keys(){
+    budget = document.getElementById('predictor_budget').value;
+    var clean = budget.replace(/,/g, '').replace('$','');
+                          
+    // don't move cursor to end if no change
+    if(isNaN(clean)) {
+      document.getElementById('predictor_budget').value = ''
+    }
+  }
+  // function to open date range div 
+  function show_channel_date_ranges(){
+    if(channel_grouping_div_open == true){
+    $('#plus-icon').removeClass('fa-plus-square').addClass('fa-minus-square')
+    $('#channel_grouping_with_search_box').css('display','block');
+  }else{
+    $('#plus-icon').removeClass('fa-minus-square').addClass('fa-plus-square')
+    $('#channel_grouping_with_search_box').css('display','none');
+  }
+  channel_grouping_div_open = !channel_grouping_div_open;
+}
+  // function to perform searching of channels as per user choice 
+  function search_dimension_names(this_value){
+  let character_to_searched = this_value.value;
+  $('.channel-date-range').each(function(index,element){
+    if(element.children[0].innerHTML.includes(character_to_searched))
+      element.style.display = 'flex';
+    else 
+      element.style.display = 'none';
+  })
+}
+ $('input[name="daterange"]').daterangepicker();
+
+  $('input[name="daterange"]').on("apply.daterangepicker", function (ev, picker) {
+      startDate = $('#predictor_predict_section_daterange').data('daterangepicker').startDate.format('MM-DD-YY');
+      endDate = $('#predictor_predict_section_daterange').data('daterangepicker').endDate.format('MM-DD-YY');
+      console.log(startDate, endDate)
+  })
+
+  function get_seasonality_from_session(){
+    console.log("get_seasonality_from_session")
+    $.ajax({
+      async: false,
+      url: '/predictor/ajax/get_seasonality_from_session/',
+      success: function (data) {
+          let seasonality_from_session = data.seasonality_from_session
+          seasonality_from_session = seasonality_from_session? parseInt(seasonality_from_session) : 0
+          console.log("seasonality_from_session", seasonality_from_session)
+          // displaying the value in commas with US format
+          global_seasonality_from_session = seasonality_from_session
+          let seasonality_to_set = seasonality_from_session == 1 ? 'Yes' : 'No';
+          $('#select_seasonality').val(seasonality_to_set);
+          //displaying predictor date box or not 
+          seasonality_from_session ? $("#channel_grouping").hide() :  $("#channel_grouping").hide().show();
+          // showing and hiding left and right arrow buttons
+          seasonality_from_session ? $("#left-arrow-button").hide().show() :  
+                                     $("#left-arrow-button").hide();
+          seasonality_from_session ? $("#right-arrow-button").hide().show() :  
+                                     $("#right-arrow-button").hide();
+      },
+      error: function (error_data) {
+        console.log(
+          "error in '/predictor/ajax/get_seasonality_from_session/'",
+          error_data
+        );
+      },
+  })
+
+  }
+
+  function predict_submit() {
+      console.log("predict_submit")
+      get_seasonality_from_session()
+      predicted_value_node.value = 0
+      predictor_startDate = $('#predictor_predict_section_daterange').data('daterangepicker').startDate.format('MM-DD-YY');
+      predictor_endDate = $('#predictor_predict_section_daterange').data('daterangepicker').endDate.format('MM-DD-YY');
+      predictor_predict_section_total_days = document.getElementById('predictor_predict_section_total_days').value;
+      // while sending the values to backend , remove all commas and convert to integer
+      predictor_budget = parseInt(document.getElementById('predictor_budget').value.replace(/,/g, '').replace('$',''));
+      dimension_value_selector = document.getElementById("dimensionValueSelector").value
+      predictor_cpm_value = document.getElementById('predictor_cpm_budget').value;
+
+      
+
+      if(global_seasonality_from_session){
+        data_to_submit_onclick_predict = {
+            'seasonality':global_seasonality_from_session,
+            'start_date': predictor_startDate,
+            'end_date': predictor_endDate,
+            'budget': predictor_budget,
+            'dimension': dimension_value_selector,
+            'cpm_value': predictor_cpm_value,
+            }
+      }else{
+        data_to_submit_onclick_predict = {
+            'seasonality':global_seasonality_from_session,
+            'total_days': predictor_predict_section_total_days,
+            'budget': predictor_budget,
+            'dimension': dimension_value_selector,
+            'cpm_value': predictor_cpm_value,
+            }
+      }
+      console.log("data_to_submit_onclick_predict: ", data_to_submit_onclick_predict)
+
+      $.ajax({
+          url: '/predictor/ajax/predictor_send_value/',
+          data: data_to_submit_onclick_predict,
+          success: function (data) {
+              let predicted_value = data.predicted_value
+              console.log("predicted_value", predicted_value)
+              // displaying the value in commas with US format
+              predicted_value_node.value = predicted_value.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+              value = enter_cpm
+          },
+          error: function (error_data) {
+            console.log(
+              "error in '/predictor/ajax/predictor_send_value/'",
+              error_data
+            );
+          },
+      })
+  }
+
+
+
+  function discard_plan(value) {
+      dimension_value_selected_by_user = document.getElementById("dimensionValueSelector").value
+      console.log(`discard_plan : dimension_value_selected_by_user : ${dimension_value_selected_by_user}`)
+
+      //Push the discarded items to the array
+      if (!discarded_items.includes(dimension_value_selected_by_user)) {
+          console.log("Add " + dimension_value_selected_by_user);
+          discarded_items.push(dimension_value_selected_by_user);
+        } else {
+          console.log("Already selected " + dimension_value_selected_by_user);
+      }
+
+      console.log("discarded_items",discarded_items)
+
+      $.ajax({
+          url: '/predictor/ajax/predictor_discard/',
+          data: {
+              'discarded_items': discarded_items.toString(),
+          },
+          success: function (data) {
+              console.log("discarded_items_from_session",data.discarded_items)
+              alert(`Discarded items : ${data.discarded_items}`)
+          },
+      })
+  }
+
+
+
+  function predictor_window_on_load_front_end() {
+    console.log("predictor_window_on_load_front_end");
+    //Clear all the old Data
+    //clearOldData();
+  
+    // Ajax Call
+    $.ajax({
+      url: "/predictor/predictor_window_on_load/",
+      success: function (data) {
+        console.log("success in '/predictor/predictor_window_on_load/'");
+        document.getElementById("right_div").style.display = "block";
+        // clear the running setInnterval if running
+        clearInterval(progInterval);
+        // set all the properties of screen back and hide the progress bar
+        $("#container").css("pointer-events", "auto");
+        $("#container").css("opacity", 1);
+        $("body").css("background-color", "#fff");
+        scatterplot_data = data.scatterplot_data;
+        predictor_table_data = data.predictor_table_data[0];
+        enter_cpm = data.enter_cpm;
+        default_dimension = data.default_dimension;
+        dimension_value_selector = data.dimension_value_selector;
+        drop_dimension = data.drop_dimension
+        seasonality = data.seasonality
+        multi_line_chart_data2 = data.multi_line_chart_data2
+        weekly_predictions_json = data.weekly_predictions_json
+        monthly_predictions_json = data.monthly_predictions_json
+        console.log(
+          `\n scatterplot_data, ${scatterplot_data} 
+          \n predictor_table_data, ${predictor_table_data} 
+          \n default_dimension, ${default_dimension}
+          \n dimension_value_selector, ${dimension_value_selector}`
+        );
+        //CPM Div visible 
+        if (enter_cpm ) {
+          console.log(`\nenter_cpm, ${enter_cpm}`)
+          document.getElementById("predictor_cpm_budget").style.display = "block";
+        }
+        // Set dates 
+        $('input[name="daterange"]').daterangepicker();
+        // on load we do need this function
+        getPredictorStartAndEndDates()
+        //addOnApplyFuncnalityToDataRangePicker()
+        setnewDateRangerDates()
+        if (seasonality) {
+          $("#predictor_predict_section_daterange").show();
+          $("#predictor_predict_section_total_days").hide();
+        } else {
+          $("#predictor_predict_section_total_days").show();
+          $("#predictor_predict_section_daterange").hide();
+        }
+        // Start : Updating Drop dimension
+        $("#drop_dimension_outer_div").css("display", "flex");
+        $("#drop_dimension_outer_div").css("flex-direction", "column");
+        $("#drop_dimension_inner_div").css("display", "flex");
+        $("#drop_dimension_inner_div").css("flex-direction", "column");
+        if (drop_dimension.length) {
+          $("#drop_dimension_inner_div").empty();
+          $.each(drop_dimension, function (key, value) {
+            console.log(value);
+            $("#drop_dimension_inner_div").append(
+              `<span style="color:#fff;">${value}</span>`
+            );
+          });
+        }else{
+          $("#drop_dimension_inner_div").append(
+              `<span style="color:#fff;">No dimensions are discarded here</span>`
+            );
+        }
+        // End : Updating Drop dimension
+
+        var option = new Option(
+          default_dimension,
+          default_dimension,
+          true,
+          true
+        );
+        $("#dimensionValueSelector").empty(option);
+        $("#dimensionValueSelector").append(option);
+        $.each(dimension_value_selector, function (key, valueSelector) {
+          console.log(valueSelector);
+          //Use the Option() constructor to create a new HTMLOptionElement.
+          var option = new Option(valueSelector, valueSelector);
+          //Convert the HTMLOptionElement into a JQuery object that can be used with the append method.
+          $(option).html(valueSelector);
+          $("#dimensionValueSelector").append(option);
+        });
+        if(global_seasonality_from_session){
+          plot_weekly_seasonality(weekly_predictions_json)
+          plot_monthly_seasonality(monthly_predictions_json);
+        }
+        plot_multi_line_chart_checkboxes(multi_line_chart_data2, data.cpm_message ,data.max_spend, data.max_predictions);
+        scatter_plot_chart(data);
+        addDataToTable(predictor_table_data);
+        enter_cpm ? addDataToCPMSelector(enter_cpm) : null;
+      },
+      error: function (error_data) {
+        console.log(
+          "error in '/predictor/predictor_window_on_load/'",
+          error_data
+        );
+        clearInterval(progInterval);
+        // set all the properties of screen back and hide the progress bar
+        $("#container").css("pointer-events", "auto");
+        $("#container").css("opacity", 1);
+        $("body").css("background-color", "#fff");
+      },
+    });
+  }
+  function get_is_weekly_selected(){
+    console.log("get_is_weekly_selected")
+    $.ajax({
+      async: false,
+      url: '/predictor/ajax/is_weekly_selected/',
+      success: function (data) {
+         let is_weekly_selected = data.is_weekly_selected;
+         if(is_weekly_selected == 1 ){
+          select_seasonality_userselection = 0 ;
+          $('#select_seasonality').val('No') ;
+          $('#select_seasonality').addClass('disabled')
+        }
+      },
+      error: function (error_data) {
+        console.log(
+          "error in '/predictor/ajax/is_weekly_selected/'",
+          error_data
+        );
+      },
+  })
+
+  }
+  function get_convert_to_weekly_data(){
+    console.log("get_convert_to_weekly_data")
+    $.ajax({
+      async: false,
+      url: '/predictor/ajax/convert_to_weekly_data/',
+      success: function (data) {
+         let convert_to_weekly_data = data.convert_to_weekly_data;
+         if(convert_to_weekly_data == 1 ){
+          select_seasonality_userselection = 0 ;
+          $('#select_seasonality').val('No') ;
+          $('#select_seasonality').addClass('disabled')
+        }
+      },
+      error: function (error_data) {
+        console.log(
+          "error in '/predictor/ajax/convert_to_weekly_data/'",
+          error_data
+        );
+      },
+  })
+
+  }
+$(window).on('load',function(){
+    get_seasonality_from_session()
+    getPredictorStartAndEndDates() 
+    $('#predictor-btn').addClass('active')
+    $('#explorer-btn').removeClass('active')
+    let buttons_to_disable = JSON.parse(window.localStorage.getItem('buttons_to_disable'));
+    if(Boolean(buttons_to_disable['optimizer']) == true)
+      $('#optimizer-btn').addClass('disabled');  
+    get_is_weekly_selected()
+    get_convert_to_weekly_data()
+   })
+  {% if run_wondow_onload %}
+    window.onload = predictor_window_on_load_front_end;
+  {% endif %}
+</script>
+
+{% endblock %}
