@@ -1,0 +1,117 @@
+{% extends "home/login_base.html" %} {% load crispy_forms_tags %} {% comment %}
+sdfgd {% endcomment %} {% load static %} {% block content %}
+<style>
+  body {
+    color: black;
+    height: 100%;
+    margin: 0;
+  }
+  .login_base_container {
+    padding: 0;
+    margin: 0;
+    display: flex;
+    height: 100vh;
+    justify-content: center;
+    align-items: center;
+  }
+  .bg {
+    /* The image used */
+    background-image: url("{% static '/assets/Crossmediabackground.jpg' %}");
+    /* Full height */
+    height: 100%;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    /* Center and scale the image nicely */
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    position: absolute;
+  }
+  a {
+    color: black !important;
+  }
+  small {
+    color: black !important;
+  }
+  .form-text,
+  .text-muted {
+    color: black !important;
+  }
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .outer-div {
+    min-width: 25%;
+    padding: 1rem;
+  }
+  img {
+    width: 4.8rem;
+    height: 4.9rem;
+  }
+  label {
+    font-weight: bold;
+  }
+  .btn-outline-info{
+    border-color:#000000;
+    color:#000000;
+  }
+  .btn-outline-info:hover{
+    border-color:#000000;
+    color:#fff;
+    background-color:#000000;
+  }
+</style>
+<body>
+  <div class="bg"></div>
+  <div class="content-section outer-div card">
+    <div style="display: flex; flex-direction: row; padding: 1rem">
+      <div>
+        <img src="{% static '/assets/Redboxlogo-red.png' %}" alt="CROSSMEDIA" />
+      </div>
+      <div style="padding: 1rem">
+        <h3 class="text-center" style="font-weight: bold">
+          Outcomes Optimizer
+        </h3>
+      </div>
+    </div>
+
+    <div class="login-form">
+      <form method="POST" style="width: 90%">
+        {% csrf_token %}
+        <div style="display:flex;justify-content:center;">
+          {% if messages %} {%for message in messages%}
+            {% if message.tags == 'error' %}
+              <div class="alert alert-danger" style="z-index:100">{{message}}</div>
+            {% else %}
+              <div class="alert alert-{{ message.tags}}" style="z-index:100">{{message}}</div>
+            {% endif %}
+          {%endfor%} {% endif%} 
+          </div>
+        <fieldset class="form-group">{{ form|crispy }}</fieldset>
+        <div class="form-group mt-2 mb-2">
+          <button class="btn btn-outline-info" type="submit">Login</button>
+          <small class="text-muted ml-2">
+            <a href="{% url 'password_reset' %}">Forgot Password?</a>
+          </small>
+        </div>
+      </form>
+    </div>
+    <div class="login-form">
+      <div class="border-top pt-3" style="width: 90%">
+        <small class="text-muted">
+          Need An Account?
+          <a class="ml-2" href="{% url 'register' %}">Sign Up Now</a>
+        </small>
+      </div>
+    </div>
+  </div>
+  <script type="text/javascript">
+    localStorage.clear();
+  </script>
+</body>
+{% endblock content %}

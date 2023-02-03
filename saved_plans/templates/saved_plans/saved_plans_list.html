@@ -1,0 +1,179 @@
+{% extends 'home/base.html' %} {% block content %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.2/css/jquery.dataTables.min.css">
+<script type="text/javascript" src="https://cdn.datatables.net/1.10.2/js/jquery.dataTables.min.js"></script>
+<style>
+  .dataTables_filter{
+    margin-bottom:10px;
+  }
+</style>
+<div class="row header mt-5 mb-2" style="text-align:center">
+  <h3>Saved Plans</h3>
+  </div>
+
+<div id="savedplan-table-container">
+  <table id="example" class="table table-striped">
+    <thead style="background-color: #9A3334; color:white;padding: 20px">
+      <tr>
+        <th class="table-space text-center">Plan ID</th>
+        <th class="table-space text-center">Plan Name</th>
+        <th class="table-space text-center">Submitted Date</th>
+        <th class="table-space text-center" scope="col">Delete Plan</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in saved_plans_list %}
+      <tr>
+        <td class="table-space text-center" id="savedplan-plan-id">{{row.plan_id}}</td>
+        <td class="table-space text-center">
+          <a href="/optimizer_view_results?id={{row.plan_id}}" id="savedplan-plan-name"
+            >{{row.plan_name}}</a
+          >
+        </td>
+        <td class="table-space text-center">{{row.plan_date}}</td>
+        <td class="table-space text-center">
+          <i
+            class="fa fa-trash savedplans-delete-icon"
+            style="color: tomato"
+            data-toggle="modal"
+            data-target="#deleteModal"
+          ></i>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% comment %} Delete modal {% endcomment %}
+
+<div
+  class="modal fade"
+  id="deleteModal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="exampleModalCenterTitle"
+  data-backdrop="static"
+  data-keyboard="false"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">Delete Plan</h5>
+        <button
+          type="button"
+          class="close btn"
+          data-dismiss="modal"
+          aria-label="Close"
+        >
+          <span  style="color: black;font-size:1.5rem" aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form method="POST" class="delete-plan-submit-form">
+          {% csrf_token%}
+          <div class="form-group">
+            <div class="row">
+              <div class="col-md-6">
+                <label for="savedplan-planid-todelete" class="col-form-label"
+                  >Plan ID</label
+                >
+                <input
+                  name="planid-todelete"
+                  type="text2"
+                  class="form-control"
+                  id="savedplan-planid-todelete"
+                  placeholder="Plan-id to delete"
+                  required
+                  style="pointer-events: none; background: #ccc"
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="savedplan-planname-todelete" class="col-form-label"
+                  >Plan Name</label
+                >
+                <input
+                  name="planname-todelete"
+                  type="text2"
+                  class="form-control"
+                  id="savedplan-planname-todelete"
+                  placeholder="Plan to delted"
+                  required
+                  style="pointer-events: none; background: #ccc"
+                />
+              </div>
+            </div>
+            <br />
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="spinner-submit-button red-red btn" style="background-color:#2b6777;color:white" onclick = delete_saveplan()>
+              Delete
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% comment %} Pagination - modal for save plan {% endcomment %}
+<script>
+  $(document).ready(function () {
+    $("#example").dataTable({
+      ordering:  false
+     });
+  });
+</script>
+
+{% comment %} EditUser script {% endcomment %}
+<script>
+  $(document).ready(function () {
+    $("#savedplan-table-container").on(
+      "click",
+      ".savedplans-delete-icon",
+      function () {
+        $("#savedplan-planid-todelete").val(
+          $(this).parent().parent().find("#savedplan-plan-id").text()
+        );
+        $("#savedplan-planname-todelete").val(
+          $(this).parent().parent().find("#savedplan-plan-name").text()
+        );
+      }
+    );
+  });
+</script>
+<script>
+  $(document).ready(function () {
+    $(".delete-plan-submit-form").on("submit", function () {
+      $(this)
+        .find(".spinner-submit-button")
+        .addClass("add-spinner")
+        .attr("disabled", true);
+      const self = this;
+      setTimeout(function () {
+        $(self)
+          .find(".spinner-submit-button")
+          .removeClass("add-spinner")
+          .removeAttr("disabled");
+      }, 20000);
+    });
+  });
+</script>
+<script>
+  function delete_saveplan(){
+    plan_id_to_delete = $('#savedplan-planid-todelete').val()
+    $.ajax({
+      url :'/saved_plans/ajax/delete',
+      data:{
+        plan_id:plan_id_to_delete
+      },
+      success:function(data){
+        console.log(data)
+      },
+      error:function(error){
+        console.log(error)
+      }
+    })
+  }
+</script>
+
+{% endblock content %}
