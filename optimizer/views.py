@@ -19,8 +19,7 @@ from django.views.decorators.csrf import csrf_exempt
 # custom imports
 from .optimizer_helper_functions import (
     dimension_bound,
-    optimizer_class,
-    optimizer_with_seasonality_class,
+    optimizer_iterative,
 )
 
 
@@ -30,7 +29,7 @@ ERROR_DICT = {
     "5004": "Incorrect Date Format",
 }
 # for production environment
-UPLOAD_FOLDER = 'var/www/optimizer/data/'
+# UPLOAD_FOLDER = "/var/www/source2/data/"
 # for local environment
 UPLOAD_FOLDER = "data/"
 TEMP_ERROR_DICT = {"4002": "Value Error"}
@@ -131,6 +130,9 @@ def dimension_min_max(request):
                 request.session.get("_uuid")
             )
         )
+        scatter_plot_df = pd.read_pickle(
+            UPLOAD_FOLDER + "scatter_plot_df_{}.pkl".format(request.session.get("_uuid"))
+        )
 
         # Get from request object
         body = json.loads(request.body)
@@ -138,6 +140,7 @@ def dimension_min_max(request):
         dimension_min_max = json.loads(body["dimension_min_max"])
         total_budget = int(body["total_budget"])
         discarded_dimensions = json.loads(body["discarded_dimensions"])
+        #cpm_checked = request.session.get('cpm_checked')
         if seasonality:
             print(
                 f"\ndimension_min_max - seasonality:{seasonality}, Running optimizer_with_seasonality_class"
@@ -149,12 +152,11 @@ def dimension_min_max(request):
             df_spend_dis = pd.DataFrame(request.session.get('df_spend_dis'))
             print(start_date, end_date)
             date_range = [start_date, end_date]
-            optimizer_object = optimizer_with_seasonality_class(
+            optimizer_object = optimizer_iterative(
                 df_predictor_page_latest_data
             )
             (
                 df_optimizer_results_post_min_max,
-                df_optimizer_results_for_line_chart,
             ) = optimizer_object.execute(total_budget, date_range, dimension_min_max,discarded_dimensions,df_spend_dis)
         else:
             print(
@@ -162,20 +164,17 @@ def dimension_min_max(request):
             )
             number_of_days = int(body["number_of_days"])
             df_spend_dis = pd.DataFrame(request.session.get('df_spend_dis'))
-            optimizer_object = optimizer_class(df_predictor_page_latest_data)
+            optimizer_object = optimizer_iterative(df_predictor_page_latest_data)
             try:
+                 
                 (
-                    df_optimizer_results_post_min_max,
-                    df_optimizer_results_for_line_chart,
+                    df_optimizer_results_post_min_max
                 ) = optimizer_object.execute(
-                    total_budget, number_of_days, dimension_min_max, discarded_dimensions, df_spend_dis  
+                    scatter_plot_df, total_budget, number_of_days, df_spend_dis, discarded_dimensions, dimension_min_max
                 )
             except Exception as error:
                 return JsonResponse({"error": str(error)}, status=501)
         df_optimizer_results_post_min_max = df_optimizer_results_post_min_max.round(2)
-        df_optimizer_results_for_line_chart = (
-            df_optimizer_results_for_line_chart.round(1)
-        )
 
         print(
             "\n dimension_min_max",
@@ -193,7 +192,6 @@ def dimension_min_max(request):
         print(
             "df_optimizer_results_post_min_max \n",
             df_optimizer_results_post_min_max.columns,
-            df_optimizer_results_for_line_chart,
         )
         # Table1
         df_table_1_data = df_optimizer_results_post_min_max[
@@ -201,12 +199,12 @@ def dimension_min_max(request):
                 "dimension",
                 "original_median_budget_per_day",
                 "recommended_budget_per_day",
-                "buget_allocation_old",
-                "buget_allocation_new",
+                "buget_allocation_old_%",
+                "buget_allocation_new_%",
                 "recommended_budget_for_n_days",
-                "est_opt_target_per_day",
-                "est_opt_target_for_n_days",
-                "estimated_target_new"
+                'estimated_return_per_day', 
+                'estimated_return_%', 
+                'estimated_return_for_n_days'
             ]
         ]
 
@@ -214,14 +212,14 @@ def dimension_min_max(request):
         df_sum_ = df_table_1_data.sum()
         df_sum_['original_median_budget_per_day'] = df_sum_['original_median_budget_per_day'].round()
         df_sum_['recommended_budget_per_day'] = df_sum_['recommended_budget_per_day'].round()
-        df_sum_['buget_allocation_old'] = df_sum_['buget_allocation_old'].round()
-        df_sum_['buget_allocation_new'] = df_sum_['buget_allocation_new'].round()
+        df_sum_['buget_allocation_old_%'] = df_sum_['buget_allocation_old_%'].round()
+        df_sum_['buget_allocation_new_%'] = df_sum_['buget_allocation_new_%'].round()
         df_sum_['recommended_budget_for_n_days'] = df_sum_['recommended_budget_for_n_days']
         df_sum_[df_sum_.index == "dimension"] = "Total"
         df_table_1_data['original_median_budget_per_day'] = df_table_1_data['original_median_budget_per_day'].round()
         df_table_1_data['recommended_budget_per_day'] = df_table_1_data['recommended_budget_per_day'].round()
-        df_table_1_data['buget_allocation_old'] = df_table_1_data['buget_allocation_old'].round(decimals=2)
-        df_table_1_data['buget_allocation_new'] = df_table_1_data['buget_allocation_new'].round(decimals=2)
+        df_table_1_data['buget_allocation_old_%'] = df_table_1_data['buget_allocation_old_%'].round(decimals=2)
+        df_table_1_data['buget_allocation_new_%'] = df_table_1_data['buget_allocation_new_%'].round(decimals=2)
         df_table_1_data['recommended_budget_for_n_days'] = df_table_1_data['recommended_budget_for_n_days'].round()
         df_table_1_data = df_table_1_data.append(df_sum_, ignore_index=True)
         df_table_1_data = df_table_1_data
@@ -235,8 +233,8 @@ def dimension_min_max(request):
             df_table_for_csv =  df_table_1_data.rename(columns = {'original_median_budget_per_day':'original_median_budget_per_week',
                                            'recommended_budget_per_day':'recommended_budget_per_week',
                                            'recommended_budget_for_n_days':'recommended_budget_for_n_weeks',
-                                           'est_opt_target_for_n_days':'est_opt_target_for_n_weeks',
-                                           'est_opt_target_per_day':'est_opt_target_per_week'
+                                            'estimated_return_per_day':'estimated_return_per_week',
+                                            'estimated_return_for_n_days':'estimated_return_for_n_weeks'
                                            }, inplace = False)
         else:
             df_table_for_csv = df_table_1_data
@@ -253,25 +251,15 @@ def dimension_min_max(request):
             "dimension"
         ].tolist()
         dict_donut_chart_data[
-            "buget_allocation_old"
-        ] = df_optimizer_results_post_min_max["buget_allocation_old"].tolist()
+            "buget_allocation_old_%"
+        ] = df_optimizer_results_post_min_max["buget_allocation_old_%"].tolist()
         dict_donut_chart_data[
-            "buget_allocation_new"
-        ] = df_optimizer_results_post_min_max["buget_allocation_new"].tolist()
+            "buget_allocation_new_%"
+        ] = df_optimizer_results_post_min_max["buget_allocation_new_%"].tolist()
 
         json_table_1_data = df_table_1_data.to_dict("records")
         # json_donut_chart_data = df_donut_chart_data.to_dict()
 
-        # Line Chart
-        dict_line_chart_data["date"] = df_optimizer_results_for_line_chart[
-            "days"
-        ].tolist()
-        dict_line_chart_data["old_conversion"] = df_optimizer_results_for_line_chart[
-            "conversion_current_spend"
-        ].tolist()
-        dict_line_chart_data[
-            "expected_conversion"
-        ] = df_optimizer_results_for_line_chart["conversion_optimize_spend"].tolist()
 
         print("json_table_1_data", json_table_1_data)
         # print("json_donut_chart_data", json_donut_chart_data)

@@ -150,7 +150,7 @@ img{
           <div class="tooltip_outer_div">
             <i class="fa fa-book fa-lg" aria-hidden="true" style="color: white; margin-right: 10px"></i>
               <span class="tooltiptext">Please enter a minimum and maximum spend per day/week.
-                The ranges in the placeholders are calculated from the data.
+                The ranges in the placeholders are calculated from data.
                 Max values are the 3x the median spend per day/week. Application will not accept values beyond the placeholder ranges.
                 Min cannot be equal to max value as the optimizer needs a non-zero search space.
                 This is an optional input. If no input is provided the placeholder ranges are used</span>
@@ -302,6 +302,7 @@ img{
             <span class="tooltiptext" style = "bottom:2rem">Enter Total Budget. The placeholder range for the total budget is calculated by summing the min and max for each channel.</span>  
           </div>
           <div style="margin: auto">
+            <p id="budget_per_day_text" style="color: #fff"></p>
             <button type="button" name="Submit" class="btn explorer-sidebar-submit-btn" id="submit_btn"
               onclick="submit_predictor_left_pannel_chart_inputs()">Submit</button>
           </div>
@@ -910,6 +911,13 @@ function update_number_of_days(value){
     alert("Please enter a Budget with in specified range, reseting to minimum butget value")
     return
   }
+  var budget_per_day_week = optimizer_left_panel_total_budget/optimizer_left_panel_number_of_days;
+  if(get_is_weekly_selected() == 1 || get_convert_to_weekly_data() == 1)
+    document.getElementById('budget_per_day_text').innerText = 'Investment per week : '
+           +   Math.round(budget_per_day_week);
+  else 
+    document.getElementById('budget_per_day_text').innerText = 'Investment per day : '
+           +   Math.round(budget_per_day_week);
  }
  
  function update_global_optimizer_left_pannel_data(){
@@ -1127,11 +1135,11 @@ function update_number_of_days(value){
       td3.appendChild(textNode3);
 
       td4 = document.createElement("td");
-      textNode4 = document.createTextNode(value["buget_allocation_old"]+" %");
+      textNode4 = document.createTextNode(value["buget_allocation_old_%"]+" %");
       td4.appendChild(textNode4);
 
       td5 = document.createElement("td");
-      textNode5 = document.createTextNode(value["buget_allocation_new"]+" %");
+      textNode5 = document.createTextNode(value["buget_allocation_new_%"]+" %");
       td5.appendChild(textNode5);
 
       td6 = document.createElement("td");
@@ -1139,31 +1147,31 @@ function update_number_of_days(value){
       td6.appendChild(textNode6);
 
       td7 = document.createElement("td");
-      if(value["est_opt_target_per_day"]){
-        textNode7 = document.createTextNode(`${value["est_opt_target_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+      if(value["estimated_return_per_day"]){
+        textNode7 = document.createTextNode(`${value["estimated_return_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
         td7.appendChild(textNode7);
       }else{
-        textNode7 = document.createTextNode(`${value["est_opt_target_per_day"]}`);
+        textNode7 = document.createTextNode(`${value["estimated_return_per_day"]}`);
         td7.appendChild(textNode7);
       }
 
      
       td8 = document.createElement("td");
       if(value["dimension"] == "Total"){
-        textNode8 = document.createTextNode(Math.round(value["estimated_target_new"],2)+" %");
+        textNode8 = document.createTextNode(Math.round(value["estimated_return_%"],2)+" %");
         td8.appendChild(textNode8);
       }
       else{ 
-        textNode8 = document.createTextNode(value["estimated_target_new"] +" %");
+        textNode8 = document.createTextNode(value["estimated_return_%"] +" %");
         td8.appendChild(textNode8);
       }
 
       td9 = document.createElement("td");
-      if(value["est_opt_target_for_n_days"]){
-        textNode9 = document.createTextNode(`${value["est_opt_target_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+      if(value["estimated_return_for_n_days"]){
+        textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
         td9.appendChild(textNode9);
       }else{
-        textNode9 = document.createTextNode(`${value["est_opt_target_for_n_days"]}`);
+        textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"]}`);
         td9.appendChild(textNode9);
       }
       tableRow.appendChild(td1)
@@ -1186,8 +1194,8 @@ function update_number_of_days(value){
   function populate_grouped_bar_chart(dict_donut_chart_data){
       console.log("populate_grouped_bar_chart")
       let xValues = dict_donut_chart_data['dimension']
-      let buget_allocation_old = dict_donut_chart_data['buget_allocation_old']
-      let buget_allocation_new = dict_donut_chart_data['buget_allocation_new']
+      let buget_allocation_old = dict_donut_chart_data['buget_allocation_old_%']
+      let buget_allocation_new = dict_donut_chart_data['buget_allocation_new_%']
       let barColors = global_chart_colors
       ctx = "optimizer_bar_chart"
       config = {
@@ -1309,6 +1317,7 @@ function update_number_of_days(value){
           "error in '/predictor/ajax/is_weekly_selected/'",
           error_data
         );
+        return 0;
       },
   })
   return is_weekly_selected;
@@ -1328,6 +1337,7 @@ function update_number_of_days(value){
           "error in '/predictor/ajax/convert_to_weekly_data/'",
           error_data
         );
+        return 0;
       },
   })
   return convert_to_weekly_data;

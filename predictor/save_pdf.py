@@ -8,14 +8,17 @@ import os
 import time
 # customizing runtime configuration stored
 # in matplotlib.rcParams
-plt.rcParams["figure.figsize"] = [8.00, 6.50]
 plt.rcParams["figure.autolayout"] = True
-PREDICTOR_UPLOAD_FOLDER = "/var/www/optimizer/Predictor_pdf/"
+matplotlib.use("Agg")
 
 
 
-def plot_curve(multi_chart_data, seasonality, cpm_checked, df_score_final, request):
-    filename = PREDICTOR_UPLOAD_FOLDER + "predictor_" + request.session.get("_uuid") + ".pdf"  
+def plot_curve(multi_chart_data, seasonality, cpm_checked, df_score_final, weekly_predictions_df, monthly_predictions_df, request):
+    if seasonality == 1:
+        plt.rcParams["figure.figsize"] = [8.50, 14.00]
+    else:
+        plt.rcParams["figure.figsize"] = [8.50, 6.00]
+    filename = "Predictor_pdf/predictor_" + request.session.get("_uuid") + ".pdf"  
     # first remove this file from system if it already exists 
     if os.path.isfile(filename):
         os.remove(filename)
@@ -41,8 +44,14 @@ def plot_curve(multi_chart_data, seasonality, cpm_checked, df_score_final, reque
         else :
             x = multi_chart_data[key]['spend']
         fig = plt.figure(clear=True)
-        ax1 = fig.add_subplot(211)
-        ax2 = fig.add_subplot(212)
+        if seasonality == 1:
+            ax1 = fig.add_subplot(411)
+            ax2 = fig.add_subplot(412)
+            ax3 = fig.add_subplot(413)
+            ax4 = fig.add_subplot(414) 
+        else :
+            ax1 = fig.add_subplot(211)
+            ax2 = fig.add_subplot(212)
         # plotting the points spend vs predictions
         ax1.plot(x, y)
         # plotting spend vs target 
@@ -75,13 +84,58 @@ def plot_curve(multi_chart_data, seasonality, cpm_checked, df_score_final, reque
         ]
         for col in predictor_data_json.keys():
             if col == 'SMAPE' or col == 'correlation':
-                table_data.append([col, str(int(predictor_data_json[col]*100)) + "%"])
+                if predictor_data_json[col] != None:
+                    table_data.append([col, str(int(predictor_data_json[col]*100)) + "%"])
             elif col == '%_of_data_points_discarded_during_outlier_treatment':
-                  table_data.append([col, str(predictor_data_json[col]) + "%"])
+                    table_data.append([col, str(predictor_data_json[col]) + "%"])
             else:
                 table_data.append([col, str(predictor_data_json[col])])
 
-        the_table = ax2.table(cellText=table_data,loc='center') 
+        the_table = ax2.table(cellText=table_data, loc='center')
+        if seasonality == 1:
+            # extracting weekly data 
+            weekly_predictions_df_dimension = weekly_predictions_df[
+                            (weekly_predictions_df["dimension"] == key)
+                                ].drop_duplicates()
+            monthly_predictions_df_dimension = monthly_predictions_df[
+                            (monthly_predictions_df["dimension"] == key)
+                                ].drop_duplicates()
+            weekly_predictions_json = weekly_predictions_df_dimension.to_dict('records')
+            monthly_predictions_json = monthly_predictions_df_dimension.to_dict('records')
+            days_of_week = []
+            weekly_predictions_array = []
+            month_of_year = []
+            monthly_predictions_array = []
+            for obj in weekly_predictions_json:
+                days_of_week.append(obj['weekday_'])
+                weekly_predictions_array.append(obj['weekly_prediction'])
+            for obj in monthly_predictions_json:
+                month_of_year.append(obj['month_'])
+                monthly_predictions_array.append(obj['monthly_prediction'])
+            x = days_of_week
+            y = weekly_predictions_array
+            # plotting weekly seasonality
+            ax3.plot(x,y)
+            # adding the legend
+            ax3.legend(['predictions'], loc ="upper left")
+            ax3.tick_params(axis='x', labelrotation = 45)
+            # plotting the grid lines 
+            ax3.grid(True)
+            # setting xlabel for monthly seasonality 
+            ax3.set_xlabel('Days Of Week')
+            ax3.set_ylabel('Predictions')
+            # plotting monthly seasonality
+            x = month_of_year
+            y = monthly_predictions_array
+            ax4.plot(x,y)
+            # adding the legend
+            ax4.legend(['predictions'], loc ="upper left")
+            ax4.tick_params(axis='x', labelrotation = 45)
+            # plotting the grid lines 
+            ax4.grid(True)
+            # setting xlabel for monthly seasonality 
+            ax4.set_xlabel('Months of year')
+            ax4.set_ylabel('Predictions')
         save_image(p , fig)    
         index = index + 1
    

@@ -993,6 +993,14 @@
         );
         // clear the running setInnterval if running
         clearInterval(progInterval);
+        $("#inner-progressbarDiv").animate(
+          {
+            width: 100 * 0.02 + "%",
+          },
+          100
+        );
+        $("#inner-progressbarDiv").text("2%");
+        previousPercentage = 0;
         // set all the properties of screen back and hide the progress bar
         $("#container").css("pointer-events", "auto");
         $("#container").css("opacity", 1);
@@ -1011,6 +1019,8 @@
         success: function (response) {
           total_steps = response["prog_variables"][1];
           ongoing_step = response["prog_variables"][0];
+          if(total_steps == ongoing_step)
+            on_cancel_progress_bar('internal_call')
           console.log(response["prog_variables"]);
           frac_of_req_loaded = ongoing_step / total_steps;
           console.log("diff", frac_of_req_loaded - previousPercentage);
@@ -1042,28 +1052,31 @@
     }, 2000);
   }
   // function gets called when user cancels the progress bar
-  function on_cancel_progress_bar() {
-    // properties to set back
-    // abort the ajax request which is ongoing
-    mainRequest.abort();
-    console.log("request aborted");
-    $("#outer-progressbarDiv").css("display", "none");
-    // clear the interval of ajax requests which is running in backgound
+  function on_cancel_progress_bar(type_of_call = 'external_call') {
+  
     clearInterval(progInterval);
-    $("#container").css("pointer-events", "auto");
-    $("#container").css("opacity", 1);
-    $("body").css("background-color", "#fff");
-    // if user cancels make right div invisible back
-    $("#right_div").css("display", "none");
-    $("#inner-progressbarDiv").text("2%");
-    // setting the progress bar again to 2%
-    $("#inner-progressbarDiv").animate(
-      {
-        width: 100 * 0.02 + "%",
-      },
-      100
-    );
-    previousPercentage = 0;
+    if(type_of_call == 'external_call'){
+      mainRequest.abort();
+      console.log("request aborted");
+      // properties to set back
+      // abort the ajax request which is ongoing
+      // clear the interval of ajax requests which is running in backgound
+      $("#outer-progressbarDiv").css("display", "none");
+      $("#container").css("pointer-events", "auto");
+      $("#container").css("opacity", 1);
+      $("body").css("background-color", "#fff");
+      // if user cancels make right div invisible back
+      $("#right_div").css("display", "none");
+      $("#inner-progressbarDiv").text("2%");
+      // setting the progress bar again to 2%
+      $("#inner-progressbarDiv").animate(
+        {
+          width: 100 * 0.02 + "%",
+        },
+        100
+      );
+      previousPercentage = 0;
+    }
   }
 </script>
 

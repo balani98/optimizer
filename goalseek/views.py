@@ -30,9 +30,9 @@ ERROR_DICT = {
     "5004": "Incorrect Date Format",
 }
 # for production environment
-# UPLOAD_FOLDER = "/var/www/optimizer/data/"
+# UPLOAD_FOLDER = "/var/www/source2/data/"
 # for local environment
-#UPLOAD_FOLDER = "data/"
+UPLOAD_FOLDER = "data/"
 TEMP_ERROR_DICT = {"4002": "Value Error"}
 
 # Create your views here.

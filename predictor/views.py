@@ -24,11 +24,9 @@ ERROR_DICT = {
     "5004": "Incorrect Date Format",
 }
 # for production environment
-# UPLOAD_FOLDER = "/var/www/optimizer/data/"
-# PREDICTOR_UPLOAD_FOLDER = "/var/www/optimizer/Predictor_pdf/"
+# UPLOAD_FOLDER = "/var/www/source2/data/"
 # for local environment
 UPLOAD_FOLDER = "data/"
-PREDICTOR_UPLOAD_FOLDER = "Predictor_pdf/"
 TEMP_ERROR_DICT = {"4002": "Value Error"}
 
 # Global variables
@@ -355,7 +353,7 @@ def predictor_ajax_left_panel_submit(request):
                 (scatter_plot_df["dimension"] == default_dim)
                ]
         multi_line_chart_data = create_pdf_for_multiple_plots(multi_line_chart_json, seasonality, cpm_checked)
-        plot_curve(multi_line_chart_data, seasonality, cpm_checked, df_score_final, request)
+        plot_curve(multi_line_chart_data, seasonality, cpm_checked, df_score_final,weekly_predictions_df, monthly_predictions_df, request)
         df_score_final = df_score_final[(df_score_final["dimension"] == default_dim)]
         if seasonality == 1:
             weekly_predictions_df = weekly_predictions_df[
@@ -841,7 +839,7 @@ def download_predictor_curves_pdf(request):
     try:
         context = {}
          # Get the file path of the PDF file
-        pdf_file = PREDICTOR_UPLOAD_FOLDER+"predictor_" + request.session.get("_uuid") + ".pdf"  
+        pdf_file = "Predictor_pdf/predictor_" + request.session.get("_uuid") + ".pdf"  
         pdf = open(pdf_file, 'rb')
         response = FileResponse(pdf, content_type='application/pdf')
         response['Content-Disposition'] = 'attachment; filename="predictor.pdf"'
