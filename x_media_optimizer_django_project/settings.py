@@ -89,6 +89,9 @@ WSGI_APPLICATION = "x_media_optimizer_django_project.wsgi.application"
 # Declaring the environment
 ENVIRONMENT = 'test'
 
+if ENVIRONMENT == 'test':
+    ALLOWED_HOSTS = ['34.195.162.3']
+
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 json_config_data = ""
