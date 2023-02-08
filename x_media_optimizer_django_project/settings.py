@@ -86,6 +86,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "x_media_optimizer_django_project.wsgi.application"
 
+# Declaring the environment
+ENVIRONMENT = 'test'
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
@@ -95,19 +97,19 @@ with open('config.json') as config_file:
 DATABASES = {}
 if len(ALLOWED_HOSTS) == 0:
     ssh_tunnel = SSHTunnelForwarder(
-        (json_config_data["SERVER_IP_ADDRESS"]),
-        ssh_password=json_config_data["SSH_PASSWORD"],
-        ssh_private_key=json_config_data["SSH_PRIVATE_KEY"],
-        ssh_username=json_config_data["SSH_USERNAME"],
-        remote_bind_address=(json_config_data["DATABASE_HOSTNAME"], json_config_data["DATABASE_PORT"]),
+        (json_config_data[ENVIRONMENT]["SERVER_IP_ADDRESS"]),
+        ssh_password=json_config_data[ENVIRONMENT]["SSH_PASSWORD"],
+        ssh_private_key=json_config_data[ENVIRONMENT]["SSH_PRIVATE_KEY"],
+        ssh_username=json_config_data[ENVIRONMENT]["SSH_USERNAME"],
+        remote_bind_address=(json_config_data[ENVIRONMENT]["DATABASE_HOSTNAME"], json_config_data[ENVIRONMENT]["DATABASE_PORT"]),
     )
     ssh_tunnel.start()
     DATABASES = {
         'default': {
-            'ENGINE': json_config_data["ENGINE"],
-            'NAME': json_config_data["DATABASE_NAME"],
-            'USER': json_config_data["DATABASE_USER"],
-            'PASSWORD': json_config_data["DATABASE_PASSWORD"],
+            'ENGINE': json_config_data[ENVIRONMENT]["ENGINE"],
+            'NAME': json_config_data[ENVIRONMENT]["DATABASE_NAME"],
+            'USER': json_config_data[ENVIRONMENT]["DATABASE_USER"],
+            'PASSWORD': json_config_data[ENVIRONMENT]["DATABASE_PASSWORD"],
             'HOST': '127.0.0.1',
             'PORT': ssh_tunnel.local_bind_port,
         }
@@ -115,12 +117,12 @@ if len(ALLOWED_HOSTS) == 0:
 else:
     DATABASES = {
         'default': {
-            'ENGINE': json_config_data["ENGINE"],
-            'NAME': json_config_data["DATABASE_NAME"],
-            'USER': json_config_data["DATABASE_USER"],
-            'PASSWORD': json_config_data["DATABASE_PASSWORD"],
-            'HOST': json_config_data['DATABASE_HOSTNAME'],
-            'PORT': json_config_data['DATABASE_PORT'],
+            'ENGINE': json_config_data[ENVIRONMENT]["ENGINE"],
+            'NAME': json_config_data[ENVIRONMENT]["DATABASE_NAME"],
+            'USER': json_config_data[ENVIRONMENT]["DATABASE_USER"],
+            'PASSWORD': json_config_data[ENVIRONMENT]["DATABASE_PASSWORD"],
+            'HOST': json_config_data[ENVIRONMENT]['DATABASE_HOSTNAME'],
+            'PORT': json_config_data[ENVIRONMENT]['DATABASE_PORT'],
         }
     }
     
