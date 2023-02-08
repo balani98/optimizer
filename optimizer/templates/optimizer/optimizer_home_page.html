@@ -359,6 +359,7 @@ img{
                 <th scope="col">Target per day</th>
                 <th scope="col">% of Target</th>
                 <th scope="col">Overall Target</th>
+                <th scope="col">Overall Current Projections</th>
               </tr>
             </thead>
             <tbody style="text-align: center;" class="table_body_1_optimizer">
@@ -1174,6 +1175,9 @@ function update_number_of_days(value){
         textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"]}`);
         td9.appendChild(textNode9);
       }
+      td10 = document.createElement("td");
+      textNode10 = document.createTextNode(Math.round(value["current_projections_for_n_days"]));
+      td10.appendChild(textNode10);
       tableRow.appendChild(td1)
       tableRow.appendChild(td2)
       tableRow.appendChild(td3)
@@ -1183,6 +1187,7 @@ function update_number_of_days(value){
       tableRow.appendChild(td7)
       tableRow.appendChild(td8)
       tableRow.appendChild(td9)
+      tableRow.appendChild(td10)
       table_body_1_optimizer.appendChild(tableRow)
 
 
