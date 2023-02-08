@@ -89,14 +89,15 @@ WSGI_APPLICATION = "x_media_optimizer_django_project.wsgi.application"
 # Declaring the environment
 ENVIRONMENT = 'test'
 
-if ENVIRONMENT == 'test':
-    ALLOWED_HOSTS = ['34.195.162.3']
-
-# Database
-# https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 json_config_data = ""
 with open('config.json') as config_file:
     json_config_data = json.load(config_file)
+if ENVIRONMENT == 'test':
+    ALLOWED_HOSTS = [json_config_data[ENVIRONMENT]["SERVER_IP_ADDRESS"]]
+
+# Database
+# https://docs.djangoproject.com/en/4.0/ref/settings/#databases
+
 DATABASES = {}
 if len(ALLOWED_HOSTS) == 0:
     ssh_tunnel = SSHTunnelForwarder(
