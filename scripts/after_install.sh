@@ -20,4 +20,4 @@ pip install -r /mnt/apps/optimizer/source/requirements.txt
 # sudo systemctl restart apache2
 
 # restart python server 
-nohup python manage.py runserver 0.0.0.0:8080 
+screen -d nohup python manage.py runserver 0.0.0.0:8080 
