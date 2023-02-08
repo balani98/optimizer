@@ -13,7 +13,7 @@ cd /mnt/apps/optimizer/source
 python3 -m venv venv
 source venv/bin/activate
 
-install requirements.txt
+# install requirements.txt
 pip install -r /mnt/apps/optimizer/source/requirements.txt
 
 # restart apache2 server for production server
