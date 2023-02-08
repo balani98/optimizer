@@ -7,14 +7,17 @@ sudo pkill -f runserver
 # sudo pkill -f tailwind
 # sudo pkill -f node
 
-cd /var/www/optimizer
+cd /mnt/apps/optimizer/source
 
 # activate virtual environment
 python3 -m venv venv
 source venv/bin/activate
 
 install requirements.txt
-pip install -r /var/www/optimizer/requirements.txt
+pip install -r /mnt/apps/optimizer/source/requirements.txt
 
-# restart apache2 server
-sudo systemctl restart apache2
+# restart apache2 server for production server
+# sudo systemctl restart apache2
+
+# restart python server 
+nohup python manage.py runserver 0.0.0.0:8080 
