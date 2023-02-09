@@ -85,9 +85,16 @@ WSGI_APPLICATION = "x_media_optimizer_django_project.wsgi.application"
 
 # Declaring the environment
 ENVIRONMENT = os.getenv('ENVIRONMENT')
+if ENVIRONMENT == 'production':
+    path_to_config_file = '/var/www/optimizer/config.json'
+elif ENVIRONMENT =='test':
+    path_to_config_file = 'config.json'
+else:
+    path_to_config_file = 'config.json'
+
 
 json_config_data = ""
-with open('config.json') as config_file:
+with open(path_to_config_file) as config_file:
     json_config_data = json.load(config_file)
 if ENVIRONMENT == 'test':
     ALLOWED_HOSTS = [json_config_data[ENVIRONMENT]["SERVER_IP_ADDRESS"]]
