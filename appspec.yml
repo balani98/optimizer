@@ -2,7 +2,7 @@ version: 0.0
 os: linux
 files:
   - source: /
-    destination: /var/wwww/optimizer
+    destination: /var/www/optimizer
 hooks:
   BeforeInstall:
       - location: scripts/before_install.sh
