@@ -327,7 +327,7 @@ class optimizer_class:
 
         return df_res, df_day
     
-    def optimizer_result_adjust(self, discard_json, df_res, df_spend_dis, days):
+    def optimizer_result_adjust(self, discard_json, df_res, df_spend_dis, budget_per_day, days):
         """re-calculation of result based on discarded dimension budget
 
         Args:
@@ -379,8 +379,22 @@ class optimizer_class:
 
         df_res['buget_allocation_old'] = df_res['median spend']/df_res['median spend'].sum()
 
+        for dim in self.d_param:
+            spend_projections = budget_per_day*df_res.loc[df_res['dimension']==dim, 'buget_allocation_old']
+            if self.use_impression:
+                imp_projections = (spend_projections * 1000)/dimension_bound[dim][2]
+                metric_projections = imp_projections
+            else:
+                metric_projections = spend_projections
+            df_res.loc[df_res['dimension']==dim, 'current_projections_per_day'] = self.s_curve_hill(metric_projections, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]).round(2)
+        df_res['current_projections_for_n_days'] = df_res['current_projections_per_day']*days
+        df_res['current_projections_allocation'] = ((df_res['current_projections_per_day']/df_res['current_projections_per_day'].sum())*100)
+
         df_res['buget_allocation_new']=(df_res['buget_allocation_new']*100).round(2)
         df_res['buget_allocation_old']=(df_res['buget_allocation_old']*100).round(2)
+
+        df_res['current_projections_per_day']=df_res['current_projections_per_day'].round().astype(int)
+        df_res['current_projections_for_n_days']=df_res['current_projections_for_n_days'].round().astype(int)
 
 #         df_res=pd.merge(df_res, df_spend_dis[['dimension', 'median spend']], on='dimension', how='left')
         df_res['median spend'] = df_res['median spend'].round().astype(int)
@@ -450,14 +464,14 @@ class optimizer_class:
 
         df_res, df_day = self.lift_cal(sol, budget_per_day, days)
         
-        df_res = self.optimizer_result_adjust(discard_json, df_res, df_spend_dis, days)
+        df_res = self.optimizer_result_adjust(discard_json, df_res, df_spend_dis, budget_per_day, days)
         
 #         df_param__ = pd.DataFrame(self.d_param).T.reset_index(drop=False).rename(columns={"index":"dimension"})
 #         df_param__['median spend']=df_param__['median spend'].round(2)
 #         df_param__=df_param__.rename(columns={"median spend":"original_median_budget_per_day"})
 #         df_res=pd.merge(df_res, df_param__[['dimension', 'original_median_budget_per_day']], on='dimension', how='left')
         
-        df_res__ = df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_old', 'buget_allocation_new', 'recommended_budget_for_n_days', 'est_opt_target_per_day', 'est_opt_target_for_n_days', 'estimated_target_new']]
+        df_res__ = df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_old', 'buget_allocation_new', 'recommended_budget_for_n_days', 'est_opt_target_per_day', 'est_opt_target_for_n_days', 'estimated_target_new', 'current_projections_for_n_days']]
 
         return df_res__, df_day
     
@@ -894,7 +908,7 @@ class optimizer_with_seasonality_class:
         )
 
     
-    def optimizer_result_adjust_seasonality(self,discard_json,df_res,df_spend_dis,date_range):
+    def optimizer_result_adjust_seasonality(self,discard_json,df_res,df_spend_dis,budget_per_day,dimension_bound,d_weekday,d_month,date_range):
         """re-calculation of result based on discarded dimension budget
 
         Args:
@@ -947,6 +961,44 @@ class optimizer_with_seasonality_class:
         # df_res['curr_spend_for_n_days'] = df_res['curr_spend_per_day']*days
         
         df_res['buget_allocation_old'] = df_res['median spend']/df_res['median spend'].sum()
+
+        for dim in self.d_param:
+            spend_projections = budget_per_day*df_res.loc[df_res['dimension']==dim, 'buget_allocation_old']
+            if self.use_impression:
+                imp_projections = (spend_projections * 1000)/dimension_bound[dim][2]
+                metric_projections = imp_projections
+            else:
+                metric_projections = spend_projections
+            target_projection = 0
+            for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both"):
+                target_projection = target_projection + self.s_curve_hill(metric_projections,
+                                                            self.d_param[dim]["param a"],
+                                                            self.d_param[dim]["param b"],
+                                                            self.d_param[dim]["param c"],
+                                                            self.d_param[dim]["weekday 1"],
+                                                            self.d_param[dim]["weekday 2"],
+                                                            self.d_param[dim]["weekday 3"],
+                                                            self.d_param[dim]["weekday 4"],
+                                                            self.d_param[dim]["weekday 5"],
+                                                            self.d_param[dim]["weekday 6"],
+                                                            self.d_param[dim]["month 2"],
+                                                            self.d_param[dim]["month 3"],
+                                                            self.d_param[dim]["month 4"],
+                                                            self.d_param[dim]["month 5"],
+                                                            self.d_param[dim]["month 6"],
+                                                            self.d_param[dim]["month 7"],
+                                                            self.d_param[dim]["month 8"],
+                                                            self.d_param[dim]["month 9"],
+                                                            self.d_param[dim]["month 10"],
+                                                            self.d_param[dim]["month 11"],
+                                                            self.d_param[dim]["month 12"],
+                                                            d_weekday[str(day_.date())],
+                                                            d_month[str(day_.date())])
+            df_res.loc[df_res['dimension']==dim, 'current_projections_for_n_days'] = target_projection
+        df_res['current_projections_for_n_days'] = df_res['current_projections_for_n_days'].round().astype(int)
+        df_res['current_projections_per_day'] = (df_res['current_projections_for_n_days']/days).round().astype(int)
+        df_res['current_projections_allocation'] = ((df_res['current_projections_for_n_days']/df_res['current_projections_for_n_days'].sum())*100).round(2)
+
         df_res['buget_allocation_new']=(df_res['buget_allocation_new']*100).round(2)
         df_res['buget_allocation_old']=(df_res['buget_allocation_old']*100).round(2)
 
@@ -1058,13 +1110,13 @@ class optimizer_with_seasonality_class:
 
         df_res, df_day = self.lift_cal(sol, budget_per_day, d_weekday, d_month)
         
-        df_res = self.optimizer_result_adjust_seasonality(discard_json,df_res,df_spend_dis,date_range)
+        df_res = self.optimizer_result_adjust_seasonality(discard_json,df_res,df_spend_dis,budget_per_day,dimension_bound,d_weekday,d_month,date_range)
 
 #         df_param__ = pd.DataFrame(self.d_param).T.reset_index(drop=False).rename(columns={"index":"dimension"})
 #         df_param__['median spend']=df_param__['median spend'].round(2)
 #         df_param__=df_param__.rename(columns={"median spend":"original_median_budget_per_day"})
 #         df_res=pd.merge(df_res, df_param__[['dimension', 'original_median_budget_per_day']], on='dimension', how='left')
         
-        df_res__ = df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_old', 'buget_allocation_new', 'recommended_budget_for_n_days', 'est_opt_target_per_day', 'est_opt_target_for_n_days', 'estimated_target_new']]
+        df_res__ = df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_old', 'buget_allocation_new', 'recommended_budget_for_n_days', 'est_opt_target_per_day', 'est_opt_target_for_n_days', 'estimated_target_new', 'current_projections_for_n_days']]
 
         return df_res__, df_day
