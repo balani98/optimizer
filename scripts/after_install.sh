@@ -16,5 +16,8 @@ source venv/bin/activate
 install requirements.txt
 pip install -r /var/www/optimizer/requirements.txt
 
+# Declaring the environment variables
+export ENVIRONMENT='production'
+
 # restart apache2 server
 sudo systemctl restart apache2

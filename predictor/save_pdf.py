@@ -10,9 +10,16 @@ import time
 # in matplotlib.rcParams
 plt.rcParams["figure.figsize"] = [8.00, 6.50]
 plt.rcParams["figure.autolayout"] = True
-PREDICTOR_UPLOAD_FOLDER = "/var/www/optimizer/Predictor_pdf/"
-
-
+# Declaring the environment variable
+ENVIRONMENT = os.getenv('ENVIRONMENT')
+# for production environment
+if ENVIRONMENT == 'production':
+    PREDICTOR_UPLOAD_FOLDER = 'var/www/optimizer/Predictor_pdf/'
+# for test environment
+elif ENVIRONMENT == 'test':
+    PREDICTOR_UPLOAD_FOLDER = "Predictor_pdf/"
+else:
+    PREDICTOR_UPLOAD_FOLDER = "Predictor_pdf/"
 
 def plot_curve(multi_chart_data, seasonality, cpm_checked, df_score_final, request):
     filename = PREDICTOR_UPLOAD_FOLDER + "predictor_" + request.session.get("_uuid") + ".pdf"  
