@@ -87,7 +87,7 @@ WSGI_APPLICATION = "x_media_optimizer_django_project.wsgi.application"
 ENVIRONMENT = os.getenv('ENVIRONMENT')
 if ENVIRONMENT == 'production':
     path_to_config_file = '/var/www/optimizer/config.json'
-elif ENVIRONMENT =='test':
+elif ENVIRONMENT == 'test':
     path_to_config_file = 'config.json'
 else:
     path_to_config_file = 'config.json'

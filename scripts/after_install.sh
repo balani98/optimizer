@@ -12,15 +12,13 @@ sudo systemctl stop apache2
 
 cd /var/www/optimizer
 
-# activate virtual environment
-python3 -m venv venv
-source venv/bin/activate
 
-install requirements.txt
+
+# install requirements.txt
 pip install -r /var/www/optimizer/requirements.txt
 
 # Declaring the environment variables
-export ENVIRONMENT='production'
+sudo export ENVIRONMENT=production
 
 # restart apache2 server
 sudo systemctl restart apache2
