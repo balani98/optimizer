@@ -29,10 +29,16 @@ ERROR_DICT = {
     "5003": "Type Error",
     "5004": "Incorrect Date Format",
 }
+# Declaring the environment variable
+ENVIRONMENT = os.getenv('ENVIRONMENT')
 # for production environment
-# UPLOAD_FOLDER = "/var/www/source2/data/"
-# for local environment
-UPLOAD_FOLDER = "data/"
+if ENVIRONMENT == 'production':
+    UPLOAD_FOLDER = 'var/www/optimizer/data/'
+# for test environment
+elif ENVIRONMENT == 'test':
+    UPLOAD_FOLDER = "data/"
+else:
+    UPLOAD_FOLDER = "data/"
 TEMP_ERROR_DICT = {"4002": "Value Error"}
 
 

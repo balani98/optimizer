@@ -9,9 +9,16 @@ import time
 # customizing runtime configuration stored
 # in matplotlib.rcParams
 plt.rcParams["figure.autolayout"] = True
-matplotlib.use("Agg")
-
-
+# Declaring the environment variable
+ENVIRONMENT = os.getenv('ENVIRONMENT')
+# for production environment
+if ENVIRONMENT == 'production':
+    PREDICTOR_UPLOAD_FOLDER = 'var/www/optimizer/Predictor_pdf/'
+# for test environment
+elif ENVIRONMENT == 'test':
+    PREDICTOR_UPLOAD_FOLDER = "Predictor_pdf/"
+else:
+    PREDICTOR_UPLOAD_FOLDER = "Predictor_pdf/"
 
 def plot_curve(multi_chart_data, seasonality, cpm_checked, df_score_final, weekly_predictions_df, monthly_predictions_df, request):
     if seasonality == 1:

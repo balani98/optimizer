@@ -19,5 +19,8 @@ pip install -r /mnt/apps/optimizer/source/requirements.txt
 # restart apache2 server for production server
 # sudo systemctl restart apache2
 
+# Declaring the environment variables
+export ENVIORNMENT='test'
+
 # restart python server 
 screen -dm bash -c  'nohup python manage.py runserver 0.0.0.0:8080' 
