@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from scipy.optimize import minimize
 
 
@@ -327,7 +328,7 @@ class optimizer_class:
 
         return df_res, df_day
     
-    def optimizer_result_adjust(self, discard_json, df_res, df_spend_dis, budget_per_day, days):
+    def optimizer_result_adjust(self, discard_json, df_res, df_spend_dis,dimension_bound,budget_per_day,days):
         """re-calculation of result based on discarded dimension budget
 
         Args:
@@ -363,20 +364,18 @@ class optimizer_class:
                 else:
                     l_append.append(None)
 
-
             df_res.loc[-1] = l_append
             df_res.index = df_res.index + 1  # shifting index
             df_res = df_res.sort_index()
 
         df_res['buget_allocation_new'] = df_res['recommended_budget_per_day']/df_res['recommended_budget_per_day'].sum()
+
         # df_res['buget_allocation_old'] = df_res['curr_spend_per_day']/df_res['curr_spend_per_day'].sum()
-
-
-        df_res = df_res.merge(df_spend_dis, on='dimension', how='left')
         # df_res['buget_allocation_old'] = df_res['spend']/df_res['spend'].sum()
         # df_res['curr_spend_per_day'] = df_res['buget_allocation_old']*df_res['recommended_budget_per_day'].sum()
         # df_res['curr_spend_for_n_days'] = df_res['curr_spend_per_day']*days
-
+        
+        df_res = df_res.merge(df_spend_dis[['dimension','median spend']], on='dimension', how='left')
         df_res['buget_allocation_old'] = df_res['median spend']/df_res['median spend'].sum()
 
         for dim in self.d_param:
@@ -386,19 +385,21 @@ class optimizer_class:
                 metric_projections = imp_projections
             else:
                 metric_projections = spend_projections
-            df_res.loc[df_res['dimension']==dim, 'current_projections_per_day'] = self.s_curve_hill(metric_projections, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]).round(2)
-        df_res['current_projections_for_n_days'] = df_res['current_projections_per_day']*days
+            df_res.loc[df_res['dimension']==dim, 'current_projections_per_day'] = self.s_curve_hill(metric_projections, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]).round().astype(int)
+        df_res['current_projections_for_n_days'] = (df_res['current_projections_per_day']*days).round()
         df_res['current_projections_allocation'] = ((df_res['current_projections_per_day']/df_res['current_projections_per_day'].sum())*100)
 
         df_res['buget_allocation_new']=(df_res['buget_allocation_new']*100).round(2)
         df_res['buget_allocation_old']=(df_res['buget_allocation_old']*100).round(2)
 
-        df_res['current_projections_per_day']=df_res['current_projections_per_day'].round().astype(int)
-        df_res['current_projections_for_n_days']=df_res['current_projections_for_n_days'].round().astype(int)
-
-#         df_res=pd.merge(df_res, df_spend_dis[['dimension', 'median spend']], on='dimension', how='left')
-        df_res['median spend'] = df_res['median spend'].round().astype(int)
+        df_res['median spend'] = df_res['median spend'].round()
         df_res = df_res.rename(columns={"median spend": "original_median_budget_per_day"})
+
+        df_res = df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_old', 'buget_allocation_new', 'recommended_budget_for_n_days', 'est_opt_target_per_day', 'est_opt_target_for_n_days', 'estimated_target_new', 'current_projections_for_n_days']]
+        df_res = df_res.replace({np.nan: None})
+        int_cols = [i for i in df_res.columns if ((i != "dimension") & (('allocation' not in i) | ('old' not in i) | ('new' not in i)))]
+        for i in int_cols:
+            df_res.loc[df_res[i].values != None, i]=df_res.loc[df_res[i].values != None, i].astype(float).round().astype(int)
 
         return df_res
 
@@ -464,7 +465,7 @@ class optimizer_class:
 
         df_res, df_day = self.lift_cal(sol, budget_per_day, days)
         
-        df_res = self.optimizer_result_adjust(discard_json, df_res, df_spend_dis, budget_per_day, days)
+        df_res = self.optimizer_result_adjust(discard_json, df_res, df_spend_dis, dimension_bound, budget_per_day, days)
         
 #         df_param__ = pd.DataFrame(self.d_param).T.reset_index(drop=False).rename(columns={"index":"dimension"})
 #         df_param__['median spend']=df_param__['median spend'].round(2)
@@ -947,19 +948,18 @@ class optimizer_with_seasonality_class:
                 else:
                     l_append.append(None)
 
-
             df_res.loc[-1] = l_append
             df_res.index = df_res.index + 1  # shifting index
             df_res = df_res.sort_index()
 
         df_res['buget_allocation_new'] = df_res['recommended_budget_per_day']/df_res['recommended_budget_per_day'].sum()
-        # df_res['buget_allocation_old'] = df_res['curr_spend_per_day']/df_res['curr_spend_per_day'].sum()
 
-        df_res = df_res.merge(df_spend_dis,on='dimension',how='left')
+        # df_res['buget_allocation_old'] = df_res['curr_spend_per_day']/df_res['curr_spend_per_day'].sum()
         # df_res['buget_allocation_old'] = df_res['spend']/df_res['spend'].sum()
         # df_res['curr_spend_per_day'] = df_res['buget_allocation_old']*df_res['recommended_budget_per_day'].sum()
         # df_res['curr_spend_for_n_days'] = df_res['curr_spend_per_day']*days
-        
+
+        df_res = df_res.merge(df_spend_dis[['dimension','median spend']], on='dimension', how='left')
         df_res['buget_allocation_old'] = df_res['median spend']/df_res['median spend'].sum()
 
         for dim in self.d_param:
@@ -994,19 +994,23 @@ class optimizer_with_seasonality_class:
                                                             self.d_param[dim]["month 12"],
                                                             d_weekday[str(day_.date())],
                                                             d_month[str(day_.date())])
-            df_res.loc[df_res['dimension']==dim, 'current_projections_for_n_days'] = target_projection
-        df_res['current_projections_for_n_days'] = df_res['current_projections_for_n_days'].round().astype(int)
-        df_res['current_projections_per_day'] = (df_res['current_projections_for_n_days']/days).round().astype(int)
+            df_res.loc[df_res['dimension']==dim, 'current_projections_for_n_days'] = round(target_projection)
+        df_res['current_projections_per_day'] = (df_res['current_projections_for_n_days']/days).round()
         df_res['current_projections_allocation'] = ((df_res['current_projections_for_n_days']/df_res['current_projections_for_n_days'].sum())*100).round(2)
 
         df_res['buget_allocation_new']=(df_res['buget_allocation_new']*100).round(2)
         df_res['buget_allocation_old']=(df_res['buget_allocation_old']*100).round(2)
 
-#         df_res=pd.merge(df_res, df_spend_dis[['dimension', 'median spend']], on='dimension', how='left')
-        df_res['median spend']=df_res['median spend'].round().astype(int)
+        df_res['median spend']=df_res['median spend'].round()
         df_res=df_res.rename(columns={"median spend":"original_median_budget_per_day"})
 
-        return df_res   
+        df_res = df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_old', 'buget_allocation_new', 'recommended_budget_for_n_days', 'est_opt_target_per_day', 'est_opt_target_for_n_days', 'estimated_target_new', 'current_projections_for_n_days']]
+        df_res = df_res.replace({np.nan: None})
+        int_cols = [i for i in df_res.columns if ((i != "dimension") & (('allocation' not in i) | ('old' not in i) | ('new' not in i)))]
+        for i in int_cols:
+            df_res.loc[df_res[i].values != None, i]=df_res.loc[df_res[i].values != None, i].astype(float).round().astype(int)
+
+        return df_res
 
 
     def budget_range(self, dim_bound):
