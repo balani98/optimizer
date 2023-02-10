@@ -16,7 +16,8 @@ cd /var/www/optimizer
 
 # install requirements.txt
 pip install -r /var/www/optimizer/requirements.txt
-
+# installing the cryptography for SSL modules
+pip install cryptography==38.0.4
 # Declaring the environment variables
 sudo export ENVIRONMENT=production
 
