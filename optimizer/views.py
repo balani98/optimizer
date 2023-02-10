@@ -212,7 +212,8 @@ def dimension_min_max(request):
                 "recommended_budget_for_n_days",
                 "est_opt_target_per_day",
                 "est_opt_target_for_n_days",
-                "estimated_target_new"
+                "estimated_target_new",
+                "current_projections_for_n_days"
             ]
         ]
 
@@ -223,12 +224,14 @@ def dimension_min_max(request):
         df_sum_['buget_allocation_old'] = df_sum_['buget_allocation_old'].round()
         df_sum_['buget_allocation_new'] = df_sum_['buget_allocation_new'].round()
         df_sum_['recommended_budget_for_n_days'] = df_sum_['recommended_budget_for_n_days']
+        df_sum_['current_projections_for_n_days'] = df_sum_['current_projections_for_n_days']
         df_sum_[df_sum_.index == "dimension"] = "Total"
         df_table_1_data['original_median_budget_per_day'] = df_table_1_data['original_median_budget_per_day'].round()
         df_table_1_data['recommended_budget_per_day'] = df_table_1_data['recommended_budget_per_day'].round()
         df_table_1_data['buget_allocation_old'] = df_table_1_data['buget_allocation_old'].round(decimals=2)
         df_table_1_data['buget_allocation_new'] = df_table_1_data['buget_allocation_new'].round(decimals=2)
         df_table_1_data['recommended_budget_for_n_days'] = df_table_1_data['recommended_budget_for_n_days'].round()
+        df_table_1_data['current_projections_for_n_days'] = df_table_1_data['current_projections_for_n_days'].round()
         df_table_1_data = df_table_1_data.append(df_sum_, ignore_index=True)
         df_table_1_data = df_table_1_data
 
