@@ -162,9 +162,12 @@ def dimension_min_max(request):
             optimizer_object = optimizer_iterative_seasonality(
                 df_predictor_page_latest_data
             )
-            (
-                df_optimizer_results_post_min_max
-            ) = optimizer_object.execute(scatter_plot_df, total_budget, date_range, df_spend_dis, discarded_dimensions, dimension_min_max)
+            try:
+                (
+                    df_optimizer_results_post_min_max
+                ) = optimizer_object.execute(scatter_plot_df, total_budget, date_range, df_spend_dis, discarded_dimensions, dimension_min_max)
+            except Exception as error:
+                return JsonResponse({"error": str(error)}, status=501)
         else:
             print(
                 f"\ndimension_min_max - seasonality:{seasonality}, Running optimizer_class"
@@ -215,22 +218,21 @@ def dimension_min_max(request):
                 'current_projections_for_n_days'
             ]
         ]
-
+        print('deeps',df_table_1_data[["buget_allocation_old_%"]])
         # Total values
         df_sum_ = df_table_1_data.sum()
         df_sum_['original_median_budget_per_day'] = df_sum_['original_median_budget_per_day'].round()
         df_sum_['recommended_budget_per_day'] = df_sum_['recommended_budget_per_day'].round()
-        df_sum_['buget_allocation_old_%'] = df_sum_['buget_allocation_old_%'].round()
-        df_sum_['buget_allocation_new_%'] = df_sum_['buget_allocation_new_%'].round()
+        df_sum_['buget_allocation_old_%'] = round(df_sum_['buget_allocation_old_%'])
+        df_sum_['buget_allocation_new_%'] = round(df_sum_['buget_allocation_new_%'])
         df_sum_['recommended_budget_for_n_days'] = df_sum_['recommended_budget_for_n_days']
         df_sum_['current_projections_for_n_days'] = df_sum_['current_projections_for_n_days']
         df_sum_[df_sum_.index == "dimension"] = "Total"
         df_table_1_data['original_median_budget_per_day'] = df_table_1_data['original_median_budget_per_day'].round()
         df_table_1_data['recommended_budget_per_day'] = df_table_1_data['recommended_budget_per_day'].round()
-        df_table_1_data['buget_allocation_old_%'] = df_table_1_data['buget_allocation_old_%'].round(decimals=2)
-        df_table_1_data['buget_allocation_new_%'] = df_table_1_data['buget_allocation_new_%'].round(decimals=2)
+        df_table_1_data['buget_allocation_old_%'] = df_table_1_data['buget_allocation_old_%']
+        df_table_1_data['buget_allocation_new_%'] = df_table_1_data['buget_allocation_new_%']
         df_table_1_data['recommended_budget_for_n_days'] = df_table_1_data['recommended_budget_for_n_days'].round()
-        df_table_1_data['current_projections_for_n_days'] = df_table_1_data['current_projections_for_n_days'].round()
         df_table_1_data = df_table_1_data.append(df_sum_, ignore_index=True)
         df_table_1_data = df_table_1_data
 
