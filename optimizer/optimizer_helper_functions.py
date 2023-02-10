@@ -1426,8 +1426,8 @@ class optimizer_iterative_seasonality:
                                                     init_weekday,
                                                     init_month)
             df_res.loc[df_res['dimension']==dim, 'current_projections_for_n_days'] = target_projection
-        df_res['current_projections_for_n_days'] = df_res['current_projections_for_n_days'].round().astype(int)
-        df_res['current_projections_per_day'] = (df_res['current_projections_for_n_days']/days).round().astype(int)
+        df_res['current_projections_for_n_days'] = df_res['current_projections_for_n_days'].round()
+        df_res['current_projections_per_day'] = (df_res['current_projections_for_n_days']/days).round()
         df_res['current_projections_%'] = ((df_res['current_projections_for_n_days']/df_res['current_projections_for_n_days'].sum())*100)
         df_res['buget_allocation_old_%']=df_res['buget_allocation_old_%'].round(2)
         df_res = df_res.replace({np.nan: None})
