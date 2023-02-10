@@ -155,13 +155,16 @@ def dimension_min_max(request):
             df_spend_dis = pd.DataFrame(request.session.get('df_spend_dis'))
             print(start_date, end_date)
             date_range = [start_date, end_date]
-            optimizer_object = optimizer_with_seasonality_class(
-                df_predictor_page_latest_data
-            )
-            (
-                df_optimizer_results_post_min_max,
-                df_optimizer_results_for_line_chart,
-            ) = optimizer_object.execute(total_budget, date_range, dimension_min_max,discarded_dimensions,df_spend_dis)
+            try:
+                optimizer_object = optimizer_with_seasonality_class(
+                    df_predictor_page_latest_data
+                )
+                (
+                    df_optimizer_results_post_min_max,
+                    df_optimizer_results_for_line_chart,
+                ) = optimizer_object.execute(total_budget, date_range, dimension_min_max,discarded_dimensions,df_spend_dis)
+            except Exception as error:
+                return JsonResponse({"error": str(error)}, status=501)
         else:
             print(
                 f"\ndimension_min_max - seasonality:{seasonality}, Running optimizer_class"
@@ -231,7 +234,6 @@ def dimension_min_max(request):
         df_table_1_data['buget_allocation_old'] = df_table_1_data['buget_allocation_old'].round(decimals=2)
         df_table_1_data['buget_allocation_new'] = df_table_1_data['buget_allocation_new'].round(decimals=2)
         df_table_1_data['recommended_budget_for_n_days'] = df_table_1_data['recommended_budget_for_n_days'].round()
-        df_table_1_data['current_projections_for_n_days'] = df_table_1_data['current_projections_for_n_days'].round()
         df_table_1_data = df_table_1_data.append(df_sum_, ignore_index=True)
         df_table_1_data = df_table_1_data
 
