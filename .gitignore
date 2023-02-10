@@ -265,3 +265,5 @@ db.sqlite3
 config.json 
 Nabler_Django_Key.pem
 Predictor_pdf/
+scripts/
+appspec.yml
