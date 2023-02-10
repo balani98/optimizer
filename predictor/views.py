@@ -674,7 +674,8 @@ def predictor_ajax_predictor_discard(request):
         # adding discarded dimensions by user to drop dimensions
         for item in discarded_items_from_session_array:
             drop_dimension_from_session.append(item)
-            
+        drop_dimension_from_session = list(set(drop_dimension_from_session))
+        request.session['drop_dimension_from_session'] = drop_dimension_from_session
         df_predictor_page_latest_data = pd.read_pickle(
             UPLOAD_FOLDER + "df_predictor_page_latest_data_{}.pkl".format(
                 request.session.get("_uuid")

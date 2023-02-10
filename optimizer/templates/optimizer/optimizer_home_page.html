@@ -1167,10 +1167,14 @@ function update_number_of_days(value){
         textNode9 = document.createTextNode(`${value["est_opt_target_for_n_days"]}`);
         td9.appendChild(textNode9);
       }
-
       td10 = document.createElement("td");
-      textNode10 = document.createTextNode(`${value["current_projections_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-      td10.appendChild(textNode10);
+      if(value["current_projections_for_n_days"]){
+        textNode10 = document.createTextNode(`${value["current_projections_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        td10.appendChild(textNode10);
+      }else{
+        textNode10 = document.createTextNode(`${value["current_projections_for_n_days"]}`);
+        td10.appendChild(textNode10);
+      }
       tableRow.appendChild(td1)
       tableRow.appendChild(td2)
       tableRow.appendChild(td3)
