@@ -283,7 +283,6 @@ def dimension_min_max(request):
         ] = df_optimizer_results_for_line_chart["conversion_optimize_spend"].tolist()
 
         print("json_table_1_data", json_table_1_data)
-        # print("json_donut_chart_data", json_donut_chart_data)
         print("dict_donut_chart_data", dict_donut_chart_data)
         print("dict_line_chart_data", dict_line_chart_data)
         # Table1
