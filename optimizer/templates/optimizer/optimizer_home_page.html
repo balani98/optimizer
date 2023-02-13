@@ -356,10 +356,10 @@ img{
                 <th scope="col">Budget Allocation Original %</th>
                 <th scope="col">Budget Allocation New %</th>
                 <th scope="col">Total Recommended Budget Allocation</th>
-                <th scope="col">Target per day</th>
+                <th scope="col">Optimized Target per day</th>
                 <th scope="col">% of Target</th>
-                <th scope="col">Overall Target</th>
-                <th scope="col">Overall Current Projections</th>
+                <th scope="col">Optimized Overall Target</th>
+                <th scope="col">Current Overall Projections</th>
               </tr>
             </thead>
             <tbody style="text-align: center;" class="table_body_1_optimizer">
@@ -596,12 +596,16 @@ function search_dimensions_table(this_value){
                   children[0].children[0].children[8];
     var table_element2 = document.getElementById('table_1_optimizer').
                   children[0].children[0].children[7];
+    var table_element3 = document.getElementById('table_1_optimizer').
+                  children[0].children[0].children[9];
     if(get_is_weekly_selected() == 1 || get_convert_to_weekly_data() == 1)
-      table_element0.innerText = window.localStorage.getItem('target_selector') + " per week";
+      table_element0.innerText = "Optimized " + window.localStorage.getItem('target_selector') + " per week";
     else
-      table_element0.innerText = window.localStorage.getItem('target_selector') + " per day";
-    table_element1.innerText = "Overall " + window.localStorage.getItem('target_selector'); 
+      table_element0.innerText = "Optimized "  + window.localStorage.getItem('target_selector') + " per day";
+    table_element1.innerText =  "Optimized Overall " + window.localStorage.getItem('target_selector'); 
     table_element2.innerText = "% of " + window.localStorage.getItem('target_selector'); 
+    table_element3.innerText = "Current Overall " + window.localStorage.getItem('target_selector');
+    table_element3.innerHTML = table_element3.innerText +   "<i class='fa fa-info-circle fa-lg' title='Current projections based on original budget allocation %'  style='font-size:1.5em;color:#9A3334'></i>"
     $('#optimizer_date_picker').on("apply.daterangepicker", function (ev, picker) {
       $('#total_budget').val(null);
       global_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
