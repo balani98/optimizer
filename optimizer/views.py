@@ -218,7 +218,6 @@ def dimension_min_max(request):
                 'current_projections_for_n_days'
             ]
         ]
-        print('deeps',df_table_1_data[["buget_allocation_old_%"]])
         # Total values
         df_sum_ = df_table_1_data.sum()
         df_sum_['original_median_budget_per_day'] = df_sum_['original_median_budget_per_day'].round()
