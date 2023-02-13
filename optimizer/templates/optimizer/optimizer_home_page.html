@@ -915,10 +915,10 @@ function update_number_of_days(value){
   var budget_per_day_week = optimizer_left_panel_total_budget/optimizer_left_panel_number_of_days;
   if(get_is_weekly_selected() == 1 || get_convert_to_weekly_data() == 1)
     document.getElementById('budget_per_day_text').innerText = 'Investment per week : '
-           +   Math.round(budget_per_day_week);
+           +   `$ ${Math.round(budget_per_day_week).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
   else 
     document.getElementById('budget_per_day_text').innerText = 'Investment per day : '
-           +   Math.round(budget_per_day_week);
+           +   `$ ${Math.round(budget_per_day_week).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
  }
  
  function update_global_optimizer_left_pannel_data(){
