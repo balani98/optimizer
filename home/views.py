@@ -21,7 +21,7 @@ ERROR_DICT = {
     "5003": "Type Error",
     "5004": "Incorrect Date Format",
 }
-ENVIRONMENT = os.getenv('ENVIRONMENT')
+ENVIRONMENT = os.getenv('ENVIRONMENT')  or 'test'
 # for production environment
 if ENVIRONMENT == 'production':
     UPLOAD_FOLDER = 'var/www/optimizer/data/'

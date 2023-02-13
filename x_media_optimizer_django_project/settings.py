@@ -84,7 +84,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "x_media_optimizer_django_project.wsgi.application"
 
 # Declaring the environment
-ENVIRONMENT = os.getenv('ENVIRONMENT')
+ENVIRONMENT = os.getenv('ENVIRONMENT') or 'test'
 
 json_config_data = ""
 with open('config.json') as config_file:

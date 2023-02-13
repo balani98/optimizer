@@ -10,7 +10,7 @@ import time
 # in matplotlib.rcParams
 plt.rcParams["figure.autolayout"] = True
 # Declaring the environment variable
-ENVIRONMENT = os.getenv('ENVIRONMENT')
+ENVIRONMENT = os.getenv('ENVIRONMENT')  or 'test'
 # for production environment
 if ENVIRONMENT == 'production':
     PREDICTOR_UPLOAD_FOLDER = 'var/www/optimizer/Predictor_pdf/'

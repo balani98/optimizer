@@ -30,7 +30,7 @@ ERROR_DICT = {
     "5004": "Incorrect Date Format",
 }
 # Declaring the environment variable
-ENVIRONMENT = os.getenv('ENVIRONMENT')
+ENVIRONMENT = os.getenv('ENVIRONMENT')  or 'test'
 # for production environment
 if ENVIRONMENT == 'production':
     UPLOAD_FOLDER = 'var/www/optimizer/data/'

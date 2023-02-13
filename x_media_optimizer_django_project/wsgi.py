@@ -11,6 +11,5 @@ import os
 from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'x_media_optimizer_django_project.settings')
-os.environ.setdefault('ENVIRONMENT','test')
 
 application = get_wsgi_application()
