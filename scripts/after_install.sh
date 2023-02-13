@@ -23,7 +23,7 @@ pip install cryptography==38.0.4
 # sudo systemctl restart apache2
 
 # Declaring the environment variables
-sudo "export ENVIORNMENT=test"
+bash -c "export ENVIRONMENT=test"
 
 # restart python server 
 screen -dm bash -c  'nohup python manage.py runserver 0.0.0.0:8080' 
