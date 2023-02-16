@@ -323,7 +323,8 @@ def chart_filter(request):
                 eo.use_impression = True
                 print("use impressions true")
             # aggregation function
-            agg_data = eo.data_aggregation()
+            (agg_data, dimension_data ) = eo.data_aggregation()
+            request.session['dimension_data'] = dimension_data
             agg_data["date"] = pd.to_datetime(agg_data["date"])
             # print(agg_data.head(20))
 

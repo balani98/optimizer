@@ -74,14 +74,18 @@ def optimizer_home_page(request):
         # df_param = df_predictor_page_latest_data[
         #     ~df_predictor_page_latest_data["dimension"].isin(discarded_items_array)
         # ]
-        optimizer_left_pannel_data = dimension_bound(df_predictor_page_latest_data)
+        dimension_data = request.session.get('dimension_data')
+        (optimizer_left_pannel_data,
+         grouped_optimizer_left_pannel_data,
+         grouped_channel_dictionary,
+         flag_to_show_grouped_dimensions) = dimension_bound(df_predictor_page_latest_data, dimension_data)
         stringified_optimizer_left_pannel_data = json.dumps(optimizer_left_pannel_data)
+        
         print("optimizer_left_pannel_data", optimizer_left_pannel_data)
         print(
             "stringified_optimizer_left_pannel_data",
             stringified_optimizer_left_pannel_data,
-        )
-
+        )  
         # Checking for CPM selection
         if request.session.get("cpm_checked") == "True":
             context["cpm_checked"] = 1
@@ -96,13 +100,18 @@ def optimizer_home_page(request):
             print(f"convert_to_weekly_data : {convert_to_weekly_data}")
             context["convert_to_weekly_data"] = int(convert_to_weekly_data)
 
+        if flag_to_show_grouped_dimensions == 1:
+            context['grouped_optimizer_left_pannel_data'] = grouped_optimizer_left_pannel_data
+            request.session['grouped_channel_dictionary'] = grouped_channel_dictionary
+            stringified_grouped_optimizer_left_pannel_data = json.dumps(grouped_optimizer_left_pannel_data)
+            context['stringified_grouped_optimizer_left_pannel_data'] = stringified_grouped_optimizer_left_pannel_data
+        context['flag_to_show_grouped_dimensions'] = flag_to_show_grouped_dimensions
         context["seasonality"] = seasonality
         context["drop_dimension_from_session"] = drop_dimension_from_session
         context["optimizer_left_pannel_data"] = optimizer_left_pannel_data
         context[
             "stringified_optimizer_left_pannel_data"
         ] = stringified_optimizer_left_pannel_data
-
         return render(request, "optimizer/optimizer_home_page.html", context)
 
 

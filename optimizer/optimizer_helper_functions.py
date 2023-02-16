@@ -6,7 +6,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # isolate function
-def dimension_bound(df_param):
+def dimension_bound(df_param, dimension_data):
 
     """bounds for optimizer
 
@@ -22,6 +22,8 @@ def dimension_bound(df_param):
     d_param = df_param_opt.iloc[1:, :].to_dict()
 
     dim_bound = {}
+    grp_dim_bound = {}
+    sub_dim_dict = {}
 
     if "cpm" in df_param.columns:
         for dim in d_param.keys():
@@ -48,8 +50,22 @@ def dimension_bound(df_param):
                 -20,
                 20
             ]
+            
+    grp_dim_flag = 1 if (len(dimension_data.keys())>1) else False
+    
+    if(grp_dim_flag == 1):
+        grp_dim_list = dimension_data[list(dimension_data.keys())[0]]
+        for grp_dim in grp_dim_list:
+            sub_dim_dict[grp_dim] = list({dim for dim, value in dim_bound.items() if dim.startswith(grp_dim)})
 
-    return dim_bound
+            if not(sub_dim_dict[grp_dim]):
+                del sub_dim_dict[grp_dim]
+            else:
+                sub_dim_bound_min = sum([dim_bound[dim][0] for dim in sub_dim_dict[grp_dim]])
+                sub_dim_bound_max = sum([dim_bound[dim][1] for dim in sub_dim_dict[grp_dim]])
+                grp_dim_bound[grp_dim] = [sub_dim_bound_min, sub_dim_bound_max]
+
+    return dim_bound, grp_dim_bound, sub_dim_dict, grp_dim_flag
 
 
 class optimizer_iterative:
