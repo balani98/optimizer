@@ -108,6 +108,9 @@
     .table th {
       font-weight: bold;
     }
+    .content-sidebar-right{
+      max-height:44rem;
+    }
     .sidebar-right {
       height: 100%;
       width: 0;
@@ -169,8 +172,10 @@
     }
     .grouped_channel{
       display:flex;
-      flex-direction:row;
-      justify-content:center;
+      flex-direction:column;
+      justify-content:space-between;
+      padding:5px 10px;
+      margin:10px 0;
     }
     .group_of_individual_channels{
       display:flex;
@@ -190,11 +195,12 @@
       border: none;
       outline: none;
       font-size: 15px;
+      margin-right:15px;
     }
   .styled_checkbox {
       margin-right: 1em;
-      width: 2em;
-      height: 2em;
+      width: 1.2em;
+      height: 1.2em;
       margin-top: -0.5em;
   }
     {% comment %} #main {
@@ -916,7 +922,8 @@
                 "
               ></div>
               {% if flag_to_show_grouped_dimensions == 1 %}
-              <div id="mysidebar-right" class="sidebar-right">
+              <div id="mysidebar-right" class="sidebar-right hide_scroller y_scroll mb-4">
+                <div class="content-sidebar-right">
                 <a
                   href="javascript:void(0)"
                   class="closebtn"
@@ -926,33 +933,39 @@
               {% for key,value in  grouped_optimizer_left_pannel_data.items %}
                 <div class="group_of_grouped_channels">
                   <div class="grouped_channel">
-                    <label style="width: 50%">{{key}}</label>
-                    <input type="text" style="width: 50%" class="group_channel_min_budget" value="{{value.constraints.0}}" />
-                    <input type="text" style="width: 50%;margin-left:5%" class="group_channel_max_budget" value="{{value.constraints.1}}" />
-                    <button
-                      type="button"
-                      class="collapsible"
-                      onclick="open_collapsible(this)"
-                    >
-                      <i class="fa fa-plus"></i>
-                    </button>
+                    <div style="display:flex;flex-direction:row;justify-content:space-between">
+                      <label>{{key}}</label>
+                      <button
+                        type="button"
+                        class="collapsible"
+                        onclick="open_collapsible(this)"
+                        >
+                        <i class="fa fa-plus"></i>
+                      </button>
+                    </div>
+                    <div style="display:flex;flex-direction:row;justify-content:space-between">
+                      <input type="text" style="width: 50%" class="group_channel_min_budget" value="{{value.constraints.0}}" />
+                      <input type="text" style="width: 50%;margin-left:5%" class="group_channel_max_budget" value="{{value.constraints.1}}" />
+                    </div>
                   </div>
-                  {% for item in  value.sub_channels %}
+                 
                   <div
                     class="group_of_individual_channels"
                     style="display: none; overflow: hidden"
                   >
-                  
+                    {% for item in  value.sub_dimension  %}
                     <div class="individual_channel">
                       <input type="checkbox" class="styled_checkbox" checked />
                       <label>{{item}}</label>
                     </div>
+                    {% endfor %}
                   </div>
-                  {% endfor %}
+                 
                 </div>
               {% endfor %}
               {% endif %}
               </div>
+            </div>
               {% if flag_to_show_grouped_dimensions == 1 %}
               <button class="openbtn" onclick="openNav()">
                 <i class="fa fa-plus-square-o fa-2x"></i>
@@ -981,8 +994,7 @@
                 }
                 // this is to open and collapse individual channels
                 function open_collapsible(this_value) {
-                  var div_to_collapsed = this_value.parentElement.nextElementSibling;
-                  console.log(div_to_collapsed.style.display);
+                  var div_to_collapsed = this_value.parentElement.parentElement.nextElementSibling;
                   if (div_to_collapsed.style.display == "none")
                     div_to_collapsed.style.display = "flex";
                   else div_to_collapsed.style.display = "none";

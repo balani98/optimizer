@@ -23,7 +23,6 @@ def dimension_bound(df_param, dimension_data):
 
     dim_bound = {}
     grp_dim_bound = {}
-    sub_dim_dict = {}
 
     if "cpm" in df_param.columns:
         for dim in d_param.keys():
@@ -51,21 +50,20 @@ def dimension_bound(df_param, dimension_data):
                 20
             ]
             
-    grp_dim_flag = 1 if (len(dimension_data.keys())>1) else False
+    grp_dim_flag = True if (len(dimension_data.keys())>1) else False
     
-    if(grp_dim_flag == 1):
+    if(grp_dim_flag == True):
         grp_dim_list = dimension_data[list(dimension_data.keys())[0]]
         for grp_dim in grp_dim_list:
-            sub_dim_dict[grp_dim] = list({dim for dim, value in dim_bound.items() if dim.startswith(grp_dim)})
+            sub_dim_list = list({dim for dim, value in dim_bound.items() if dim.startswith(grp_dim)})
+            if not(sub_dim_list):
+                continue
+            sub_dim_bound_min = sum([dim_bound[dim][0] for dim in sub_dim_list])
+            sub_dim_bound_max = sum([dim_bound[dim][1] for dim in sub_dim_list])
+            grp_dim_bound[grp_dim] = {'sub_dimension' : sub_dim_list,
+                                      'constraints':[sub_dim_bound_min, sub_dim_bound_max]}
 
-            if not(sub_dim_dict[grp_dim]):
-                del sub_dim_dict[grp_dim]
-            else:
-                sub_dim_bound_min = sum([dim_bound[dim][0] for dim in sub_dim_dict[grp_dim]])
-                sub_dim_bound_max = sum([dim_bound[dim][1] for dim in sub_dim_dict[grp_dim]])
-                grp_dim_bound[grp_dim] = [sub_dim_bound_min, sub_dim_bound_max]
-
-    return dim_bound, grp_dim_bound, sub_dim_dict, grp_dim_flag
+    return dim_bound, grp_dim_bound, grp_dim_flag
 
 
 class optimizer_iterative:
@@ -219,7 +217,9 @@ class optimizer_iterative:
         """
         # inc_factor =  df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby('date').agg({'spend':'sum','target':'sum'})['spend'].median()
         # increment = round(inc_budget*0.075)
-        increment = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':'median'})['spend'].median())
+        # increment = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':'median'})['spend'].median())
+        inc_factor = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':'median'})['spend'].min())
+        increment = round(inc_factor*0.50)
         return increment
     
     
@@ -340,14 +340,22 @@ class optimizer_iterative:
 
             # Get proportion to allocate remaining budget: 
             # budget allocated during optimization process (or median spend if no budget is allocated in optimization process)
-            agg_medianSpend=sum(self.d_param[dim_filtered]['median spend'] for dim_filtered in allocation_dim_list)
+            
+            if self.use_impression:
+                agg_medianSpend=sum((self.d_param[dim_filtered]['impression_median']*self.d_param[dim_filtered]['cpm'])/1000 for dim_filtered in allocation_dim_list)
+            else:
+                agg_medianSpend=sum(self.d_param[dim_filtered]['median spend'] for dim_filtered in allocation_dim_list)
+            
             for dim in allocation_dim_list:
                 incrementProportion = 0
                 budgetRemainDim = 0
                 incrementCalibration = 0
 
                 if (check_noSpendDim == True):
-                    allocationSpendVec[dim] = self.d_param[dim]['median spend']/agg_medianSpend
+                    if self.use_impression:
+                        allocationSpendVec[dim] = ((self.d_param[dim]['impression_median']*self.d_param[dim]['cpm'])/1000)/agg_medianSpend
+                    else:
+                        allocationSpendVec[dim] = self.d_param[dim]['median spend']/agg_medianSpend
                 else:
                     allocationSpendVec[dim] = newSpendVec_filtered[dim]/sum(newSpendVec_filtered.values())
 
@@ -936,7 +944,9 @@ class optimizer_iterative_seasonality:
         """
         # inc_factor =  df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby('date').agg({'spend':'sum','target':'sum'})['spend'].median()
         # increment = round(inc_budget*0.075)
-        increment = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':'median'})['spend'].median())
+        # increment = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':'median'})['spend'].median())
+        inc_factor = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':'median'})['spend'].min())
+        increment = round(inc_factor*0.50)
         return increment
     
     
@@ -1131,14 +1141,21 @@ class optimizer_iterative_seasonality:
 
             # Get proportion to allocate remaining budget: 
             # budget allocated during optimization process (or median spend if no budget is allocated in optimization process)
-            agg_medianSpend=sum(self.d_param[dim_filtered]['median spend'] for dim_filtered in allocation_dim_list)
+            if self.use_impression:
+                agg_medianSpend=sum((self.d_param[dim_filtered]['impression_median']*self.d_param[dim_filtered]['cpm'])/1000 for dim_filtered in allocation_dim_list)
+            else:
+                agg_medianSpend=sum(self.d_param[dim_filtered]['median spend'] for dim_filtered in allocation_dim_list)
+            
             for dim in allocation_dim_list:
                 incrementProportion = 0
                 budgetRemainDim = 0
                 incrementCalibration = 0
 
                 if (check_noSpendDim == True):
-                    allocationSpendVec[dim] = self.d_param[dim]['median spend']/agg_medianSpend
+                    if self.use_impression:
+                        allocationSpendVec[dim] = ((self.d_param[dim]['impression_median']*self.d_param[dim]['cpm'])/1000)/agg_medianSpend
+                    else:
+                        allocationSpendVec[dim] = self.d_param[dim]['median spend']/agg_medianSpend
                 else:
                     allocationSpendVec[dim] = newSpendVec_filtered[dim]/sum(newSpendVec_filtered.values())
 

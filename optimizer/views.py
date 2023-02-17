@@ -77,7 +77,6 @@ def optimizer_home_page(request):
         dimension_data = request.session.get('dimension_data')
         (optimizer_left_pannel_data,
          grouped_optimizer_left_pannel_data,
-         grouped_channel_dictionary,
          flag_to_show_grouped_dimensions) = dimension_bound(df_predictor_page_latest_data, dimension_data)
         stringified_optimizer_left_pannel_data = json.dumps(optimizer_left_pannel_data)
         
@@ -99,12 +98,6 @@ def optimizer_home_page(request):
         if convert_to_weekly_data:
             print(f"convert_to_weekly_data : {convert_to_weekly_data}")
             context["convert_to_weekly_data"] = int(convert_to_weekly_data)
-        grouped_optimizer_left_pannel_data = {
-                                                'Display': {
-                                                'sub_channels' : ['Display_Affiliate' , 'Display_Retargeting' , 'Display_Audio'],
-                                                 'constraints': [0, 1000]
-                                                }
-                                            }
         if flag_to_show_grouped_dimensions == 1:
             context['grouped_optimizer_left_pannel_data'] = grouped_optimizer_left_pannel_data
           
