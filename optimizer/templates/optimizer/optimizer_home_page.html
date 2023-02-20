@@ -855,6 +855,9 @@
                 <p id="id_stringified_optimizer_left_pannel_data">
                   {{stringified_optimizer_left_pannel_data}}
                 </p>
+                <p id="id_stringified_grouped_optimizer_left_pannel_data">
+                  {{stringified_grouped_optimizer_left_pannel_data}}
+                </p>
               </div>
               <div
                 class="modal fade"
@@ -955,7 +958,7 @@
                   >
                     {% for item in  value.sub_dimension  %}
                     <div class="individual_channel">
-                      <input type="checkbox" class="styled_checkbox" checked />
+                      <input type="checkbox" class="styled_checkbox" onchange="selectDeselectGroupedDimensions(this,'{{key}}')" checked/>
                       <label>{{item}}</label>
                     </div>
                     {% endfor %}
@@ -999,6 +1002,27 @@
                     div_to_collapsed.style.display = "flex";
                   else div_to_collapsed.style.display = "none";
                 }
+                // function to change input budget values on selection or unselection
+                function selectDeselectGroupedDimensions(this_value,key){
+                  // changing budget as per user selection and deselection 
+                  var dimensionBudget = 0;
+                  var sub_dimension_array = []; 
+                  var dimensionObjectSiblings = this_value.parentElement.parentElement.children;
+                  var dimensionBudgetDiv = this_value.parentElement.parentElement.previousElementSibling.children[1].children[1]
+                  for(let i=0;i<dimensionObjectSiblings.length;i++){
+                      if(dimensionObjectSiblings[i].children[0].checked == true)
+                        sub_dimension_array.push(dimensionObjectSiblings[i].children[1].innerText)
+                  }
+                  sub_dimension_array.forEach((key)=>{
+                    dimensionBudget += global_optimizer_left_pannel_data[key][1]
+                  })
+                dimensionBudgetDiv.value ='$' + dimensionBudget.toString().replace("$","").replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");;
+                // updating the dictionary
+                global_grouped_optimizer_left_panel_data[key] = {
+                 'constraints':[0,dimensionBudget],
+                 'sub_dimension':sub_dimension_array
+                }
+              }
                 // function to display percentage inputs and hide absolute inputs
                 function change_input_type_to_percentages(this_value){
                   if(this_value.checked){
@@ -1081,6 +1105,7 @@
                   // DOM Selectors
                   total_budget = document.getElementById('total_budget')
                   id_stringified_optimizer_left_pannel_data = document.getElementById('id_stringified_optimizer_left_pannel_data')
+                  id_stringified_grouped_optimizer_left_pannel_data = document.getElementById('id_stringified_grouped_optimizer_left_pannel_data')
                   get_all_the_key_value = document.querySelectorAll('.get_all_the_key_value')
                   let table_body_1_optimizer = document.querySelector(".table_body_1_optimizer");
                   let table_body_2_optimizer = document.querySelector(".table_body_2_optimizer");
@@ -1106,6 +1131,7 @@
                   global_optimizer_left_pannel_data  = JSON.parse(JSON.stringify(arr).replaceAll('&amp;', '&' ));
                   original_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data))
                   const_unchanged_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(arr).replaceAll('&amp;', '&' ));
+                  global_grouped_optimizer_left_panel_data = JSON.parse(id_stringified_grouped_optimizer_left_pannel_data.innerHTML)
                   global_seasonality = {{seasonality}}
                   let global_chart_colors = ["#45B8AC", "#EFC050", "#5B5EA6", "#9B2335", "#DFCFBE", "#98B4D4", "#34568B", "#6B5B95","#88B04B","#F7CAC9","#92A8D1", "#955251", "#B565A7", "#009B77", "#DD4124", "#D65076"];
                   let global_sum_fixed_budget_values = 0;
