@@ -965,12 +965,20 @@
                 type="text"
                 style="width: 50%"
                 class="group_channel_min_budget"
+                onchange = "update_total_limits_min_value_grouped_panel(this,'{{key}}')"
+                onkeyup="add_commas_min_max_value(this)"
+                oninput="check_keys_min_max_value(this)"
+                onblur="add_commas_min_max_value(this)"
                 value="{{value.constraints.0}}"
               />
               <input
                 type="text"
                 style="width: 50%; margin-left: 5%"
                 class="group_channel_max_budget"
+                onchange = "update_total_limits_max_value_grouped_panel(this,'{{key}}')"
+                onkeyup="add_commas_min_max_value(this)"
+                oninput="check_keys_min_max_value(this)"
+                onblur="add_commas_min_max_value(this)"
                 value="{{value.constraints.1}}"
               />
             </div>
@@ -1052,6 +1060,7 @@
      'constraints':[0,dimensionBudget],
      'sub_dimension':sub_dimension_array
     }
+    const_unchanged_global_grouped_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_grouped_optimizer_left_panel_data))
   }
     // function to display percentage inputs and hide absolute inputs
     function change_input_type_to_percentages(this_value){
@@ -1162,6 +1171,7 @@
       original_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data))
       const_unchanged_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(arr).replaceAll('&amp;', '&' ));
       global_grouped_optimizer_left_panel_data = JSON.parse(id_stringified_grouped_optimizer_left_pannel_data.innerHTML)
+      const_unchanged_global_grouped_optimizer_left_pannel_data = JSON.parse(id_stringified_grouped_optimizer_left_pannel_data.innerHTML);
       global_seasonality = {{seasonality}}
       let global_chart_colors = ["#45B8AC", "#EFC050", "#5B5EA6", "#9B2335", "#DFCFBE", "#98B4D4", "#34568B", "#6B5B95","#88B04B","#F7CAC9","#92A8D1", "#955251", "#B565A7", "#009B77", "#DD4124", "#D65076"];
       let global_sum_fixed_budget_values = 0;
@@ -1170,7 +1180,7 @@
       {% comment %} Graphs and Charts variables  {% endcomment %}
       global_my_optimizer_bar_chart = 0
       global_my_optimizer_line_chart = 0
-
+      validation_of_inputs = false 
       console.log("global_seasonality", global_seasonality)
 
       $(window).on('load',function(){
@@ -1258,6 +1268,36 @@
         }
         //console.log("optimizer_left_panel_user_selected_final_dict",optimizer_left_panel_user_selected_final_dict)
         update_global_optimizer_left_pannel_data()
+      }
+    }
+    // function to update values in right panel 
+    function update_total_limits_min_value_grouped_panel(this_value,key){
+      original_min_value = const_unchanged_global_grouped_optimizer_left_pannel_data[key]["constraints"][0];
+      original_max_value = const_unchanged_global_grouped_optimizer_left_pannel_data[key]["constraints"][1];
+      min_value = this_value.value.replace(/,/g, '').replace('$','');
+      max_value = this_value.nextElementSibling.value.replace(/,/g, '').replace('$','');
+      if(min_value < original_min_value || min_value >= original_max_value){
+        alert("Min value lower than the given bound values or higer than the max value")
+        console.log("Min value lower than the given bound values or higer than the max value")
+        this_value.value = original_min_value
+      }else{
+        global_grouped_optimizer_left_panel_data[key]["constraints"][0] = min_value
+        global_grouped_optimizer_left_panel_data[key]["constraints"][1] = max_value
+      }
+    }
+    // function to update values in right side navbar panel
+    function update_total_limits_max_value_grouped_panel(this_value,key){
+      original_min_value = const_unchanged_global_grouped_optimizer_left_pannel_data[key]["constraints"][0];
+      original_max_value = const_unchanged_global_grouped_optimizer_left_pannel_data[key]["constraints"][1];
+      max_value = this_value.value.replace(/,/g, '').replace('$','');
+      min_value = this_value.previousElementSibling.value.replace(/,/g, '').replace('$','');
+      if(max_value <= original_min_value || max_value > original_max_value){
+        alert("Max value higer than the given bound values or lower than the min value")
+        console.log("Max value higer than the given bound values or lower than the min value")
+        this_value.value = original_max_value
+      }else{
+        global_grouped_optimizer_left_panel_data[key]["constraints"][0] = min_value
+        global_grouped_optimizer_left_panel_data[key]["constraints"][1] = max_value
       }
     }
      function add_commas_min_max_value(this_value){
@@ -1507,6 +1547,7 @@
       }
      function update_budget(this_value){
       optimizer_left_panel_total_budget = parseInt(this_value.value.replace(/,/g, '').replace('$',''));
+      validation_of_inputs = validate_inputs_for_left_pannel_as_per_right_pannel()
       console.log("optimizer_left_panel_total_budget",optimizer_left_panel_total_budget)
       if(optimizer_left_panel_total_budget < global_range_min || optimizer_left_panel_total_budget > global_range_max){
         this_value.value = global_range_min
@@ -1566,11 +1607,68 @@
       total_budget.setAttribute('placeholder',
       `$${global_range_min.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")} -
        $${global_range_max.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`)
-     }
+      }
 </script>
 
 {% comment %} on submit {% endcomment %}
 <script>
+
+    function validate_inputs_for_left_pannel_as_per_right_pannel(){
+      stringified_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data).replaceAll('&amp;', '&'));
+      var dimension_keys = Object.keys(stringified_global_optimizer_left_pannel_data)
+      // splicing the elements at 2 , 3 , 4
+      const removeValFromIndex = [2 , 3, 4];
+      const indexSet = new Set(removeValFromIndex);
+      dimension_keys.forEach((key)=>{
+        stringified_global_optimizer_left_pannel_data[key] =
+        stringified_global_optimizer_left_pannel_data[key].filter((value, i) => !indexSet.has(i));
+      })
+      // re stringifiying the json
+      stringified_global_optimizer_left_pannel_data = JSON.stringify(stringified_global_optimizer_left_pannel_data)
+      stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(global_grouped_optimizer_left_panel_data)
+      data_to_submit = {
+        dimension_min_max: stringified_global_optimizer_left_pannel_data,
+        dimension_capping_constraints: stringified_global_grouped_optimizer_left_pannel_data,
+      }
+      $.ajax({
+        url: '/optimizer/ajax/validate_dimension_min_max/',
+        data: JSON.stringify(data_to_submit),
+        type : 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        success: function (data) {
+          $('.optimizer_left_panel_dimension_name').each((index,element)=>{
+              element.style.border = "2px inset #EBE9ED";
+              element.style.color = "#000";
+              element.nextElementSibling.children[0].style.border = "2px inset #EBE9ED"  
+              element.nextElementSibling.children[1].style.border = "2px inset #EBE9ED"  
+            })
+          return true;
+        },
+        error: function(error){
+          dimensions_to_be_corrected_json = JSON.parse(error.responseJSON.error.dimensions_to_be_corrected);
+          dimensions_to_be_corrected_keys = Object.keys(dimensions_to_be_corrected_json)
+          alert(error.responseJSON.message)
+         $('.optimizer_left_panel_dimension_name').each((index,element)=>{
+            if(dimensions_to_be_corrected_keys.indexOf(element.innerText) != -1){
+              element.style.border = "3px solid red";
+              element.style.color = "red";
+              if(dimensions_to_be_corrected_json[element.innerText][0] == 1)
+                element.nextElementSibling.children[0].style.border = "2px solid red"
+              else
+                element.nextElementSibling.children[0].style.border = "2px inset #EBE9ED"   
+              if(dimensions_to_be_corrected_json[element.innerText][1] == 1)
+                element.nextElementSibling.children[1].style.border = "2px solid red"
+              else 
+                element.nextElementSibling.children[1].style.border = "2px inset #EBE9ED"
+             }
+          })
+          return false; 
+        }
+      })
+
+    }
     function submit_predictor_left_pannel_chart_inputs() {
       console.log("inputs submitted")
       // Final validation before the submit
@@ -1587,6 +1685,11 @@
       }
       if(optimizer_left_panel_total_budget == 0 || isNaN(optimizer_left_panel_total_budget)){
         alert("Please add valid Total Budget before submitting")
+        return
+      }
+      validation_of_inputs = validate_inputs_for_left_pannel_as_per_right_pannel()
+      if(validation_of_inputs == false){
+        alert("Please  correct all inputs before submitting")
         return
       }
       $('#spinner-optimizer').css('display','block');

@@ -99,6 +99,7 @@ def optimizer_home_page(request):
             print(f"convert_to_weekly_data : {convert_to_weekly_data}")
             context["convert_to_weekly_data"] = int(convert_to_weekly_data)
         if flag_to_show_grouped_dimensions == 1:
+            request.session['flag_to_show_grouped_dimensions'] = flag_to_show_grouped_dimensions
             context['grouped_optimizer_left_pannel_data'] = grouped_optimizer_left_pannel_data
           
             stringified_grouped_optimizer_left_pannel_data = json.dumps(grouped_optimizer_left_pannel_data)
@@ -112,6 +113,36 @@ def optimizer_home_page(request):
         ] = stringified_optimizer_left_pannel_data
         return render(request, "optimizer/optimizer_home_page.html", context)
 
+def validate_dimension_budget_with_caps(request):
+    context = {}
+    body = json.loads(request.body)
+    dimension_capping_constraints = json.loads(body['dimension_capping_constraints'])
+    dimension_min_max = json.loads(body["dimension_min_max"])
+    top_dimension_keys = list(dimension_capping_constraints.keys())
+    dimensions_to_be_corrected = {}
+    for key in top_dimension_keys:
+        sum_max_budget = 0
+        sum_min_budget = 0
+        sub_dimension_keys = list(dimension_capping_constraints[key]['sub_dimension'])
+        for sub_dimension_key in sub_dimension_keys:
+            sum_min_budget += dimension_min_max[sub_dimension_key][0]
+            sum_max_budget += dimension_min_max[sub_dimension_key][1]
+        for sub_dimension_key in sub_dimension_keys:
+            if int(sum_max_budget) > int(dimension_capping_constraints[key]['constraints'][1]) and int(sum_min_budget) < int(dimension_capping_constraints[key]['constraints'][0]):
+                dimensions_to_be_corrected[sub_dimension_key] = [1, 1]
+            elif int(sum_max_budget) > int(dimension_capping_constraints[key]['constraints'][1]):
+                dimensions_to_be_corrected[sub_dimension_key] = [0, 1]
+            elif int(sum_min_budget) < int(dimension_capping_constraints[key]['constraints'][0]):
+                dimensions_to_be_corrected[sub_dimension_key] = [1, 0]
+    context['dimensions_to_be_corrected'] = json.dumps(dimensions_to_be_corrected)
+    if len(set(dimensions_to_be_corrected.keys())) != 0:
+        return JsonResponse({"error": context,
+                            "message":"Max Budget is exceeding for some dimensions or Min budget is lagging"}
+                            , status=400)
+    return JsonResponse({"message":"Inputs validated"}
+                            , status=200)
+
+         
 
 def dimension_min_max(request):
     try:
@@ -225,7 +256,6 @@ def dimension_min_max(request):
                 'current_projections_for_n_days'
             ]
         ]
-        print('deeps',df_table_1_data[["buget_allocation_old_%"]])
         # Total values
         df_sum_ = df_table_1_data.sum()
         df_sum_['original_median_budget_per_day'] = df_sum_['original_median_budget_per_day'].round()

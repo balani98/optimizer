@@ -13,4 +13,9 @@ urlpatterns = [
         views.optimizer_save_the_plan,
         name="optimizer_save_the_plan",
     ),
+      path(
+        "ajax/validate_dimension_min_max/",
+        views.validate_dimension_budget_with_caps,
+        name="validate_dimension_min_max",
+    ),
 ]
