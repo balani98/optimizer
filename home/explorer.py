@@ -16,6 +16,7 @@ class explorer:
         self.date = None
         self.spend = None
         self.target = None
+        self.group_dimension = None
         self.cpm = None
         self.use_impression = False
         self.is_weekly_selected = False
@@ -86,7 +87,6 @@ class explorer:
                 raise Exception(5003)
 
     def data_aggregation(self):
-
         """data aggregation at selected dimension,day level
 
         Returns:
@@ -128,7 +128,8 @@ class explorer:
 
         df_grp["_dimension_"] = ""
         dimension_data = {}
-
+        idx_grp_dim = self.dimension.index(self.group_dimension)
+        self.dimension = [self.group_dimension] + self.dimension[:idx_grp_dim] + self.dimension[idx_grp_dim+1:]
         count = 1
 
         if len(self.dimension) > 1:
@@ -139,7 +140,7 @@ class explorer:
                 if count != len(self.dimension):
                     df_grp["_dimension_"] = df_grp["_dimension_"] + df_grp[dim] + "_"
                 else:
-                    df_grp["_dimension_"] = df_grp["_dimension_"] + "_" + df_grp[dim]
+                    df_grp["_dimension_"] = df_grp["_dimension_"] + df_grp[dim]
 
                 count += 1
         else:

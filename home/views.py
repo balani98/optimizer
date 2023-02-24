@@ -191,6 +191,24 @@ def date_check(request):
 
     except Exception as exp_date_check:
         return JsonResponse({"error": ERROR_DICT[str(exp_date_check)]}, status=403)
+    
+
+def dimension_grouping_check(request):
+    try:
+        data = pd.read_pickle(UPLOAD_FOLDER+"{}.pkl".format(request.session.get("_uuid")))
+        # data = pd.DataFrame.from_dict(request.session.get('data'))
+        # print(data)
+        eo = explorer(data)
+        print("submitted")
+        dimension_grouping_check = request.GET.get('dimension_grouping_selector')
+        dimensionSelector = request.session.get("DimensionSelector")
+        eo.group_dimension = dimension_grouping_check if(len(dimensionSelector) > 1) else dimensionSelector[0]
+        request.session["Dimension_grouping_check"] = dimension_grouping_check
+        print("dimension grouping check validated")
+        return JsonResponse({"message": "Successfully published"}, status=200)
+
+    except Exception as exp_date_check:
+        return JsonResponse({"error": ERROR_DICT[str(exp_date_check)]}, status=403)
 
 
 def dimension_check(request):
@@ -210,7 +228,8 @@ def dimension_check(request):
         request.session["DimensionSelector"] = DimensionSelector
         print("DimensionSelector", request.session.get("DimensionSelector"))
         print("dimension validated")
-        return JsonResponse({"message": "Successfully published"}, status=200)
+        return JsonResponse({"message": "Successfully published",
+                             "dimensionSelector": DimensionSelector}, status=200)
 
     except Exception as exp_date_check:
         return JsonResponse({"error": ERROR_DICT[str(exp_date_check)]}, status=403)
@@ -314,6 +333,7 @@ def chart_filter(request):
             eo.spend = request.session.get("SpentSelector")
             eo.target = request.session.get("TargetSelector")
             eo.cpm = request.session.get("CpmSelector")
+            eo.group_dimension = request.session.get("Dimension_grouping_check")
             if convert_to_weekly_data != None and int(convert_to_weekly_data) == 1:
                 eo.convert_to_weekly = True 
             if is_weekly_selected != None and int(is_weekly_selected) == 1:
