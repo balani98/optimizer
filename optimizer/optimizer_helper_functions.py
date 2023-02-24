@@ -113,8 +113,13 @@ class optimizer_iterative:
         for dim in dimension_bound:
             
             # Max conversion possible
-            dim_max_poss_conversion=int(self.d_param[dim]["param c"])
-#             dim_max_poss_conversion=(np.trunc(self.d_param[dim]["param c"]*100)/100)
+            conv=round(self.d_param[dim]["param c"])
+            if conv>self.d_param[dim]["param c"]:
+                dim_max_poss_conversion=(np.trunc(self.d_param[dim]["param c"]*10)/10)
+            elif conv<=self.d_param[dim]["param c"]:
+                dim_max_poss_conversion=int(self.d_param[dim]["param c"])
+            if dim_max_poss_conversion==self.d_param[dim]["param c"]:
+                dim_max_poss_conversion=dim_max_poss_conversion-(self.precision/100)
             
             # Max budget entered by user
             dim_max_inp_budget=dimension_bound[dim][1]
@@ -690,6 +695,7 @@ class optimizer_iterative:
         # Restricting dimensions budget to max conversion budget if enetered budget is greater for any dimension
         dimension_bound_actual = copy.deepcopy(dimension_bound)
         dimension_bound = self.dimension_bound_max_check(dimension_bound)
+        print(dimension_bound_actual," ",dimension_bound)
         
         # Considering budget per day till 2 decimal points: truncting (and not rounding-off)
         budget_per_day = budget/days
@@ -840,8 +846,13 @@ class optimizer_iterative_seasonality:
         for dim in dimension_bound:
             
             # Max conversion possible
-            dim_max_poss_conversion=int(self.d_param[dim]["param c"])
-#             dim_max_poss_conversion=(np.trunc(self.d_param[dim]["param c"]*100)/100)
+            conv=round(self.d_param[dim]["param c"])
+            if conv>self.d_param[dim]["param c"]:
+                dim_max_poss_conversion=(np.trunc(self.d_param[dim]["param c"]*10)/10)
+            elif conv<=self.d_param[dim]["param c"]:
+                dim_max_poss_conversion=int(self.d_param[dim]["param c"])
+            if dim_max_poss_conversion==self.d_param[dim]["param c"]:
+                dim_max_poss_conversion=dim_max_poss_conversion-(self.precision/100)
             
             # Max budget entered by user
             dim_max_inp_budget=dimension_bound[dim][1]
