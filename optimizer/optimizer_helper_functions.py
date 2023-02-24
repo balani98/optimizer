@@ -89,7 +89,7 @@ class optimizer_iterative:
         # Precision used for optimization
         self.precision = 1e-0
         # Max iterations used for optimization
-        self.max_iter = 10000
+        self.max_iter = 50000
         
 
     def s_curve_hill(self, X, a, b, c):
