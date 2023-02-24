@@ -369,6 +369,21 @@
           }
         })
       }
+    dimension_grouping_selector = window.localStorage.getItem('dimension_grouping_selector')
+    if(dimension_grouping_selector != '' && dimension_grouping_selector !='undefined' && dimension_grouping_selector != null){
+      // code to write to dimension grouping selector on load 
+      $('#dimensionGroupingSelector').parent().css('display','block')
+      $('#dimensionGroupingSelector').children().remove().end()
+      .append('<option selected value="0">Dimension Grouping Selector</option>') ;
+      $.each(dimension_selector, (key,value) =>{
+        if(value !=  ""){
+          var option = new Option(value, value)         
+          $(option).html(value);
+        }
+        $('#dimensionGroupingSelector').append(option)
+      })
+      $('#dimensionGroupingSelector').val(dimension_grouping_selector)
+    }
     var file = window.localStorage.getItem('file')
     if(file)
       $('#filename_to_put').attr('hidden',false).text("Uploaded File : " + file )
