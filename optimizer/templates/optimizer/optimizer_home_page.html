@@ -1639,10 +1639,9 @@
         },
         success: function (data) {
           $('.optimizer_left_panel_dimension_name').each((index,element)=>{
-              element.style.border = "2px inset #EBE9ED";
               element.style.color = "#000";
-              element.nextElementSibling.children[0].style.border = "2px inset #EBE9ED"  
-              element.nextElementSibling.children[1].style.border = "2px inset #EBE9ED"  
+              element.nextElementSibling.children[0].style.color = "#000"  
+              element.nextElementSibling.children[1].style.color = "#000"  
             })
           return true;
         },
@@ -1652,16 +1651,15 @@
           alert(error.responseJSON.message)
          $('.optimizer_left_panel_dimension_name').each((index,element)=>{
             if(dimensions_to_be_corrected_keys.indexOf(element.innerText) != -1){
-              element.style.border = "3px solid red";
               element.style.color = "red";
               if(dimensions_to_be_corrected_json[element.innerText][0] == 1)
-                element.nextElementSibling.children[0].style.border = "2px solid red"
+                element.nextElementSibling.children[0].style.color = "red"
               else
-                element.nextElementSibling.children[0].style.border = "2px inset #EBE9ED"   
+                element.nextElementSibling.children[0].style.color = "#000"   
               if(dimensions_to_be_corrected_json[element.innerText][1] == 1)
-                element.nextElementSibling.children[1].style.border = "2px solid red"
+                element.nextElementSibling.children[1].style.color = "red"
               else 
-                element.nextElementSibling.children[1].style.border = "2px inset #EBE9ED"
+                element.nextElementSibling.children[1].style.color = "#000"
              }
           })
           return false; 
