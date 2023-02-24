@@ -74,14 +74,17 @@ def optimizer_home_page(request):
         # df_param = df_predictor_page_latest_data[
         #     ~df_predictor_page_latest_data["dimension"].isin(discarded_items_array)
         # ]
-        optimizer_left_pannel_data = dimension_bound(df_predictor_page_latest_data)
+        dimension_data = request.session.get('dimension_data')
+        (optimizer_left_pannel_data,
+         grouped_optimizer_left_pannel_data,
+         flag_to_show_grouped_dimensions) = dimension_bound(df_predictor_page_latest_data, dimension_data)
         stringified_optimizer_left_pannel_data = json.dumps(optimizer_left_pannel_data)
+        
         print("optimizer_left_pannel_data", optimizer_left_pannel_data)
         print(
             "stringified_optimizer_left_pannel_data",
             stringified_optimizer_left_pannel_data,
-        )
-
+        )  
         # Checking for CPM selection
         if request.session.get("cpm_checked") == "True":
             context["cpm_checked"] = 1
@@ -95,16 +98,51 @@ def optimizer_home_page(request):
         if convert_to_weekly_data:
             print(f"convert_to_weekly_data : {convert_to_weekly_data}")
             context["convert_to_weekly_data"] = int(convert_to_weekly_data)
-
+        if flag_to_show_grouped_dimensions == 1:
+            request.session['flag_to_show_grouped_dimensions'] = flag_to_show_grouped_dimensions
+            context['grouped_optimizer_left_pannel_data'] = grouped_optimizer_left_pannel_data
+          
+            stringified_grouped_optimizer_left_pannel_data = json.dumps(grouped_optimizer_left_pannel_data)
+            context['stringified_grouped_optimizer_left_pannel_data'] = stringified_grouped_optimizer_left_pannel_data
+        context['flag_to_show_grouped_dimensions'] = flag_to_show_grouped_dimensions
         context["seasonality"] = seasonality
         context["drop_dimension_from_session"] = drop_dimension_from_session
         context["optimizer_left_pannel_data"] = optimizer_left_pannel_data
         context[
             "stringified_optimizer_left_pannel_data"
         ] = stringified_optimizer_left_pannel_data
-
         return render(request, "optimizer/optimizer_home_page.html", context)
 
+def validate_dimension_budget_with_caps(request):
+    context = {}
+    body = json.loads(request.body)
+    dimension_capping_constraints = json.loads(body['dimension_capping_constraints'])
+    dimension_min_max = json.loads(body["dimension_min_max"])
+    top_dimension_keys = list(dimension_capping_constraints.keys())
+    dimensions_to_be_corrected = {}
+    for key in top_dimension_keys:
+        sum_max_budget = 0
+        sum_min_budget = 0
+        sub_dimension_keys = list(dimension_capping_constraints[key]['sub_dimension'])
+        for sub_dimension_key in sub_dimension_keys:
+            sum_min_budget += dimension_min_max[sub_dimension_key][0]
+            sum_max_budget += dimension_min_max[sub_dimension_key][1]
+        for sub_dimension_key in sub_dimension_keys:
+            if int(sum_max_budget) > int(dimension_capping_constraints[key]['constraints'][1]) and int(sum_min_budget) < int(dimension_capping_constraints[key]['constraints'][0]):
+                dimensions_to_be_corrected[sub_dimension_key] = [1, 1]
+            elif int(sum_max_budget) > int(dimension_capping_constraints[key]['constraints'][1]):
+                dimensions_to_be_corrected[sub_dimension_key] = [0, 1]
+            elif int(sum_min_budget) < int(dimension_capping_constraints[key]['constraints'][0]):
+                dimensions_to_be_corrected[sub_dimension_key] = [1, 0]
+    context['dimensions_to_be_corrected'] = json.dumps(dimensions_to_be_corrected)
+    if len(set(dimensions_to_be_corrected.keys())) != 0:
+        return JsonResponse({"error": context,
+                            "message":"Max Budget is exceeding for some dimensions or Min budget is lagging"}
+                            , status=400)
+    return JsonResponse({"message":"Inputs validated"}
+                            , status=200)
+
+         
 
 def dimension_min_max(request):
     try:

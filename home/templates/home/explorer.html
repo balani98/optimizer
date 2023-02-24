@@ -172,7 +172,13 @@
           </div>
 
           <p class="dimension_error" style="color: #fff; display: none;"></p>
-
+          <!-- Dimension grouping selector -->
+          <div class="dropdown" style="margin-bottom: 10px; width: 100%;display:none">
+            <select id = "dimensionGroupingSelector" name="dimensionGroupingSelector" class="btn dropdown-toggle explorer-sidebar-dropdown"
+              onchange="dimensionGroupingCheck(this.value)" id="target_value">
+              <option value="0">Dimension Grouping Selector</option>
+            </select>
+          </div>
 
           <div class="dropdown" style="margin-bottom: 10px; width: 100%;">
             <select name="spentSelector" class="btn dropdown-toggle explorer-sidebar-dropdown"
@@ -403,16 +409,44 @@
 
       console.log(dimensionvalueselector, "this is dimension value selectpr")
       window.localStorage.setItem('dimension_selector',dimensionvalueselector)
+      $('#container').css('opacity',0.5);
+      $('#container').css('pointer-events','none');
+      $('#container').css('z-index',1);
+      $("body").css("background-color", "#cecece");
+      $('#spinner-optimizer').css('display','block');
       $.ajax({
         url: 'ajax/dimension_check/',
         data: {
           'dimension_check[]': dimensionvalueselector,
         },
         success: function (data) {
+          $('#container').css('opacity',1);
+          $("body").css("background-color", "#fff");
+          $('#container').css('pointer-events','auto');
+          $('#spinner-optimizer').css('display','none');
           console.log(data.message);
+          dimensionSelector = data.dimensionSelector
+          if(dimensionSelector.length >= 2){
+            $('#dimensionGroupingSelector').parent().css('display','block')
+            $('#dimensionGroupingSelector').children().remove().end()
+            .append('<option selected value="0">Dimension Grouping Selector</option>') ;
+            $.each(dimensionSelector, (key,value) =>{
+              var option = new Option(value, value)         
+              $(option).html(value);
+              $('#dimensionGroupingSelector').append(option)
+            })
+          }
+         else {
+            $('#dimensionGroupingSelector').parent().css('display','none')
+            dimensionGroupingCheck(dimensionSelector[0])
+          }
           $('.dimension_error').css("display", "none");
         },
         error: function (data) {
+          $('#container').css('opacity',1);
+          $("body").css("background-color", "#fff");
+          $('#container').css('pointer-events','auto');
+          $('#spinner-optimizer').css('display','none');
           console.log(data.responseJSON.error);
 
           $('.dimension_error').css("display", "block");
@@ -1006,8 +1040,44 @@
 
 {% comment %} spent validation check {% endcomment %}
 <script>
+  // function to send dimensiongrouping selector value to server 
+  function dimensionGroupingCheck(value){
+    $('#container').css('opacity',0.5);
+    $('#container').css('pointer-events','none');
+    $('#container').css('z-index',1);
+    $("body").css("background-color", "#cecece");
+    $('#spinner-optimizer').css('display','block');
+    window.localStorage.setItem('dimension_grouping_selector',value);
+    $.ajax({
+      url : 'ajax/dimension_grouping_check',
+      data : {
+        'dimension_grouping_selector':value
+      },
+      success : function(data){
+        $('#container').css('opacity',1);
+        $("body").css("background-color", "#fff");
+        $('#container').css('pointer-events','auto');
+        $('#spinner-optimizer').css('display','none');
+        console.log(data.message)
+
+      },
+      error : function(error){
+        $('#container').css('opacity',1);
+        $("body").css("background-color", "#fff");
+        $('#container').css('pointer-events','auto');
+        $('#spinner-optimizer').css('display','none');
+        console.log(error.responseJSON.error);  
+      }
+    })
+  }
+  
   function spentCheck(value) {
     console.log(value)
+    $('#container').css('opacity',0.5);
+    $('#container').css('pointer-events','none');
+    $('#container').css('z-index',1);
+    $("body").css("background-color", "#cecece");
+    $('#spinner-optimizer').css('display','block');
     window.localStorage.setItem('investment_selector',value)
     $.ajax({
       url: 'ajax/spent_check/',
@@ -1015,10 +1085,18 @@
         'spent_check': value,
       },
       success: function (data) {
+        $('#container').css('opacity',1);
+        $("body").css("background-color", "#fff");
+        $('#container').css('pointer-events','auto');
+        $('#spinner-optimizer').css('display','none');
         console.log(data.message);
         $('.spent_error').css("display", "none");
       },
       error: function (data) {
+        $('#container').css('opacity',1);
+        $("body").css("background-color", "#fff");
+        $('#container').css('pointer-events','auto');
+        $('#spinner-optimizer').css('display','none');
         console.log(data.responseJSON.error);
 
         $('.spent_error').css("display", "block");
@@ -1033,6 +1111,11 @@
 <script>
   function targetCheck(value) {
     console.log(value)
+    $('#container').css('opacity',0.5);
+    $('#container').css('pointer-events','none');
+    $('#container').css('z-index',1);
+    $("body").css("background-color", "#cecece");
+    $('#spinner-optimizer').css('display','block');
     window.localStorage.setItem('target_selector',value)
     $.ajax({
       url: 'ajax/target_check/',
@@ -1040,10 +1123,18 @@
         'target_check': value,
       },
       success: function (data) {
+        $('#container').css('opacity',1);
+        $("body").css("background-color", "#fff");
+        $('#container').css('pointer-events','auto');
+        $('#spinner-optimizer').css('display','none');
         console.log(data.message);
         $('.target_error').css("display", "none");
       },
       error: function (data) {
+        $('#container').css('opacity',1);
+        $("body").css("background-color", "#fff");
+        $('#container').css('pointer-events','auto');
+        $('#spinner-optimizer').css('display','none');
         console.log(data.responseJSON.error);
 
         $('.target_error').css("display", "block");

@@ -16,6 +16,7 @@ class explorer:
         self.date = None
         self.spend = None
         self.target = None
+        self.group_dimension = None
         self.cpm = None
         self.use_impression = False
         self.is_weekly_selected = False
@@ -86,7 +87,6 @@ class explorer:
                 raise Exception(5003)
 
     def data_aggregation(self):
-
         """data aggregation at selected dimension,day level
 
         Returns:
@@ -127,19 +127,24 @@ class explorer:
             # df_cpm_mean = self.df.groupby(self.dimension).agg({"cpm": "mean"})
 
         df_grp["_dimension_"] = ""
-
+        dimension_data = {}
+        idx_grp_dim = self.dimension.index(self.group_dimension)
+        self.dimension = [self.group_dimension] + self.dimension[:idx_grp_dim] + self.dimension[idx_grp_dim+1:]
         count = 1
 
         if len(self.dimension) > 1:
             for dim in self.dimension:
 
+                dimension_data[dim] = list(df_grp[dim].unique())
+
                 if count != len(self.dimension):
                     df_grp["_dimension_"] = df_grp["_dimension_"] + df_grp[dim] + "_"
                 else:
-                    df_grp["_dimension_"] = df_grp["_dimension_"] + "_" + df_grp[dim]
+                    df_grp["_dimension_"] = df_grp["_dimension_"] + df_grp[dim]
 
                 count += 1
         else:
+            dimension_data[self.dimension[0]] = list(df_grp[self.dimension[0]].unique())
             df_grp["_dimension_"] = df_grp[self.dimension[0]]
 
         df_grp.drop(columns=self.dimension, inplace=True)
@@ -152,9 +157,9 @@ class explorer:
         df_grp = self.impute_missing_date(df_grp)
 
         if self.use_impression:
-            return df_grp
+            return df_grp, dimension_data
         else:
-            return df_grp
+            return df_grp, dimension_data
 
     def convert_to_weekly_granularity(self, df_grp):
         
