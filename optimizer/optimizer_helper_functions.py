@@ -36,8 +36,8 @@ def dimension_bound(df_param, dimension_data):
                     * threshold[1]
                 ),
                 d_param[dim]["impression_median"] * d_param[dim]["cpm"] / 1000,
-                -20,
-                20,
+                -100,
+                200,
                 round(d_param[dim]["cpm"], 2),
              ]
     else:
@@ -46,8 +46,8 @@ def dimension_bound(df_param, dimension_data):
                 int(d_param[dim]["median spend"] * threshold[0]),
                 int(d_param[dim]["median spend"] * threshold[1]),
                 d_param[dim]["median spend"],
-                -20,
-                20
+                -100,
+                200
             ]
             
     grp_dim_flag = True if (len(dimension_data.keys())>1) else False
@@ -89,7 +89,7 @@ class optimizer_iterative:
         # Precision used for optimization
         self.precision = 1e-0
         # Max iterations used for optimization
-        self.max_iter = 10000
+        self.max_iter = 50000
         
 
     def s_curve_hill(self, X, a, b, c):
@@ -754,7 +754,7 @@ class optimizer_iterative_seasonality:
         # Precision used for optimization
         self.precision = 1e-0
         # Max iterations used for optimization
-        self.max_iter = 10000
+        self.max_iter = 50000
 
     
     def s_curve_hill(
