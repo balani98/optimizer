@@ -1640,6 +1640,8 @@
         success: function (data) {
           $('.optimizer_left_panel_dimension_name').each((index,element)=>{
               element.style.color = "#000";
+              element.nextElementSibling.children[0].style.color = "#000"  
+              element.nextElementSibling.children[1].style.color = "#000"  
             })
           return true;
         },
