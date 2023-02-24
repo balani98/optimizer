@@ -101,7 +101,11 @@ class optimizer_iterative:
     def s_curve_hill_inv(self, Y, a, b, c):
         """This method performs the inverse of scurve function on param, target and
         Returns the outcome as investment"""
-        return ((Y * (b ** a))/(c - Y)) ** (1/a)
+        Y = (Y-(self.precision/100)) if(Y==c) else Y
+        if (Y<=0):
+            return 0
+        else:
+            return ((Y * (b ** a))/(c - Y)) ** (1/a)
     
     
     def dimension_bound_max_check(self, dimension_bound):
@@ -118,8 +122,6 @@ class optimizer_iterative:
                 dim_max_poss_conversion=(np.trunc(self.d_param[dim]["param c"]*10)/10)
             elif conv<=self.d_param[dim]["param c"]:
                 dim_max_poss_conversion=int(self.d_param[dim]["param c"])
-            if dim_max_poss_conversion==self.d_param[dim]["param c"]:
-                dim_max_poss_conversion=dim_max_poss_conversion-(self.precision/100)
             
             # Max budget entered by user
             dim_max_inp_budget=dimension_bound[dim][1]
@@ -799,7 +801,11 @@ class optimizer_iterative_seasonality:
     def s_curve_hill_inv(self, Y, a, b, c):
         """This method performs the inverse of scurve function on param, target and
         Returns the outcome as investment"""
-        return ((Y * (b ** a))/(c - Y)) ** (1/a)
+        Y = (Y-(self.precision/100)) if(Y==c) else Y
+        if (Y<=0):
+            return 0
+        else:
+            return ((Y * (b ** a))/(c - Y)) ** (1/a)
 
 
     def s_curve_hill_inv_seas(
@@ -834,7 +840,11 @@ class optimizer_iterative_seasonality:
                 + mcoeff[10] * month[10]
                 )
 
-        return ((Y_ * (b ** a))/(c - Y_)) ** (1/a)
+        Y_ = (Y_-(self.precision/100)) if(Y_==c) else Y_
+        if (Y_<=0):
+            return 0
+        else:
+            return ((Y_ * (b ** a))/(c - Y_)) ** (1/a)
     
     
     def dimension_bound_max_check(self, dimension_bound):
@@ -851,8 +861,6 @@ class optimizer_iterative_seasonality:
                 dim_max_poss_conversion=(np.trunc(self.d_param[dim]["param c"]*10)/10)
             elif conv<=self.d_param[dim]["param c"]:
                 dim_max_poss_conversion=int(self.d_param[dim]["param c"])
-            if dim_max_poss_conversion==self.d_param[dim]["param c"]:
-                dim_max_poss_conversion=dim_max_poss_conversion-(self.precision/100)
             
             # Max budget entered by user
             dim_max_inp_budget=dimension_bound[dim][1]
