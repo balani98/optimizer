@@ -46,6 +46,7 @@ TEMP_ERROR_DICT = {"4002": "Value Error"}
 def optimizer_home_page(request):
     print("optimizer_home_page")
     context = {}
+    constraint_type = 'Median'
     # Get the required items from session
     # discarded_items = request.session["discarded_items"]
     _uuid = request.session.get("_uuid")
@@ -77,7 +78,7 @@ def optimizer_home_page(request):
         dimension_data = request.session.get('dimension_data')
         (optimizer_left_pannel_data,
          grouped_optimizer_left_pannel_data,
-         flag_to_show_grouped_dimensions) = dimension_bound(df_predictor_page_latest_data, dimension_data)
+         flag_to_show_grouped_dimensions) = dimension_bound(df_predictor_page_latest_data, dimension_data, constraint_type)
         stringified_optimizer_left_pannel_data = json.dumps(optimizer_left_pannel_data)
         
         print("optimizer_left_pannel_data", optimizer_left_pannel_data)
