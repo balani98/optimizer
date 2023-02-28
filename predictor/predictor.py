@@ -139,7 +139,7 @@ class predictor:
                 )
                 pred = self.s_curve_hill(dim_df[metric], *popt)
                 pred = np.where(pred <= 0, 0, pred)
-                params[dim] = list(popt) + [dim_df[metric].median()]
+                params[dim] = list(popt) + [dim_df[metric].median()] + [dim_df[metric].mean()]
 
                 score[dim] = []
                 #score[dim].append(r2_score(dim_df["target"], pred))
@@ -185,6 +185,7 @@ class predictor:
                     1: "param b",
                     2: "param c",
                     3: "median spend",
+                    4: "mean spend"
                 }
             )
         )
@@ -270,23 +271,31 @@ class predictor:
         # df_spend_dis.rename({'sum': 'spend', 'median': 'median spend'}, axis=1, inplace=True)
 
         if self.use_impression:
-            df_spend_dis = self.df.groupby('dimension').agg(spend=('spend', 'sum'), impression=('impression', 'sum'), median_impression=('impression', 'median'), return_conv=('target', 'sum')).reset_index()
+            df_spend_dis = self.df.groupby('dimension').agg(spend=('spend', 'sum'),
+                                                            impression=('impression', 'sum'),
+                                                            median_impression=('impression', 'median'),
+                                                            mean_impression=('impression', 'mean'),
+                                                            return_conv=('target', 'sum')).reset_index()
             df_spend_dis['cpm'] = df_spend_dis["spend"] * 1000 / df_spend_dis["impression"]
             df_spend_dis['median spend'] = (df_spend_dis["median_impression"] * df_spend_dis["cpm"]) / 1000
-            df_spend_dis=df_spend_dis[['dimension', 'spend', 'median spend', 'return_conv']]
+            df_spend_dis['mean spend'] = (df_spend_dis["mean_impression"] * df_spend_dis["cpm"]) / 1000
+            df_spend_dis=df_spend_dis[['dimension', 'spend', 'median spend', 'mean spend', 'return_conv']]
             
             for i in list(set(dimension_val) - set(df_spend_dis['dimension'])):
         
-                df_spend_dis.loc[-1] = [i,0,0,0]
+                df_spend_dis.loc[-1] = [i,0,0,0,0]
 
                 df_spend_dis.index = df_spend_dis.index + 1
         else:
-            df_spend_dis = self.df.groupby('dimension').agg(spend=('spend', 'sum'), median_spend=('spend', 'median'), return_conv=('target', 'sum')).reset_index()
-            df_spend_dis.rename({'median_spend': 'median spend'}, axis=1, inplace=True)
+            df_spend_dis = self.df.groupby('dimension').agg(spend=('spend', 'sum'),
+                                                            median_spend=('spend', 'median'),
+                                                            mean_spend=('spend', 'mean'),
+                                                            return_conv=('target', 'sum')).reset_index()
+            df_spend_dis.rename({'median_spend': 'median spend', 'mean_spend': 'mean spend'}, axis=1, inplace=True)
             
             for i in list(set(dimension_val) - set(df_spend_dis['dimension'])):
         
-                df_spend_dis.loc[-1] = [i,0,0,0]
+                df_spend_dis.loc[-1] = [i,0,0,0,0]
 
                 df_spend_dis.index = df_spend_dis.index + 1
 
@@ -348,18 +357,18 @@ class predictor:
 
             df_cpm = (
                 self.df.groupby("dimension").agg(
-                    {"spend": "sum", "impression": [np.sum, np.median]}
+                    {"spend": "sum", "impression": [np.sum, np.median, np.mean]}
                 )
             ).reset_index()
 
-            df_cpm.columns = ["dimension", "spend", "impression", "impression_median"]
+            df_cpm.columns = ["dimension", "spend", "impression", "impression_median", "impression_mean"]
 
             df_cpm["cpm"] = df_cpm["spend"] * 1000 / df_cpm["impression"]
 
             d_cpm = df_cpm[["dimension", "cpm"]].set_index("dimension").to_dict()["cpm"]
 
             df_param = df_param.merge(
-                df_cpm[["dimension", "cpm", "impression_median"]],
+                df_cpm[["dimension", "cpm", "impression_median", "impression_mean"]],
                 on=["dimension"],
                 how="left",
             )
@@ -662,7 +671,7 @@ class predictor_with_seasonality:
                 [
                     0.5,
                     dim_df[metric].quantile(0.3),
-                    0,
+                    -np.inf,
                     0,
                     0,
                     0,
@@ -737,7 +746,7 @@ class predictor_with_seasonality:
                 
                 spend_pred,weekday_pred,monthly_pred = self.s_curve_hill_decomp(dim_df, *popt)
                 pred = self.s_curve_hill(dim_df, *popt)
-                params[dim] = list(popt) + [dim_df[metric].median()]
+                params[dim] = list(popt) + [dim_df[metric].median()] + [dim_df[metric].mean()]
 
                 score[dim] = []
                 # score[dim].append(r2_score(dim_df["target"], pred))
@@ -814,6 +823,7 @@ class predictor_with_seasonality:
                     18: "month 11",
                     19: "month 12",
                     20: "median spend",
+                    21: "mean spend"
                 }
             )
         )
@@ -891,23 +901,31 @@ class predictor_with_seasonality:
         # df_spend_dis.rename({'sum': 'spend', 'median': 'median spend'}, axis=1, inplace=True)
 
         if self.use_impression:
-            df_spend_dis = self.df.groupby('dimension').agg(spend=('spend', 'sum'), impression=('impression', 'sum'), median_impression=('impression', 'median'), return_conv=('target', 'sum')).reset_index()
+            df_spend_dis = self.df.groupby('dimension').agg(spend=('spend', 'sum'),
+                                                            impression=('impression', 'sum'),
+                                                            median_impression=('impression', 'median'),
+                                                            mean_impression=('impression', 'mean'),
+                                                            return_conv=('target', 'sum')).reset_index()
             df_spend_dis['cpm'] = df_spend_dis["spend"] * 1000 / df_spend_dis["impression"]
             df_spend_dis['median spend'] = (df_spend_dis["median_impression"] * df_spend_dis["cpm"]) / 1000
-            df_spend_dis=df_spend_dis[['dimension', 'spend', 'median spend', 'return_conv']]
+            df_spend_dis['mean spend'] = (df_spend_dis["mean_impression"] * df_spend_dis["cpm"]) / 1000
+            df_spend_dis=df_spend_dis[['dimension', 'spend', 'median spend', 'mean spend', 'return_conv']]
             
             for i in list(set(dimension_val) - set(df_spend_dis['dimension'])):
         
-                df_spend_dis.loc[-1] = [i,0,0,0]
+                df_spend_dis.loc[-1] = [i,0,0,0,0]
 
                 df_spend_dis.index = df_spend_dis.index + 1
         else:
-            df_spend_dis = self.df.groupby('dimension').agg(spend=('spend', 'sum'), median_spend=('spend', 'median'), return_conv=('target', 'sum')).reset_index()
-            df_spend_dis.rename({'median_spend': 'median spend'}, axis=1, inplace=True)
+            df_spend_dis = self.df.groupby('dimension').agg(spend=('spend', 'sum'),
+                                                            median_spend=('spend', 'median'),
+                                                            mean_spend=('spend', 'mean'),
+                                                            return_conv=('target', 'sum')).reset_index()
+            df_spend_dis.rename({'median_spend': 'median spend', 'mean_spend': 'mean spend'}, axis=1, inplace=True)
             
             for i in list(set(dimension_val) - set(df_spend_dis['dimension'])):
         
-                df_spend_dis.loc[-1] = [i,0,0,0]
+                df_spend_dis.loc[-1] = [i,0,0,0,0]
 
                 df_spend_dis.index = df_spend_dis.index + 1
 
@@ -1019,18 +1037,18 @@ class predictor_with_seasonality:
 
             df_cpm = (
                 self.df.groupby("dimension").agg(
-                    {"spend": "sum", "impression": [np.sum, np.median]}
+                    {"spend": "sum", "impression": [np.sum, np.median, np.mean]}
                 )
             ).reset_index()
 
-            df_cpm.columns = ["dimension", "spend", "impression", "impression_median"]
+            df_cpm.columns = ["dimension", "spend", "impression", "impression_median", "impression_mean"]
 
             df_cpm["cpm"] = df_cpm["spend"] * 1000 / df_cpm["impression"]
 
             d_cpm = df_cpm[["dimension", "cpm"]].set_index("dimension").to_dict()["cpm"]
 
             df_param = df_param.merge(
-                df_cpm[["dimension", "cpm", "impression_median"]],
+                df_cpm[["dimension", "cpm", "impression_median", "impression_mean"]],
                 on=["dimension"],
                 how="left",
             )

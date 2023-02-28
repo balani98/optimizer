@@ -45,8 +45,8 @@ def dimension_bound(df_param, dimension_data, constraint_type):
                     * threshold[1]
                 ),
                 d_param[dim][const_var] * d_param[dim]["cpm"] / 1000,
-                -20,
-                20,
+                -100,
+                200,
                 round(d_param[dim]["cpm"], 2),
              ]
     else:
@@ -61,13 +61,13 @@ def dimension_bound(df_param, dimension_data, constraint_type):
                 int(d_param[dim][const_var] * threshold[0]),
                 int(d_param[dim][const_var] * threshold[1]),
                 d_param[dim][const_var],
-                -20,
-                20
+                -100,
+                200
             ]
 
-    grp_dim_flag = True if (len(dimension_data.keys())>1) else False
+    grp_dim_flag = 1 if (len(dimension_data.keys())>1) else 0
     
-    if(grp_dim_flag == True):
+    if(grp_dim_flag == 1):
         grp_dim_list = dimension_data[list(dimension_data.keys())[0]]
         for grp_dim in grp_dim_list:
             sub_dim_list = list({dim for dim, value in dim_bound.items() if dim.startswith(grp_dim)})
