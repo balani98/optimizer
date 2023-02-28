@@ -6,14 +6,17 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # isolate function
-def dimension_bound(df_param, dimension_data):
+def dimension_bound(df_param, dimension_data, constraint_type):
 
     """bounds for optimizer
 
     Returns:
         dictionary: key dimension value [min,max] / [min,max,cpm]
+        dictionary: key group dimension value [list of sub-dimension] and [min,max]
+        flag: multiple dimensions selected or not
     """
 
+    constraint_type = constraint_type.lower()
     threshold = [0, 3]
 
     df_param_opt = df_param.T
@@ -25,34 +28,46 @@ def dimension_bound(df_param, dimension_data):
     grp_dim_bound = {}
 
     if "cpm" in df_param.columns:
+
+        if constraint_type == "median":
+            const_var = "impression_median"
+        else:
+            const_var = "impression_mean"
+
         for dim in d_param.keys():
             dim_bound[dim] = [
                 int(
-                    (d_param[dim]["impression_median"] * d_param[dim]["cpm"] / 1000)
+                    (d_param[dim][const_var] * d_param[dim]["cpm"] / 1000)
                     * threshold[0]
                 ),
                 int(
-                    (d_param[dim]["impression_median"] * d_param[dim]["cpm"] / 1000)
+                    (d_param[dim][const_var] * d_param[dim]["cpm"] / 1000)
                     * threshold[1]
                 ),
-                d_param[dim]["impression_median"] * d_param[dim]["cpm"] / 1000,
+                d_param[dim][const_var] * d_param[dim]["cpm"] / 1000,
                 -100,
                 200,
                 round(d_param[dim]["cpm"], 2),
              ]
     else:
         for dim in d_param.keys():
+
+            if constraint_type == "median":
+                const_var = "median spend"
+            else:
+                const_var = "mean spend"
+
             dim_bound[dim] = [
-                int(d_param[dim]["median spend"] * threshold[0]),
-                int(d_param[dim]["median spend"] * threshold[1]),
-                d_param[dim]["median spend"],
+                int(d_param[dim][const_var] * threshold[0]),
+                int(d_param[dim][const_var] * threshold[1]),
+                d_param[dim][const_var],
                 -100,
                 200
             ]
-            
-    grp_dim_flag = True if (len(dimension_data.keys())>1) else False
+
+    grp_dim_flag = 1 if (len(dimension_data.keys())>1) else 0
     
-    if(grp_dim_flag == True):
+    if(grp_dim_flag == 1):
         grp_dim_list = dimension_data[list(dimension_data.keys())[0]]
         for grp_dim in grp_dim_list:
             sub_dim_list = list({dim for dim, value in dim_bound.items() if dim.startswith(grp_dim)})
@@ -67,7 +82,7 @@ def dimension_bound(df_param, dimension_data):
 
 
 class optimizer_iterative:
-    def __init__(self, df_param):
+    def __init__(self, df_param, constraint_type):
         """initialization
 
         Args:
@@ -78,12 +93,22 @@ class optimizer_iterative:
 
         self.d_param = df_param_opt.iloc[1:, :].to_dict()
 
+        self.constraint_type = constraint_type.lower()
+
         if "cpm" in df_param.columns:
             self.use_impression = True
             self.metric = 'impression'
+            if self.constraint_type == 'median':
+                self.const_var = 'impression_median'
+            else:
+                self.const_var = 'impression_mean'
         else:
             self.use_impression = False
             self.metric = 'spend'
+            if self.constraint_type == 'median':
+                self.const_var = 'median spend'
+            else:
+                self.const_var = 'mean spend'        
             
         self.dimension_names = list(self.d_param.keys())
         # Precision used for optimization
@@ -225,7 +250,7 @@ class optimizer_iterative:
         # inc_factor =  df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby('date').agg({'spend':'sum','target':'sum'})['spend'].median()
         # increment = round(inc_budget*0.075)
         # increment = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':'median'})['spend'].median())
-        inc_factor = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':'median'})['spend'].min())
+        inc_factor = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':self.constraint_type})['spend'].min())
         increment = round(inc_factor*0.50)
         return increment
     
@@ -346,12 +371,12 @@ class optimizer_iterative:
             check_noSpendDim = all(value == 0 for value in newSpendVec_filtered.values())
 
             # Get proportion to allocate remaining budget: 
-            # budget allocated during optimization process (or median spend if no budget is allocated in optimization process)
+            # budget allocated during optimization process (or median/mean spend if no budget is allocated in optimization process)
             
             if self.use_impression:
-                agg_medianSpend=sum((self.d_param[dim_filtered]['impression_median']*self.d_param[dim_filtered]['cpm'])/1000 for dim_filtered in allocation_dim_list)
+                agg_constSpend=sum((self.d_param[dim_filtered][self.const_var]*self.d_param[dim_filtered]['cpm'])/1000 for dim_filtered in allocation_dim_list)
             else:
-                agg_medianSpend=sum(self.d_param[dim_filtered]['median spend'] for dim_filtered in allocation_dim_list)
+                agg_constSpend=sum(self.d_param[dim_filtered][self.const_var] for dim_filtered in allocation_dim_list)
             
             for dim in allocation_dim_list:
                 incrementProportion = 0
@@ -360,9 +385,9 @@ class optimizer_iterative:
 
                 if (check_noSpendDim == True):
                     if self.use_impression:
-                        allocationSpendVec[dim] = ((self.d_param[dim]['impression_median']*self.d_param[dim]['cpm'])/1000)/agg_medianSpend
+                        allocationSpendVec[dim] = ((self.d_param[dim][self.const_var]*self.d_param[dim]['cpm'])/1000)/agg_constSpend
                     else:
-                        allocationSpendVec[dim] = self.d_param[dim]['median spend']/agg_medianSpend
+                        allocationSpendVec[dim] = self.d_param[dim][self.const_var]/agg_constSpend
                 else:
                     allocationSpendVec[dim] = newSpendVec_filtered[dim]/sum(newSpendVec_filtered.values())
 
@@ -387,10 +412,9 @@ class optimizer_iterative:
         return newSpendVec, totalReturn, msg, newImpVec
         
         
-    def adjust_budget(self, newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, newImpVec):
-        """Budget for each dimension is checked and adjusted based on the following:
-            On comparing with historic budget projection, if the budget allocation by optimization is higher for same target
-            If a particular dimension has zero target but some budget allocated by optimizer, this scenario occurs when inilization is done before optimization process
+    def projections_compare(self, newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, newImpVec):
+        """Budget for each dimension is checked and adjusted based on comparing with historic budget projection,
+            if the budget allocation by optimization is higher for same target
 
         Returns:
             Dictionay - 
@@ -402,12 +426,12 @@ class optimizer_iterative:
 
         # Comparing budget allocation and target with current projections and adjusting budget if required
         if self.use_impression:
-            d_median_spend = {dim: ((value['impression_median'] * dimension_bound_actual[dim][2])/1000) for dim, value in self.d_param.items()}
+            d_const_spend = {dim: ((value[self.const_var] * dimension_bound_actual[dim][2])/1000) for dim, value in self.d_param.items()}
         else:
-            d_median_spend = {dim: value['median spend'] for dim, value in self.d_param.items()}
+            d_const_spend = {dim: value[self.const_var] for dim, value in self.d_param.items()}
 
-        agg_median_spend = sum({value for dim, value in d_median_spend.items()})
-        median_spend_per = {dim:value/agg_median_spend for dim, value in d_median_spend.items()}
+        agg_const_spend = sum({value for dim, value in d_const_spend.items()})
+        const_spend_per = {dim:value/agg_const_spend for dim, value in d_const_spend.items()}
 
         spend_projection = {}
         imp_projection = {}
@@ -416,7 +440,7 @@ class optimizer_iterative:
         for dim in self.d_param:
 
             dim_spend = 0
-            spend_projection[dim] = budgetGoal * median_spend_per[dim]
+            spend_projection[dim] = budgetGoal * const_spend_per[dim]
             return_projection, imp_projection = self.total_return(spend_projection, return_projection, dimension_bound_actual, dim, imp_projection)
             
             if((round(return_projection[dim])>=self.d_param[dim]['param c']) | (round(return_projection[dim])==0)):
@@ -436,6 +460,40 @@ class optimizer_iterative:
                     newSpendVec[dim] = dim_spend
                     totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, newImpVec)
 
+        return newSpendVec, totalReturn, newImpVec
+
+
+    def adjust_budget(self, newSpendVec, totalReturn, dimension_bound_actual, newImpVec):
+        """Budget for each dimension is checked and adjusted based on the following:
+            Budget adjust due to rounding error in target
+            If a particular dimension has zero target but some budget allocated by optimizer, this scenario occurs when inilization is done before optimization process
+
+        Returns:
+            Dictionay - 
+                newSpendVec: Budget allocated to each dimension after adjustment
+                totalReturn: Conversion for allocated budget for each dimension after adjustment
+                newImpVec: Impression allocated to each dimension if applicable otherwise null value is allocated
+        """
+        budgetDecrement = 0
+
+        # adjust budget due to rounding error
+        for dim in self.d_param:
+            dim_spend=newSpendVec[dim]
+            conv=totalReturn[dim]
+            if (round(conv)>conv):
+                totalReturn[dim]=np.trunc(conv*10)/10
+            elif (round(conv)<conv):
+                totalReturn[dim]==int(conv)
+            else:
+                continue
+            dim_metric = self.s_curve_hill_inv(totalReturn[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
+            if self.use_impression:
+                newImpVec[dim] = dim_metric
+                newSpendVec[dim] = (newImpVec[dim] * dimension_bound_actual[dim][2])/1000
+            else:
+                newSpendVec[dim] = dim_metric
+            budgetDecrement = budgetDecrement + (newSpendVec[dim] - dim_spend)
+
         # decrement unused budget from dimensions having almost zero conversion as part of budget allocation during initialization of initial budget value
         for dim in self.d_param:
             if ((totalReturn[dim]<1) and (newSpendVec[dim]>0)):
@@ -444,8 +502,8 @@ class optimizer_iterative:
                 totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, newImpVec)
     
         return newSpendVec, totalReturn, newImpVec
-              
-    
+
+
     def budget_optimize(self, increment_factor, oldSpendVec, oldReturn, budgetGoal, dimension_bound, dimension_bound_actual, oldImpVec):
         """function for calculating budget when metric as spend is selected
         
@@ -498,7 +556,8 @@ class optimizer_iterative:
             if(math.isclose(sum(newSpendVec.values()), budgetGoal, abs_tol=self.precision)):
                 if (check_noConversion == 0):
                     check_noConversion = 1
-                    newSpendVec, totalReturn, newImpVec = self.adjust_budget(newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, newImpVec)
+                    newSpendVec, totalReturn, newImpVec = self.projections_compare(newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, newImpVec)
+                    newSpendVec, totalReturn, newImpVec = self.adjust_budget(newSpendVec, totalReturn, dimension_bound_actual, newImpVec)
                     increment = increment_factor
                     resultIter_df = resultIter_df.append({'spend':sum(newSpendVec.values()) , 'impression': sum(newImpVec.values()), 'return' : sum(totalReturn.values())}, ignore_index=True).reset_index(drop=True)
                 else:
@@ -553,13 +612,8 @@ class optimizer_iterative:
         result_df['estimated_return_for_n_days'] = (result_df['estimated_return_per_day']*days).round().astype(int)
         result_df['buget_allocation_new_%'] = (result_df['recommended_budget_per_day']/sum(result_df['recommended_budget_per_day'])).round(2)
         result_df['estimated_return_%'] = ((result_df['estimated_return_per_day']/sum(result_df['estimated_return_per_day']))*100).round(2)
-        
-        result_df=pd.merge(result_df,df_spend_dis[['dimension', 'median spend', 'return_conv']],how='left',on='dimension')
-        result_df['median spend']=result_df['median spend'].round().astype(int)
-        result_df.rename({'median spend': 'original_median_budget_per_day', 'return_conv': 'original_agg_return_per_day'}, axis=1, inplace=True)
-        result_df['original_return_%']=((result_df['original_agg_return_per_day']/sum(result_df['original_agg_return_per_day']))*100).round(2)
-        
-        result_df=result_df[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days', 'original_return_%']]
+                
+        result_df=result_df[['dimension', 'recommended_budget_per_day', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days']]
         
         return result_df
     
@@ -602,13 +656,17 @@ class optimizer_iterative:
 
         df_res['buget_allocation_new_%'] = ((df_res['recommended_budget_per_day']/sum(df_res['recommended_budget_per_day']))*100).round(2)
 
-        df_res = df_res.merge(df_spend_dis[['dimension', 'median spend', 'spend']], on='dimension', how='left')
+        df_res = df_res.merge(df_spend_dis[['dimension', 'median spend', 'mean spend', 'spend']], on='dimension', how='left')
         # df_res['buget_allocation_old_%'] = ((df_res['spend']/df_res['spend'].sum())*100).round(2)
-        df_res['buget_allocation_old_%'] = ((df_res['median spend']/df_res['median spend'].sum())*100)
-        
-        df_res = df_res.drop('original_median_budget_per_day', axis=1)
-        df_res['median spend'] = df_res['median spend'].round().astype(int)
-        df_res = df_res.rename(columns={"median spend": "original_median_budget_per_day"})
+
+        if self.constraint_type == 'median':
+            df_res['buget_allocation_old_%'] = ((df_res['median spend']/df_res['median spend'].sum())*100)
+            df_res['median spend'] = df_res['median spend'].round().astype(int)
+            df_res = df_res.rename(columns={"median spend": "original_median_budget_per_day"})
+        else:
+            df_res['buget_allocation_old_%'] = ((df_res['mean spend']/df_res['mean spend'].sum())*100)
+            df_res['mean spend'] = df_res['mean spend'].round().astype(int)
+            df_res = df_res.rename(columns={"mean spend": "original_mean_budget_per_day"})
 
         for dim in self.d_param:
             spend_projections = budget_per_day*(df_res.loc[df_res['dimension']==dim, 'buget_allocation_old_%']/100)
@@ -623,7 +681,10 @@ class optimizer_iterative:
         df_res['buget_allocation_old_%']=df_res['buget_allocation_old_%'].round(2)
         df_res = df_res.replace({np.nan: None})
 
-        df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days', 'current_projections_for_n_days']]
+        if self.constraint_type == 'median':
+            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days', 'current_projections_for_n_days']]
+        else:
+            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days', 'current_projections_for_n_days']]
         
         int_cols = [i for i in df_res.columns if ((i != "dimension") & ('%' not in i))]
         for i in int_cols:
@@ -655,8 +716,8 @@ class optimizer_iterative:
             oldReturn_input = {dim:(self.s_curve_hill(oldImpVec_input[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])) for dim in self.dimension_names}
             
             inflection_spend_dim = {dim:((self.d_param[dim]['param b']*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
-            median_spend_dim = {dim:((self.d_param[dim]['impression_median']*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
-            threshold = np.mean(list({median_spend_dim[dim] for dim in self.dimension_names if inflection_spend_dim[dim] > increment }))              
+            const_spend_dim = {dim:((self.d_param[dim][self.const_var]*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
+            threshold = np.mean(list({const_spend_dim[dim] for dim in self.dimension_names if inflection_spend_dim[dim] > increment }))              
             
             if((initial_investment<=budget_per_day) and (budget_per_day>threshold)):
                 oldSpendVec = copy.deepcopy(oldSpendVec_initial)
@@ -674,7 +735,7 @@ class optimizer_iterative:
             
             oldSpendVec_input = {dim:value[0] for dim, value in dimension_bound.items()}
             oldReturn_input = {dim:(self.s_curve_hill(oldSpendVec_input[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])) for dim in self.dimension_names}
-            threshold = np.mean(list({value['median spend'] for dim, value in self.d_param.items() if value['param b'] > increment }))
+            threshold = np.mean(list({value[self.const_var] for dim, value in self.d_param.items() if value['param b'] > increment }))
 
             if((initial_investment<=budget_per_day) and (budget_per_day>threshold)):
                 oldSpendVec = copy.deepcopy(oldSpendVec_initial)
@@ -697,7 +758,6 @@ class optimizer_iterative:
         # Restricting dimensions budget to max conversion budget if enetered budget is greater for any dimension
         dimension_bound_actual = copy.deepcopy(dimension_bound)
         dimension_bound = self.dimension_bound_max_check(dimension_bound)
-        print(dimension_bound_actual," ",dimension_bound)
         
         # Considering budget per day till 2 decimal points: truncting (and not rounding-off)
         budget_per_day = budget/days
@@ -732,7 +792,7 @@ class optimizer_iterative:
 
 
 class optimizer_iterative_seasonality:
-    def __init__(self, df_param):
+    def __init__(self, df_param, constraint_type):
         """initialization
 
         Args:
@@ -743,12 +803,22 @@ class optimizer_iterative_seasonality:
 
         self.d_param = df_param_opt.iloc[1:, :].to_dict()
 
+        self.constraint_type = constraint_type.lower()
+
         if "cpm" in df_param.columns:
             self.use_impression = True
             self.metric = 'impression'
+            if self.constraint_type == 'median':
+                self.const_var = 'impression_median'
+            else:
+                self.const_var = 'impression_mean'
         else:
             self.use_impression = False
             self.metric = 'spend'
+            if self.constraint_type == 'median':
+                self.const_var = 'median spend'
+            else:
+                self.const_var = 'mean spend'
             
         self.dimension_names = list(self.d_param.keys())
         # Precision used for optimization
@@ -797,7 +867,7 @@ class optimizer_iterative_seasonality:
         Returns the outcome as a varible called y"""
         return c * (X ** a / (X ** a + b ** a))
     
-    
+
     def s_curve_hill_inv(self, Y, a, b, c):
         """This method performs the inverse of scurve function on param, target and
         Returns the outcome as investment"""
@@ -839,7 +909,6 @@ class optimizer_iterative_seasonality:
                 + mcoeff[9] * month[9]
                 + mcoeff[10] * month[10]
                 )
-
         Y_ = (Y_-(self.precision/100)) if(Y_==c) else Y_
         if (Y_<=0):
             return 0
@@ -964,7 +1033,7 @@ class optimizer_iterative_seasonality:
         # inc_factor =  df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby('date').agg({'spend':'sum','target':'sum'})['spend'].median()
         # increment = round(inc_budget*0.075)
         # increment = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':'median'})['spend'].median())
-        inc_factor = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':'median'})['spend'].min())
+        inc_factor = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':self.constraint_type})['spend'].min())
         increment = round(inc_factor*0.50)
         return increment
     
@@ -1159,11 +1228,11 @@ class optimizer_iterative_seasonality:
             check_noSpendDim = all(value == 0 for value in newSpendVec_filtered.values())
 
             # Get proportion to allocate remaining budget: 
-            # budget allocated during optimization process (or median spend if no budget is allocated in optimization process)
+            # budget allocated during optimization process (or median/mean spend if no budget is allocated in optimization process)
             if self.use_impression:
-                agg_medianSpend=sum((self.d_param[dim_filtered]['impression_median']*self.d_param[dim_filtered]['cpm'])/1000 for dim_filtered in allocation_dim_list)
+                agg_constSpend=sum((self.d_param[dim_filtered][self.const_var]*self.d_param[dim_filtered]['cpm'])/1000 for dim_filtered in allocation_dim_list)
             else:
-                agg_medianSpend=sum(self.d_param[dim_filtered]['median spend'] for dim_filtered in allocation_dim_list)
+                agg_constSpend=sum(self.d_param[dim_filtered][self.const_var] for dim_filtered in allocation_dim_list)
             
             for dim in allocation_dim_list:
                 incrementProportion = 0
@@ -1172,9 +1241,9 @@ class optimizer_iterative_seasonality:
 
                 if (check_noSpendDim == True):
                     if self.use_impression:
-                        allocationSpendVec[dim] = ((self.d_param[dim]['impression_median']*self.d_param[dim]['cpm'])/1000)/agg_medianSpend
+                        allocationSpendVec[dim] = ((self.d_param[dim][self.const_var]*self.d_param[dim]['cpm'])/1000)/agg_constSpend
                     else:
-                        allocationSpendVec[dim] = self.d_param[dim]['median spend']/agg_medianSpend
+                        allocationSpendVec[dim] = self.d_param[dim][self.const_var]/agg_constSpend
                 else:
                     allocationSpendVec[dim] = newSpendVec_filtered[dim]/sum(newSpendVec_filtered.values())
 
@@ -1199,10 +1268,9 @@ class optimizer_iterative_seasonality:
         return newSpendVec, totalReturn, msg, newImpVec
 
 
-    def adjust_budget(self, newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, init_weekday, init_month,  newImpVec):
-        """Budget for each dimension is checked and adjusted based on the following:
-            On comparing with historic budget projection, if the budget allocation by optimization is higher for same target
-            If a particular dimension has zero target but some budget allocated by optimizer, this scenario occurs when inilization is done before optimization process
+    def projections_compare(self, newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, init_weekday, init_month,  newImpVec):
+        """Budget for each dimension is checked and adjusted based on comparing with historic budget projection,
+            if the budget allocation by optimization is higher for same target
 
         Returns:
             Dictionay - 
@@ -1214,12 +1282,12 @@ class optimizer_iterative_seasonality:
 
         # Comparing budget allocation and target with current projections and adjusting budget if required
         if self.use_impression:
-            d_median_spend = {dim: ((value['impression_median'] * dimension_bound_actual[dim][2])/1000) for dim, value in self.d_param.items()}
+            d_const_spend = {dim: ((value[self.const_var] * dimension_bound_actual[dim][2])/1000) for dim, value in self.d_param.items()}
         else:
-            d_median_spend = {dim: value['median spend'] for dim, value in self.d_param.items()}
+            d_const_spend = {dim: value[self.const_var] for dim, value in self.d_param.items()}
 
-        agg_median_spend = sum({value for dim, value in d_median_spend.items()})
-        median_spend_per = {dim:value/agg_median_spend for dim, value in d_median_spend.items()}
+        agg_const_spend = sum({value for dim, value in d_const_spend.items()})
+        const_spend_per = {dim:value/agg_const_spend for dim, value in d_const_spend.items()}
 
         spend_projection = {}
         imp_projection = {}
@@ -1228,7 +1296,7 @@ class optimizer_iterative_seasonality:
         for dim in self.d_param:
 
             dim_spend = 0
-            spend_projection[dim] = budgetGoal * median_spend_per[dim]
+            spend_projection[dim] = budgetGoal * const_spend_per[dim]
             return_projection, imp_projection = self.total_return(spend_projection, return_projection, dimension_bound_actual, dim, init_weekday, init_month, imp_projection)
 
             # calculating max conversion for dimension with considering daily and monthly seasonality
@@ -1255,7 +1323,7 @@ class optimizer_iterative_seasonality:
 
             if((round(return_projection[dim])>=max_conversion_dim) | (round(return_projection[dim])==0)):
                 continue
-            
+
             dim_metric_estimate = int(self.s_curve_hill_inv_seas(round(return_projection[dim]),
                                                                         self.d_param[dim]["param a"],
                                                                         self.d_param[dim]["param b"],
@@ -1264,7 +1332,6 @@ class optimizer_iterative_seasonality:
                                                                         list(self.d_param[dim].values())[9:20],
                                                                         init_weekday,
                                                                         init_month))
-
             if self.use_impression:
                 dim_imp_estimate = dim_metric_estimate
                 dim_spend_estimate = (dim_imp_estimate * dimension_bound_actual[dim][2])/1000
@@ -1277,6 +1344,47 @@ class optimizer_iterative_seasonality:
                     budgetDecrement = budgetDecrement + (newSpendVec[dim] - dim_spend)
                     newSpendVec[dim] = dim_spend
                     totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, init_weekday, init_month, newImpVec)
+
+        return newSpendVec, totalReturn, newImpVec
+
+
+    def adjust_budget(self, newSpendVec, totalReturn, dimension_bound_actual, init_weekday, init_month,  newImpVec):
+        """Budget for each dimension is checked and adjusted based on the following:
+            Budget adjust due to rounding error in target
+            If a particular dimension has zero target but some budget allocated by optimizer, this scenario occurs when inilization is done before optimization process
+
+        Returns:
+            Dictionay - 
+                newSpendVec: Budget allocated to each dimension after adjustment
+                totalReturn: Conversion for allocated budget for each dimension after adjustment
+                newImpVec: Impression allocated to each dimension if applicable otherwise null value is allocated
+        """
+        budgetDecrement = 0
+
+        # adjust budget due to rounding error
+        for dim in self.d_param:
+            dim_spend=newSpendVec[dim]
+            conv=totalReturn[dim]
+            if (round(conv)>conv):
+                totalReturn[dim]=(np.trunc(conv*10)/10)
+            elif (round(conv)<conv):
+                totalReturn[dim]==int(conv)
+            else:
+                continue
+            dim_metric = self.s_curve_hill_inv_seas(totalReturn[dim],
+                                                    self.d_param[dim]["param a"],
+                                                    self.d_param[dim]["param b"],
+                                                    self.d_param[dim]["param c"],
+                                                    list(self.d_param[dim].values())[3:9],
+                                                    list(self.d_param[dim].values())[9:20],
+                                                    init_weekday,
+                                                    init_month)
+            if self.use_impression:
+                newImpVec[dim] = dim_metric
+                newSpendVec[dim] = (newImpVec[dim] * dimension_bound_actual[dim][2])/1000
+            else:
+                newSpendVec[dim] = dim_metric
+            budgetDecrement = budgetDecrement + (newSpendVec[dim] - dim_spend)
 
         # decrement unused budget from dimensions having almost zero conversion as part of budget allocation during initialization of initial budget value
         for dim in self.d_param:
@@ -1345,7 +1453,8 @@ class optimizer_iterative_seasonality:
             if(math.isclose(sum(newSpendVec.values()), budgetGoal, abs_tol=self.precision)):
                 if (check_noConversion == 0):
                     check_noConversion = 1
-                    newSpendVec, totalReturn, newImpVec = self.adjust_budget(newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, init_weekday, init_month,  newImpVec)
+                    newSpendVec, totalReturn, newImpVec = self.projections_compare(newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, init_weekday, init_month,  newImpVec)
+                    newSpendVec, totalReturn, newImpVec = self.adjust_budget(newSpendVec, totalReturn, dimension_bound_actual, init_weekday, init_month,  newImpVec)
                     increment = increment_factor
                     resultIter_df = resultIter_df.append({'spend':sum(newSpendVec.values()) , 'impression': sum(newImpVec.values()), 'return' : sum(totalReturn.values())}, ignore_index=True).reset_index(drop=True)
                 else:
@@ -1401,12 +1510,7 @@ class optimizer_iterative_seasonality:
         result_df['buget_allocation_new_%'] = (result_df['recommended_budget_for_n_days']/sum(result_df['recommended_budget_for_n_days'])).round(2)
         result_df['estimated_return_%'] = ((result_df['estimated_return_for_n_days']/sum(result_df['estimated_return_for_n_days']))*100).round(2)
         
-        result_df=pd.merge(result_df,df_spend_dis[['dimension', 'median spend', 'return_conv']],how='left',on='dimension')
-        result_df['median spend']=result_df['median spend'].round().astype(int)
-        result_df.rename({'median spend': 'original_median_budget_per_day', 'return_conv': 'original_agg_return_per_day'}, axis=1, inplace=True)
-        result_df['original_return_%']=((result_df['original_agg_return_per_day']/sum(result_df['original_agg_return_per_day']))*100).round(2)
-        
-        result_df=result_df[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days', 'original_return_%']]
+        result_df=result_df[['dimension', 'recommended_budget_per_day', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days']]
         
         return result_df
     
@@ -1449,13 +1553,17 @@ class optimizer_iterative_seasonality:
 
         df_res['buget_allocation_new_%'] = ((df_res['recommended_budget_for_n_days']/sum(df_res['recommended_budget_for_n_days']))*100).round(2)
 
-        df_res = df_res.merge(df_spend_dis[['dimension', 'median spend', 'spend']], on='dimension', how='left')
+        df_res = df_res.merge(df_spend_dis[['dimension', 'median spend', 'mean spend', 'spend']], on='dimension', how='left')
         # df_res['buget_allocation_old_%'] = ((df_res['spend']/df_res['spend'].sum())*100).round(2)
-        df_res['buget_allocation_old_%'] = ((df_res['median spend']/df_res['median spend'].sum())*100)
-        
-        df_res = df_res.drop('original_median_budget_per_day', axis=1)
-        df_res['median spend'] = df_res['median spend'].round().astype(int)
-        df_res = df_res.rename(columns={"median spend": "original_median_budget_per_day"})
+
+        if self.constraint_type == 'median':
+            df_res['buget_allocation_old_%'] = ((df_res['median spend']/df_res['median spend'].sum())*100)
+            df_res['median spend'] = df_res['median spend'].round().astype(int)
+            df_res = df_res.rename(columns={"median spend": "original_median_budget_per_day"})
+        else:
+            df_res['buget_allocation_old_%'] = ((df_res['mean spend']/df_res['mean spend'].sum())*100)
+            df_res['mean spend'] = df_res['mean spend'].round().astype(int)
+            df_res = df_res.rename(columns={"mean spend": "original_mean_budget_per_day"})
 
         for dim in self.d_param:
             spend_projections = budget_per_day*(df_res.loc[df_res['dimension']==dim, 'buget_allocation_old_%']/100)
@@ -1484,7 +1592,10 @@ class optimizer_iterative_seasonality:
         df_res['buget_allocation_old_%']=df_res['buget_allocation_old_%'].round(2)
         df_res = df_res.replace({np.nan: None})
 
-        df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days', 'current_projections_for_n_days']]
+        if self.constraint_type == 'median':
+            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days', 'current_projections_for_n_days']]
+        else:
+            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days', 'current_projections_for_n_days']]
         
         int_cols = [i for i in df_res.columns if ((i != "dimension") & ('%' not in i))]
         for i in int_cols:
@@ -1523,8 +1634,8 @@ class optimizer_iterative_seasonality:
                                                         init_month)) for dim in self.dimension_names}
             
             inflection_spend_dim = {dim:((self.d_param[dim]['param b']*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
-            median_spend_dim = {dim:((self.d_param[dim]['impression_median']*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
-            threshold = np.mean(list({median_spend_dim[dim] for dim in self.dimension_names if inflection_spend_dim[dim] > increment }))              
+            const_spend_dim = {dim:((self.d_param[dim][self.const_var]*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
+            threshold = np.mean(list({const_spend_dim[dim] for dim in self.dimension_names if inflection_spend_dim[dim] > increment }))              
             
             if((initial_investment<=budget_per_day) and (budget_per_day>threshold)):
                 oldSpendVec = copy.deepcopy(oldSpendVec_initial)
@@ -1551,7 +1662,7 @@ class optimizer_iterative_seasonality:
                                                         init_weekday,
                                                         init_month)) for dim in self.dimension_names}
 
-            threshold = np.mean(list({value['median spend'] for dim, value in self.d_param.items() if value['param b'] > increment }))
+            threshold = np.mean(list({value[self.const_var] for dim, value in self.d_param.items() if value['param b'] > increment }))
 
             if((initial_investment<=budget_per_day) and (budget_per_day>threshold)):
                 oldSpendVec = copy.deepcopy(oldSpendVec_initial)
@@ -1629,11 +1740,11 @@ class optimizer_iterative_seasonality:
             if self.use_impression:
                 result_df_, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, init_weekday, init_month, oldImpVec)
                 result_df_=result_df_[['dimension', 'spend', 'impression', 'return']]
-                result_df_[['spend', 'impression', 'return']]=result_df_[['spend', 'impression', 'return']]
+                result_df_[['spend', 'impression', 'return']]=result_df_[['spend', 'impression', 'return']].round()
             else:
                 result_df_, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, init_weekday, init_month, None)
                 result_df_=result_df_[['dimension', 'spend', 'return']]
-                result_df_[['spend', 'return']]=result_df_[['spend', 'return']]
+                result_df_[['spend', 'return']]=result_df_[['spend', 'return']].round()
 
             sol[day_month] = result_df_.set_index('dimension').T.to_dict('dict')
             sol_check[day_month] = msg

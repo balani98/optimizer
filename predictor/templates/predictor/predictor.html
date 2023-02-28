@@ -85,7 +85,7 @@
   }
 
   .predictor_cpm_check_status_text,
-  .predictor_select_seasonality_label {
+  .predictor_select_seasonality_label , .mean_median_selection{
     font-size: large;
     color: white;
     text-align: center;
@@ -244,6 +244,20 @@
                 <option value="Yes">Yes</option>
               {% endif %}
 
+            </select>
+          </div>
+          <div class="dropdown" style="margin-bottom: 10px; width: 100%">
+            <p class="mean_median_selection" for="select_mean_median">
+              Select Mean / Median
+            </p>
+            <select
+              name="select_mean_median"
+              class="btn dropdown-toggle explorer-sidebar-dropdown"
+              onchange="selectMeanMedian(this)"
+              id="select_mean_median"
+            >
+              <option value="median">Median</option>
+              <option value="mean">Mean</option>
             </select>
           </div>
           <div id="channel_grouping">
@@ -607,7 +621,8 @@
   let multi_line_chart_data2 = {}
   let unchecked_dimensions = []
   let expanded = false; 
-  let global_unique_dimensions_json = {}  
+  let global_unique_dimensions_json = {} 
+  let mean_median_selection =  'median'
   // Initiaze the datarange picker
   $('input[name="predictordaterange"]').daterangepicker()
   getPredictorStartAndEndDates()
@@ -730,6 +745,12 @@
     select_seasonality_userselection
       ? $("#channel_grouping").hide()
       : $("#channel_grouping").show();
+  }
+  // function to perform selection with mean / median
+  function selectMeanMedian(this_object){
+    let value = this_object.value ; 
+    mean_median_selection =  value;
+    window.localStorage.setItem("constraint_type",mean_median_selection) 
   }
 
   // Function to clear the old data on Change and on Submit as well
@@ -859,11 +880,13 @@
     select_seasonality_userselection = document.getElementById('select_seasonality').value == "No" ? 0 : 1;
     if (select_seasonality_userselection) {
       data = {
+        mean_median_selection:mean_median_selection,
         seasonality: select_seasonality_userselection,
       };
     } else {
       data = {
         seasonality: select_seasonality_userselection,
+        mean_median_selection:mean_median_selection,
         stringified_unique_dimensions_json : JSON.stringify(global_unique_dimensions_json),
       };
     }
@@ -945,7 +968,6 @@
         $("#dimensionValueSelector").append(option);
         // $(".dimensionValueSelectorAutoPopulate").remove();
         $.each(dimension_value_selector, function (key, valueSelector) {
-          console.log(valueSelector);
           //Use the Option() constructor to create a new HTMLOptionElement.
           var option = new Option(valueSelector, valueSelector);
           //Convert the HTMLOptionElement into a JQuery object that can be used with the append method.
@@ -1811,6 +1833,9 @@ function scatter_plot_chart(data) {
         getPredictorStartAndEndDates()
         //addOnApplyFuncnalityToDataRangePicker()
         setnewDateRangerDates()
+        // get the mean / median selection from local storage 
+        constraint_type = window.localStorage.getItem('constraint_type')
+        document.getElementById('select_mean_median').value = constraint_type
         if (seasonality) {
           $("#predictor_predict_section_daterange").show();
           $("#predictor_predict_section_total_days").hide();

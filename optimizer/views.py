@@ -46,6 +46,7 @@ TEMP_ERROR_DICT = {"4002": "Value Error"}
 def optimizer_home_page(request):
     print("optimizer_home_page")
     context = {}
+    constraint_type = 'median'
     # Get the required items from session
     # discarded_items = request.session["discarded_items"]
     _uuid = request.session.get("_uuid")
@@ -53,6 +54,7 @@ def optimizer_home_page(request):
     convert_to_weekly_data = request.session.get("convert_to_weekly_data")
     seasonality_from_session = request.session.get("seasonality")
     drop_dimension_from_session = request.session.get("drop_dimension")
+    constraint_type = request.session.get("mean_median_selection")
     if seasonality_from_session:
         seasonality = seasonality_from_session
     else:
@@ -77,7 +79,7 @@ def optimizer_home_page(request):
         dimension_data = request.session.get('dimension_data')
         (optimizer_left_pannel_data,
          grouped_optimizer_left_pannel_data,
-         flag_to_show_grouped_dimensions) = dimension_bound(df_predictor_page_latest_data, dimension_data)
+         flag_to_show_grouped_dimensions) = dimension_bound(df_predictor_page_latest_data, dimension_data, constraint_type)
         stringified_optimizer_left_pannel_data = json.dumps(optimizer_left_pannel_data)
         
         print("optimizer_left_pannel_data", optimizer_left_pannel_data)
@@ -185,6 +187,7 @@ def dimension_min_max(request):
         dimension_min_max = json.loads(body["dimension_min_max"])
         total_budget = int(body["total_budget"])
         discarded_dimensions = json.loads(body["discarded_dimensions"])
+        constraint_type = request.session.get("mean_median_selection")
         # cpm_checked = request.session.get('cpm_checked')
         if seasonality:
             print(
@@ -198,7 +201,7 @@ def dimension_min_max(request):
             print(start_date, end_date)
             date_range = [start_date, end_date]
             optimizer_object = optimizer_iterative_seasonality(
-                df_predictor_page_latest_data
+                df_predictor_page_latest_data, constraint_type
             )
             try:
                 (
@@ -212,7 +215,7 @@ def dimension_min_max(request):
             )
             number_of_days = int(body["number_of_days"])
             df_spend_dis = pd.DataFrame(request.session.get('df_spend_dis'))
-            optimizer_object = optimizer_iterative(df_predictor_page_latest_data)
+            optimizer_object = optimizer_iterative(df_predictor_page_latest_data,constraint_type)
             try:
                  
                 (
@@ -242,10 +245,11 @@ def dimension_min_max(request):
             df_optimizer_results_post_min_max.columns,
         )
         # Table1
+        dynamic_column_for_original_budget_per_day = 'original_median_budget_per_day' if constraint_type == 'median' else 'original_mean_budget_per_day'
         df_table_1_data = df_optimizer_results_post_min_max[
             [
                 "dimension",
-                "original_median_budget_per_day",
+                dynamic_column_for_original_budget_per_day, 
                 "recommended_budget_per_day",
                 "buget_allocation_old_%",
                 "buget_allocation_new_%",
@@ -258,14 +262,14 @@ def dimension_min_max(request):
         ]
         # Total values
         df_sum_ = df_table_1_data.sum()
-        df_sum_['original_median_budget_per_day'] = df_sum_['original_median_budget_per_day'].round()
+        df_sum_[dynamic_column_for_original_budget_per_day] = df_sum_[dynamic_column_for_original_budget_per_day ].round()
         df_sum_['recommended_budget_per_day'] = df_sum_['recommended_budget_per_day'].round()
         df_sum_['buget_allocation_old_%'] = round(df_sum_['buget_allocation_old_%'])
         df_sum_['buget_allocation_new_%'] = round(df_sum_['buget_allocation_new_%'])
         df_sum_['recommended_budget_for_n_days'] = df_sum_['recommended_budget_for_n_days']
         df_sum_['current_projections_for_n_days'] = df_sum_['current_projections_for_n_days']
         df_sum_[df_sum_.index == "dimension"] = "Total"
-        df_table_1_data['original_median_budget_per_day'] = df_table_1_data['original_median_budget_per_day'].round()
+        df_table_1_data[dynamic_column_for_original_budget_per_day] = df_table_1_data[dynamic_column_for_original_budget_per_day].round()
         df_table_1_data['recommended_budget_per_day'] = df_table_1_data['recommended_budget_per_day'].round()
         df_table_1_data['buget_allocation_old_%'] = df_table_1_data['buget_allocation_old_%']
         df_table_1_data['buget_allocation_new_%'] = df_table_1_data['buget_allocation_new_%']
@@ -278,8 +282,10 @@ def dimension_min_max(request):
         is_weekly_selected = request.session.get("is_weekly_selected")
         convert_to_weekly_data = request.session.get("convert_to_weekly_data")
         df_table_for_csv = pd.DataFrame()
+       
         if is_weekly_selected or convert_to_weekly_data:
-            df_table_for_csv =  df_table_1_data.rename(columns = {'original_median_budget_per_day':'original_median_budget_per_week',
+            dynamic_column_for_original_budget_per_week = 'original_median_budget_per_week' if constraint_type == 'median' else 'original_mean_budget_per_week'
+            df_table_for_csv =  df_table_1_data.rename(columns = {dynamic_column_for_original_budget_per_day :dynamic_column_for_original_budget_per_week,
                                            'recommended_budget_per_day':'recommended_budget_per_week',
                                            'recommended_budget_for_n_days':'recommended_budget_for_n_weeks',
                                             'estimated_return_per_day':'estimated_return_per_week',
@@ -318,6 +324,7 @@ def dimension_min_max(request):
         # Table1
         context["optimizer_download_csv_json"] = json_dumped_optimizer_download_csv
         context["json_table_1_data"] = json_table_1_data
+        context["constraint_type"] = constraint_type
         # context["json_donut_chart_data"] = json_donut_chart_data
         context["dict_donut_chart_data"] = dict_donut_chart_data
         context["dict_line_chart_data"] = dict_line_chart_data

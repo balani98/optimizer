@@ -1145,6 +1145,7 @@
 
       // DOM Selectors
       total_budget = document.getElementById('total_budget')
+
       id_stringified_optimizer_left_pannel_data = document.getElementById('id_stringified_optimizer_left_pannel_data')
       id_stringified_grouped_optimizer_left_pannel_data = document.getElementById('id_stringified_grouped_optimizer_left_pannel_data')
       get_all_the_key_value = document.querySelectorAll('.get_all_the_key_value')
@@ -1172,9 +1173,12 @@
       global_optimizer_left_pannel_data  = JSON.parse(JSON.stringify(arr).replaceAll('&amp;', '&' ));
       original_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data))
       const_unchanged_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(arr).replaceAll('&amp;', '&' ));
-      global_grouped_optimizer_left_panel_data = JSON.parse(id_stringified_grouped_optimizer_left_pannel_data.innerHTML)
-      const_unchanged_global_grouped_optimizer_left_pannel_data = JSON.parse(id_stringified_grouped_optimizer_left_pannel_data.innerHTML);
-      global_seasonality = {{seasonality}}
+      flag_to_show_grouped_dimensions = {{flag_to_show_grouped_dimensions}}
+      if(flag_to_show_grouped_dimensions == 1){
+        global_grouped_optimizer_left_panel_data = JSON.parse(id_stringified_grouped_optimizer_left_pannel_data.innerHTML)
+        const_unchanged_global_grouped_optimizer_left_pannel_data = JSON.parse(id_stringified_grouped_optimizer_left_pannel_data.innerHTML);
+      }
+        global_seasonality = {{seasonality}}
       let global_chart_colors = ["#45B8AC", "#EFC050", "#5B5EA6", "#9B2335", "#DFCFBE", "#98B4D4", "#34568B", "#6B5B95","#88B04B","#F7CAC9","#92A8D1", "#955251", "#B565A7", "#009B77", "#DD4124", "#D65076"];
       let global_sum_fixed_budget_values = 0;
       let discarded_dimensions_json = {};
@@ -1549,7 +1553,8 @@
       }
      function update_budget(this_value){
       optimizer_left_panel_total_budget = parseInt(this_value.value.replace(/,/g, '').replace('$',''));
-      validation_of_inputs = validate_inputs_for_left_pannel_as_per_right_pannel()
+      if(flag_to_show_grouped_dimensions == 1)
+        validation_of_inputs = validate_inputs_for_left_pannel_as_per_right_pannel()
       console.log("optimizer_left_panel_total_budget",optimizer_left_panel_total_budget)
       if(optimizer_left_panel_total_budget < global_range_min || optimizer_left_panel_total_budget > global_range_max){
         this_value.value = global_range_min
@@ -1689,9 +1694,10 @@
         alert("Please add valid Total Budget before submitting")
         return
       }
-      validation_of_inputs = validate_inputs_for_left_pannel_as_per_right_pannel()
-      if(validation_of_inputs == false){
-        alert("Please  correct all inputs before submitting")
+      if(flag_to_show_grouped_dimensions == 1)
+        validation_of_inputs = validate_inputs_for_left_pannel_as_per_right_pannel()
+      if(validation_of_inputs == false && flag_to_show_grouped_dimensions == 1){
+        alert("Please correct all inputs before submitting")
         return
       }
       $('#spinner-optimizer').css('display','block');
@@ -1755,6 +1761,7 @@
             $('#container').css('pointer-events','auto');
             $('#spinner-optimizer').css('display','none');
             global_optimizer_download_csv_json = data.optimizer_download_csv_json
+            constraint_type = data.constraint_type
             json_table_1_data = data.json_table_1_data
             //json_donut_chart_data = data.json_donut_chart_data
             dict_donut_chart_data = data.dict_donut_chart_data
@@ -1764,7 +1771,7 @@
             console.log("json_table_1_data", json_table_1_data)
             //console.log("json_donut_chart_data", json_donut_chart_data)
             console.log("dict_donut_chart_data", dict_donut_chart_data)
-            populate_table_1(json_table_1_data)
+            populate_table_1(json_table_1_data, constraint_type)
             if(global_my_optimizer_bar_chart != 0){
               console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
               global_my_optimizer_bar_chart.destroy();
@@ -1818,7 +1825,7 @@
     }
 
     {% comment %} Start : Populate Table  1 {% endcomment %}
-    function populate_table_1(json_table_1_data){
+    function populate_table_1(json_table_1_data, constraint_type){
       console.log("json_table_1_data")
 
       table_body_1_optimizer.innerHTML = ""
@@ -1832,7 +1839,10 @@
         td1.appendChild(textNode1);
 
         td2 = document.createElement("td");
-        textNode2 = document.createTextNode(`$ ${value["original_median_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        if(constraint_type == 'median')
+          textNode2 = document.createTextNode(`$ ${value["original_median_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        else 
+          textNode2 = document.createTextNode(`$ ${value["original_mean_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
         td2.appendChild(textNode2);
 
         td3 = document.createElement("td");
