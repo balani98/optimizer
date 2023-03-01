@@ -768,8 +768,12 @@
                     {% endif %}
                     <th scope="col">Recommended Budget/week</th>
                   {% else %}
-                  <th scope="col">Original Median Budget/day</th>
-                  <th scope="col">Recommended Budget/day</th>
+                    {% if constraint_type == 'median' %}
+                      <th scope="col">Original Median Budget/day</th>
+                    {% else %}
+                      <th scope="col">Original Mean Budget/day</th>
+                    {% endif %}
+                      <th scope="col">Recommended Budget/day</th>
                   {% endif %}
                   <th scope="col">Budget Allocation Original %</th>
                   <th scope="col">Budget Allocation New %</th>
