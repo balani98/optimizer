@@ -113,6 +113,7 @@ def optimizer_home_page(request):
         context[
             "stringified_optimizer_left_pannel_data"
         ] = stringified_optimizer_left_pannel_data
+        context['constraint_type'] = constraint_type
         return render(request, "optimizer/optimizer_home_page.html", context)
 
 def validate_dimension_budget_with_caps(request):
