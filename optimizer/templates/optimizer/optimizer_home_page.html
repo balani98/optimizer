@@ -303,15 +303,27 @@
               aria-hidden="true"
               style="color: white; margin-right: 10px"
             ></i>
-            <span class="tooltiptext"
+            {% if constraint_type == 'median' %}
+              <span class="tooltiptext"
+                >Please enter a minimum and maximum spend per day/week. The ranges
+                in the placeholders are calculated from data. Max values are the
+                3x the median spend per day/week. Application will not accept
+                values beyond the placeholder ranges. Min cannot be equal to max
+                value as the optimizer needs a non-zero search space. This is an
+                optional input. If no input is provided the placeholder ranges are
+                used</span
+              >
+            {% else %}
+              <span class="tooltiptext"
               >Please enter a minimum and maximum spend per day/week. The ranges
               in the placeholders are calculated from data. Max values are the
-              3x the median spend per day/week. Application will not accept
+              3x the mean spend per day/week. Application will not accept
               values beyond the placeholder ranges. Min cannot be equal to max
               value as the optimizer needs a non-zero search space. This is an
               optional input. If no input is provided the placeholder ranges are
               used</span
-            >
+              >
+            {% endif %}  
           </div>
           <div class="mb-3 pt-2 pb-2 ml-1 searchbox_div">
             <i class="fa fa-search" style="color: #fff; font-size: 1.2rem"></i>
@@ -349,9 +361,15 @@
               margin-bottom: 10px;
             "
           >
+          {% if constraint_type == 'median' %}
             <p class="label_for_inputs label_styling">% less than median</p>
             <p class="label_for_inputs label_styling">Median Spend</p>
             <p class="label_for_inputs label_styling">% more than median</p>
+          {% else %}
+            <p class="label_for_inputs label_styling">% less than mean</p>
+            <p class="label_for_inputs label_styling">Mean Spend</p>
+            <p class="label_for_inputs label_styling">% more than mean</p>
+          {% endif %}
           </div>
           <div
             id="labels_div_absolute"
@@ -743,8 +761,12 @@
                     Dimension
                   </th>
                   {% if is_weekly_selected == 1 or convert_to_weekly_data == 1 %}
-                  <th scope="col">Original Median Budget/week</th>
-                  <th scope="col">Recommended Budget/week</th>
+                    {% if constraint_type == 'median' %}
+                      <th scope="col">Original Median Budget/week</th>
+                    {% else %}
+                      <th scope="col">Original Mean Budget/week</th>
+                    {% endif %}
+                    <th scope="col">Recommended Budget/week</th>
                   {% else %}
                   <th scope="col">Original Median Budget/day</th>
                   <th scope="col">Recommended Budget/day</th>
