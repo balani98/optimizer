@@ -172,13 +172,6 @@
           </div>
 
           <p class="dimension_error" style="color: #fff; display: none;"></p>
-          <!-- Dimension grouping selector -->
-          <div class="dropdown" style="margin-bottom: 10px; width: 100%;display:none">
-            <select id = "dimensionGroupingSelector" name="dimensionGroupingSelector" class="btn dropdown-toggle explorer-sidebar-dropdown"
-              onchange="dimensionGroupingCheck(this.value)" id="target_value">
-              <option value="0">Dimension Grouping Selector</option>
-            </select>
-          </div>
 
           <div class="dropdown" style="margin-bottom: 10px; width: 100%;">
             <select name="spentSelector" class="btn dropdown-toggle explorer-sidebar-dropdown"
@@ -223,6 +216,22 @@
             </select>
           </div>
           <p class="cpm_error" style="color: #fff; display: none;"></p>
+          <div>
+            <div class="form-check" style="margin-bottom:10px;display:none" id="dimension_grouping_checkbox">
+              <input class="form-check-input" type="checkbox" value="" id="flexCheckDefaultDimensionGrouping"
+                onclick="selectorDimensionroupingDisplay()">
+              <label class="form-check-label" style="color: white;" for="flexCheckDefault">
+                Use Dimension Grouping
+              </label>
+            </div>
+          </div>
+
+          <div class="dropdown" style="margin-bottom: 10px; width: 100%;display:none"id="dimension-grouping-selector">
+            <select id = "dimensionGroupingSelector" name="dimensionGroupingSelector" class="btn dropdown-toggle explorer-sidebar-dropdown"
+              onchange="dimensionGroupingCheck(this.value)" id="target_value">
+              <option value="0">No Dimension Grouping Selected</option>
+            </select>
+          </div>
 
           <div style="margin: auto">
             <button type="button" name="Submit" class="btn explorer-sidebar-submit-btn" id="submit_btn"
@@ -368,20 +377,29 @@
             obj.checked = true
           }
         })
-      }
-    dimension_grouping_selector = window.localStorage.getItem('dimension_grouping_selector')
-    if(dimension_grouping_selector != '' && dimension_grouping_selector !='undefined' && dimension_grouping_selector != null){
-      // code to write to dimension grouping selector on load 
-      $('#dimensionGroupingSelector').parent().css('display','block')
-      $('#dimensionGroupingSelector').children().remove().end()
-      .append('<option selected value="0">Dimension Grouping Selector</option>') ;
-      $.each(dimension_selector, (key,value) =>{
-        if(value !=  ""){
+        if(dimension_selector.length >= 2){
+            document.getElementById("dimension_grouping_checkbox").style.display = 'block';
+            document.getElementById('dimension-grouping-selector').style.display = 'block';
+          }else{
+            document.getElementById("dimension_grouping_checkbox").style.display = 'none';
+            document.getElementById('dimension-grouping-selector').style.display = 'none';
+          }
+          $('#dimensionGroupingSelector').children().remove().end()
+          .append('<option selected value="0">No Dimension Grouping Selected</option>') ;
+          $.each(dimension_selector, (key,value) =>{
           var option = new Option(value, value)         
           $(option).html(value);
-        }
-        $('#dimensionGroupingSelector').append(option)
-      })
+            $('#dimensionGroupingSelector').append(option)
+            })
+          $('.dimension_error').css("display", "none");
+      }
+    dimension_grouping_selector = window.localStorage.getItem('dimension_grouping_selector')
+    dimension_grouping_check = window.localStorage.getItem('dimension_grouping_check')
+    console.log(dimension_grouping_check)
+    if(dimension_grouping_check == "true"){
+      $('#flexCheckDefaultDimensionGrouping').prop('checked',true);
+      selectorDimensionroupingDisplay()
+      // code to write to dimension grouping selector on load 
       $('#dimensionGroupingSelector').val(dimension_grouping_selector)
     }
     var file = window.localStorage.getItem('file')
@@ -423,7 +441,6 @@
       }
 
       console.log(dimensionvalueselector, "this is dimension value selectpr")
-      window.localStorage.setItem('dimension_selector',dimensionvalueselector)
       $('#container').css('opacity',0.5);
       $('#container').css('pointer-events','none');
       $('#container').css('z-index',1);
@@ -441,20 +458,21 @@
           $('#spinner-optimizer').css('display','none');
           console.log(data.message);
           dimensionSelector = data.dimensionSelector
+          window.localStorage.setItem('dimension_selector',dimensionSelector)
           if(dimensionSelector.length >= 2){
-            $('#dimensionGroupingSelector').parent().css('display','block')
-            $('#dimensionGroupingSelector').children().remove().end()
-            .append('<option selected value="0">Dimension Grouping Selector</option>') ;
-            $.each(dimensionSelector, (key,value) =>{
-              var option = new Option(value, value)         
-              $(option).html(value);
-              $('#dimensionGroupingSelector').append(option)
+            document.getElementById("dimension_grouping_checkbox").style.display = 'block';
+          }else{
+            // get rid of all divs related to grouping dimensions
+            document.getElementById("dimension_grouping_checkbox").style.display = 'none';
+            document.getElementById("dimension-grouping-selector").style.display = 'none';
+          }
+          $('#dimensionGroupingSelector').children().remove().end()
+          .append('<option selected value="0">No Dimension Grouping Selected</option>') ;
+          $.each(dimensionSelector, (key,value) =>{
+          var option = new Option(value, value)         
+          $(option).html(value);
+            $('#dimensionGroupingSelector').append(option)
             })
-          }
-         else {
-            $('#dimensionGroupingSelector').parent().css('display','none')
-            dimensionGroupingCheck(dimensionSelector[0])
-          }
           $('.dimension_error').css("display", "none");
         },
         error: function (data) {
@@ -749,6 +767,17 @@
       selector.style.display = "none";
     }
   }
+  function selectorDimensionroupingDisplay() {
+    console.log("entered script")
+    var checkBox = document.getElementById("flexCheckDefaultDimensionGrouping")
+    var selector = document.getElementById("dimension-grouping-selector")
+    if (checkBox.checked == true) {
+      selector.style.display = "block";
+    } else {
+      selector.style.display = "none";
+    }
+  }
+
 </script>
 
 <!-- ajax on submit default dimension value selector for line chart -->
@@ -1062,11 +1091,14 @@
     $('#container').css('z-index',1);
     $("body").css("background-color", "#cecece");
     $('#spinner-optimizer').css('display','block');
+    checkbox = document.getElementById('flexCheckDefaultDimensionGrouping')
     window.localStorage.setItem('dimension_grouping_selector',value);
+    window.localStorage.setItem('dimension_grouping_check',checkbox.checked);
     $.ajax({
       url : 'ajax/dimension_grouping_check',
       data : {
-        'dimension_grouping_selector':value
+        'dimension_grouping_selector':value,
+        'dimension_grouping_check':checkbox.checked
       },
       success : function(data){
         $('#container').css('opacity',1);

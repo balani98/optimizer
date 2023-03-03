@@ -6,7 +6,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # isolate function
-def dimension_bound(df_param, dimension_data, constraint_type):
+def dimension_bound(df_param, dimension_data, constraint_type, is_group_dimension_selected):
 
     """bounds for optimizer
 
@@ -65,9 +65,7 @@ def dimension_bound(df_param, dimension_data, constraint_type):
                 200
             ]
 
-    grp_dim_flag = 1 if (len(dimension_data.keys())>1) else 0
-    
-    if(grp_dim_flag == 1):
+    if is_group_dimension_selected == True:
         grp_dim_list = dimension_data[list(dimension_data.keys())[0]]
         for grp_dim in grp_dim_list:
             sub_dim_list = list({dim for dim, value in dim_bound.items() if dim.startswith(grp_dim)})
@@ -76,9 +74,9 @@ def dimension_bound(df_param, dimension_data, constraint_type):
             sub_dim_bound_min = sum([dim_bound[dim][0] for dim in sub_dim_list])
             sub_dim_bound_max = sum([dim_bound[dim][1] for dim in sub_dim_list])
             grp_dim_bound[grp_dim] = {'sub_dimension' : sub_dim_list,
-                                      'constraints':[sub_dim_bound_min, sub_dim_bound_max]}
-
-    return dim_bound, grp_dim_bound, grp_dim_flag
+                                    'constraints':[sub_dim_bound_min, sub_dim_bound_max]}
+        
+    return dim_bound, grp_dim_bound
 
 
 class optimizer_iterative:

@@ -16,11 +16,12 @@ class explorer:
         self.date = None
         self.spend = None
         self.target = None
-        self.group_dimension = None
         self.cpm = None
         self.use_impression = False
         self.is_weekly_selected = False
         self.convert_to_weekly = False
+        self.is_group_dimension_selected = False
+        self.group_dimension = None
 
     def numeric_check(self, numeric_):
         """perform data validation for numeric columns
@@ -128,8 +129,10 @@ class explorer:
 
         df_grp["_dimension_"] = ""
         dimension_data = {}
-        idx_grp_dim = self.dimension.index(self.group_dimension)
-        self.dimension = [self.group_dimension] + self.dimension[:idx_grp_dim] + self.dimension[idx_grp_dim+1:]
+
+        if self.is_group_dimension_selected == True:
+            idx_grp_dim = self.dimension.index(self.group_dimension)
+            self.dimension = [self.group_dimension] + self.dimension[:idx_grp_dim] + self.dimension[idx_grp_dim+1:]
         count = 1
 
         if len(self.dimension) > 1:
