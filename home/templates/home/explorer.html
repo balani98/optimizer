@@ -369,6 +369,8 @@
     targetCheck(target_selector)
     }
     dimension_selector = window.localStorage.getItem('dimension_selector')
+    dimension_grouping_selector = window.localStorage.getItem('dimension_grouping_selector')
+    dimension_grouping_check = window.localStorage.getItem('dimension_grouping_check')
     if(dimension_selector){
         dimension_selector = dimension_selector.split(",")
      
@@ -394,9 +396,6 @@
             })
           $('.dimension_error').css("display", "none");
       }
-    dimension_grouping_selector = window.localStorage.getItem('dimension_grouping_selector')
-    dimension_grouping_check = window.localStorage.getItem('dimension_grouping_check')
-    console.log(dimension_grouping_check)
     if(dimension_grouping_check == "true"){
       $('#flexCheckDefaultDimensionGrouping').prop('checked',true);
       selectorDimensionroupingDisplay()
