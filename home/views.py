@@ -200,11 +200,21 @@ def dimension_grouping_check(request):
         # print(data)
         eo = explorer(data)
         print("submitted")
-        dimension_grouping_check = request.GET.get('dimension_grouping_selector')
+        dimension_grouping_selector = request.GET.get('dimension_grouping_selector')
+        dimension_grouping_check = request.GET.get('dimension_grouping_check')
         dimensionSelector = request.session.get("DimensionSelector")
-        eo.group_dimension = dimension_grouping_check if(len(dimensionSelector) > 1) else dimensionSelector[0]
-        request.session["Dimension_grouping_check"] = dimension_grouping_check
-        print("dimension grouping check validated")
+        if dimension_grouping_selector != "0":
+            eo.group_dimension = dimension_grouping_selector if(len(dimensionSelector) > 1) else dimensionSelector[0]
+            dimension_grouping_check = True if dimension_grouping_check == "true" else False
+            eo.is_group_dimension_selected = dimension_grouping_check
+            request.session["dimension_grouping_selector"] = dimension_grouping_selector
+            request.session["dimension_grouping_check"] = dimension_grouping_check
+            print("dimension grouping check validated")
+        else:
+            eo.group_dimension = dimensionSelector[0]
+            dimension_grouping_check = False
+            request.session["dimension_grouping_selector"] = dimension_grouping_selector
+            request.session["dimension_grouping_check"] = dimension_grouping_check
         return JsonResponse({"message": "Successfully published"}, status=200)
 
     except Exception as exp_date_check:
@@ -333,7 +343,8 @@ def chart_filter(request):
             eo.spend = request.session.get("SpentSelector")
             eo.target = request.session.get("TargetSelector")
             eo.cpm = request.session.get("CpmSelector")
-            eo.group_dimension = request.session.get("Dimension_grouping_check")
+            eo.group_dimension = request.session.get("dimension_grouping_selector")
+            eo.is_group_dimension_selected = request.session.get("dimension_grouping_check")
             if convert_to_weekly_data != None and int(convert_to_weekly_data) == 1:
                 eo.convert_to_weekly = True 
             if is_weekly_selected != None and int(is_weekly_selected) == 1:

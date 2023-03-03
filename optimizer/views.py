@@ -55,6 +55,7 @@ def optimizer_home_page(request):
     seasonality_from_session = request.session.get("seasonality")
     drop_dimension_from_session = request.session.get("drop_dimension")
     constraint_type = request.session.get("mean_median_selection")
+    dimension_grouping_check = request.session.get("dimension_grouping_check")
     if seasonality_from_session:
         seasonality = seasonality_from_session
     else:
@@ -78,8 +79,8 @@ def optimizer_home_page(request):
         # ]
         dimension_data = request.session.get('dimension_data')
         (optimizer_left_pannel_data,
-         grouped_optimizer_left_pannel_data,
-         flag_to_show_grouped_dimensions) = dimension_bound(df_predictor_page_latest_data, dimension_data, constraint_type)
+         grouped_optimizer_left_pannel_data
+        ) = dimension_bound(df_predictor_page_latest_data, dimension_data, constraint_type, dimension_grouping_check)
         stringified_optimizer_left_pannel_data = json.dumps(optimizer_left_pannel_data)
         
         print("optimizer_left_pannel_data", optimizer_left_pannel_data)
@@ -100,6 +101,7 @@ def optimizer_home_page(request):
         if convert_to_weekly_data:
             print(f"convert_to_weekly_data : {convert_to_weekly_data}")
             context["convert_to_weekly_data"] = int(convert_to_weekly_data)
+        flag_to_show_grouped_dimensions = 1 if dimension_grouping_check == True else 0 
         if flag_to_show_grouped_dimensions == 1:
             request.session['flag_to_show_grouped_dimensions'] = flag_to_show_grouped_dimensions
             context['grouped_optimizer_left_pannel_data'] = grouped_optimizer_left_pannel_data
