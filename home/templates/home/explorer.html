@@ -379,7 +379,8 @@
         })
         if(dimension_selector.length >= 2){
             document.getElementById("dimension_grouping_checkbox").style.display = 'block';
-            document.getElementById('dimension-grouping-selector').style.display = 'block';
+            if(dimension_grouping_check == "true")
+              document.getElementById('dimension-grouping-selector').style.display = 'block';
           }else{
             document.getElementById("dimension_grouping_checkbox").style.display = 'none';
             document.getElementById('dimension-grouping-selector').style.display = 'none';
