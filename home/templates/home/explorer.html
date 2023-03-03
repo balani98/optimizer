@@ -381,7 +381,7 @@
         })
         if(dimension_selector.length >= 2){
             document.getElementById("dimension_grouping_checkbox").style.display = 'block';
-            if(dimension_grouping_check == "true")
+            if(dimension_grouping_check == "true" && dimension_grouping_selector != '0')
               document.getElementById('dimension-grouping-selector').style.display = 'block';
           }else{
             document.getElementById("dimension_grouping_checkbox").style.display = 'none';
@@ -396,7 +396,7 @@
             })
           $('.dimension_error').css("display", "none");
       }
-    if(dimension_grouping_check == "true"){
+    if(dimension_grouping_check == "true" && dimension_grouping_selector != '0'){
       $('#flexCheckDefaultDimensionGrouping').prop('checked',true);
       selectorDimensionroupingDisplay()
       // code to write to dimension grouping selector on load 
@@ -771,6 +771,7 @@
     console.log("entered script")
     var checkBox = document.getElementById("flexCheckDefaultDimensionGrouping")
     var selector = document.getElementById("dimension-grouping-selector")
+    window.localStorage.setItem('dimension_grouping_check',checkbox.checked);
     if (checkBox.checked == true) {
       selector.style.display = "block";
     } else {
@@ -1093,7 +1094,6 @@
     $('#spinner-optimizer').css('display','block');
     checkbox = document.getElementById('flexCheckDefaultDimensionGrouping')
     window.localStorage.setItem('dimension_grouping_selector',value);
-    window.localStorage.setItem('dimension_grouping_check',checkbox.checked);
     $.ajax({
       url : 'ajax/dimension_grouping_check',
       data : {
