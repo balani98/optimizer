@@ -1781,6 +1781,21 @@ function scatter_plot_chart(data) {
               'discarded_items': discarded_items.toString(),
           },
           success: function (data) {
+                             // Start : Updating Drop dimension
+              drop_dimension_from_session = data.drop_dimension_from_session
+              if (drop_dimension_from_session) {
+                $("#drop_dimension_outer_div").css("display", "flex");
+                $("#drop_dimension_outer_div").css("flex-direction", "column");
+                $("#drop_dimension_inner_div").css("display", "flex");
+                $("#drop_dimension_inner_div").css("flex-direction", "column");
+                $("#drop_dimension_inner_div").empty();
+                $.each(drop_dimension_from_session, function (key, value) {
+                  $("#drop_dimension_inner_div").append(
+                    `<span style="color:#fff;">${value}</span>`
+                  );
+                });
+              }
+             // End : Updating Drop dimension
               console.log("discarded_items_from_session",data.discarded_items)
               alert(`Discarded items : ${data.discarded_items}`)
           },
