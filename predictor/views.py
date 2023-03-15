@@ -694,7 +694,7 @@ def predictor_ajax_predictor_discard(request):
         # testing
 
         context["discarded_items"] = discarded_items_from_session_array
-         context["drop_dimension_from_session"] = drop_dimension_from_session
+        context["drop_dimension_from_session"] = drop_dimension_from_session
         return JsonResponse(context)
     except Exception as exp:
         print(exp)
