@@ -367,7 +367,8 @@
     if(file)
       $('#filename_to_put').attr('hidden',false).text("Uploaded File : " + file )
     // run on load submit charts 
-    submit_chart_inputs();
+    if(file)
+      submit_chart_inputs();
   })
   function showCheckboxes() {
     var checkboxes =
