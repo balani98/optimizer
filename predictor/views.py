@@ -44,6 +44,7 @@ global_df_param = None
 global_df_score_final = None
 global_scatter_plot_df = None
 global_drop_dimension = None
+global_drop_dimension_with_user_discarded = None
 global_d_cpm = None
 global_weekly_predictions_df = None
 global_monthly_predictions_df = None
@@ -675,6 +676,8 @@ def predictor_ajax_predictor_discard(request):
         for item in discarded_items_from_session_array:
             drop_dimension_from_session.append(item)
         drop_dimension_from_session = list(set(drop_dimension_from_session))
+        global global_drop_dimension_with_user_discarded
+        global_drop_dimension_with_user_discarded = drop_dimension_from_session 
         request.session['drop_dimension_from_session'] = drop_dimension_from_session
         df_predictor_page_latest_data = pd.read_pickle(
             UPLOAD_FOLDER + "df_predictor_page_latest_data_{}.pkl".format(
@@ -742,7 +745,7 @@ def predictor_window_on_load(request):
             df_param = global_df_param
             df_score_final = global_df_score_final
             scatter_plot_df = global_scatter_plot_df
-            drop_dimension = global_drop_dimension
+            drop_dimension = global_drop_dimension_with_user_discarded if global_drop_dimension_with_user_discarded  else global_drop_dimension
             d_cpm = global_d_cpm
             weekly_predictions_df = global_weekly_predictions_df
             monthly_predictions_df = global_monthly_predictions_df
@@ -759,7 +762,7 @@ def predictor_window_on_load(request):
             df_param = global_df_param
             df_score_final = global_df_score_final
             scatter_plot_df = global_scatter_plot_df
-            drop_dimension = global_drop_dimension
+            drop_dimension = global_drop_dimension_with_user_discarded if global_drop_dimension_with_user_discarded  else global_drop_dimension
             weekly_predictions_df = global_weekly_predictions_df
             monthly_predictions_df = global_monthly_predictions_df
             d_cpm = None
