@@ -689,14 +689,22 @@
     });
     
   }
-  function onChangeHelperFunction() {
+  function onChangeHelperFunction(discard_dimension=false) {
     console.log("onChangeHelperFunction");
-    let dimensionValueSelector = document.getElementById(
+    // if user discards some dimension , change the dimension to 2nd dimension
+    if(discard_dimension == true){
+      dimensionValueSelectorToBeDone = document.getElementById(
+        "dimensionValueSelector"
+      ).children[1].value;
+      $('#dimensionValueSelector').val(dimensionValueSelectorToBeDone);
+    }
+    dimensionValueSelector = document.getElementById(
       "dimensionValueSelector"
     ).value;
     data_to_submit = {
       seasonality: global_seasonality_from_session,
       dimension_value_selector: dimensionValueSelector,
+      discard_dimension:discard_dimension
       // start_date: startDate,
       // end_date: endDate,
     }
@@ -1781,6 +1789,7 @@ function scatter_plot_chart(data) {
               'discarded_items': discarded_items.toString(),
           },
           success: function (data) {
+              onChangeHelperFunction(true)
                              // Start : Updating Drop dimension
               drop_dimension_from_session = data.drop_dimension_from_session
               if (drop_dimension_from_session) {
