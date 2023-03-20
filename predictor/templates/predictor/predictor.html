@@ -247,9 +247,26 @@
             </select>
           </div>
           <div class="dropdown" style="margin-bottom: 10px; width: 100%">
-            <p class="mean_median_selection" for="select_mean_median">
-              Select Mean / Median
-            </p>
+            <div style="display:flex;justify-content:space-between">
+                <p class="mean_median_selection" for="select_mean_median">
+                  Select Mean / Median
+                </p>
+                <div class="tooltip_outer_div">
+                  <i
+                    class="fa fa-info-circle fa-2x"
+                    aria-hidden="true"
+                    style="color: white; margin-right: 10px"
+                  ></i>
+                  <span class="tooltiptext"
+                    >In general, median is recommended as it 
+                    controls the effects of the outliers. 
+                    Mean can be used instead based on the user's 
+                    discretion when median doesn't allow to utilize 
+                    the certain level of budget for some dimensions. 
+                    By default, median is selected for constraint setting.</span
+                  >
+                </div>
+              </div>
             <select
               name="select_mean_median"
               class="btn dropdown-toggle explorer-sidebar-dropdown"
