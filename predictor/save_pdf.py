@@ -20,7 +20,7 @@ elif ENVIRONMENT == 'test':
 else:
     PREDICTOR_UPLOAD_FOLDER = "Predictor_pdf/"
 
-def plot_curve(multi_chart_data, seasonality, cpm_checked, df_score_final, weekly_predictions_df, monthly_predictions_df, request):
+def plot_curve(multi_chart_data, seasonality, cpm_checked, df_score_final, weekly_predictions_df, monthly_predictions_df,global_unique_dimensions, request):
     if seasonality == 1:
         plt.rcParams["figure.figsize"] = [8.50, 14.00]
     else:
@@ -38,6 +38,8 @@ def plot_curve(multi_chart_data, seasonality, cpm_checked, df_score_final, weekl
     p = PdfPages(filename)
     for key in keys:
         # x axis values
+        if global_unique_dimensions is not None and key not in global_unique_dimensions:
+            continue
         x = multi_chart_data[key]['spend']
         y2 = multi_chart_data[key]['target']
         # corresponding y axis values

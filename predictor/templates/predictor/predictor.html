@@ -689,14 +689,27 @@
     });
     
   }
-  function onChangeHelperFunction() {
+  function onChangeHelperFunction(discard_dimension=false) {
     console.log("onChangeHelperFunction");
-    let dimensionValueSelector = document.getElementById(
+    // if user discards some dimension , change the dimension to 2nd dimension
+    dimension_to_be_discarded = null
+    if(discard_dimension == true){
+      dimension_to_be_discarded =  dimensionValueSelector = document.getElementById(
+        "dimensionValueSelector"
+      ).value;
+      dimensionValueSelectorToBeDone = document.getElementById(
+        "dimensionValueSelector"
+      ).children[1].value;
+      $('#dimensionValueSelector').val(dimensionValueSelectorToBeDone);
+    }
+    dimensionValueSelector = document.getElementById(
       "dimensionValueSelector"
     ).value;
     data_to_submit = {
       seasonality: global_seasonality_from_session,
       dimension_value_selector: dimensionValueSelector,
+      discard_dimension:discard_dimension,
+      dimension_to_be_discarded:dimension_to_be_discarded
       // start_date: startDate,
       // end_date: endDate,
     }
@@ -711,6 +724,8 @@
       success: function (data) {
         console.log("success in '/predictor/ajax/date_dimension_onchange/'");
         scatterplot_data = data.scatterplot_data;
+        dimension_value_selector = data.dimension_value_selector
+        default_dimension = data.default_dimension
         weekly_predictions_json = data.weekly_predictions_json;
         monthly_predictions_json = data.monthly_predictions_json;
         predictor_table_data = data.predictor_table_data[0];
@@ -720,6 +735,22 @@
           \n predictor_table_data, ${predictor_table_data} 
           \n enter_cpm, ${enter_cpm}`
         );
+        var option = new Option(
+          default_dimension,
+          default_dimension,
+          true,
+          true
+        );
+        $("#dimensionValueSelector").empty(option);
+        $("#dimensionValueSelector").append(option);
+        // $(".dimensionValueSelectorAutoPopulate").remove();
+        $.each(dimension_value_selector, function (key, valueSelector) {
+          //Use the Option() constructor to create a new HTMLOptionElement.
+          var option = new Option(valueSelector, valueSelector);
+          //Convert the HTMLOptionElement into a JQuery object that can be used with the append method.
+          $(option).html(valueSelector);
+          $("#dimensionValueSelector").append(option);
+        });
         scatter_plot_chart(data);
         if(global_seasonality_from_session){
           plot_weekly_seasonality(weekly_predictions_json)
@@ -1762,6 +1793,9 @@ function scatter_plot_chart(data) {
 
 
   function discard_plan(value) {
+      children_dimension_value_selector = document.getElementById("dimensionValueSelector").children;
+      if(children_dimension_value_selector.length <=1)
+        alert("There Atleast be a one dimension")
       dimension_value_selected_by_user = document.getElementById("dimensionValueSelector").value
       console.log(`discard_plan : dimension_value_selected_by_user : ${dimension_value_selected_by_user}`)
 
@@ -1781,6 +1815,7 @@ function scatter_plot_chart(data) {
               'discarded_items': discarded_items.toString(),
           },
           success: function (data) {
+              onChangeHelperFunction(true)
                              // Start : Updating Drop dimension
               drop_dimension_from_session = data.drop_dimension_from_session
               if (drop_dimension_from_session) {
