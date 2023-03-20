@@ -48,6 +48,7 @@ global_drop_dimension_with_user_discarded = None
 global_d_cpm = None
 global_weekly_predictions_df = None
 global_monthly_predictions_df = None
+global_unique_dim = None
 # Create your views here.
 
 # helper function
@@ -287,6 +288,7 @@ def predictor_ajax_left_panel_submit(request):
         global global_d_cpm
         global global_weekly_predictions_df
         global global_monthly_predictions_df
+        global global_unique_dim
         global_df_param = df_param
         global_df_score_final = df_score_final
         global_scatter_plot_df = scatter_plot_df
@@ -295,6 +297,7 @@ def predictor_ajax_left_panel_submit(request):
         multi_line_chart_df = scatter_plot_df
         global_weekly_predictions_df = weekly_predictions_df
         global_monthly_predictions_df = monthly_predictions_df
+        global_unique_dim = None
         if cpm_checked == "True":
             sort_multi = ['dimension', 'impression']
             max_spend = multi_line_chart_df.loc[multi_line_chart_df["impression"].idxmax()]["impression"]
@@ -321,7 +324,7 @@ def predictor_ajax_left_panel_submit(request):
         #     if (col in np.array(scatter_plot_df["dimension"].unique()))
         # ]
         unique_dim = list(df_score_final["dimension"])
-        print("uniq_dim", unique_dim)
+        global_unique_dim = unique_dim.copy()
         default_dim = unique_dim[0]
         request.session["predictor_default_dim"] = default_dim
         # dimension_value_selector = list(set(unique_dim) - set([default_dim]))
@@ -414,9 +417,11 @@ def predictor_ajax_left_panel_submit(request):
 def predictor_ajax_date_dimension_onchange(request):
     print("predictor_ajax_date_dimension_onchange")
     try:
+        global global_unique_dim
         context = {}
         seasonality = int(request.session.get("seasonality"))
         default_dim = request.GET.get("dimension_value_selector")
+        discard_dimension = request.GET.get('discard_dimension')
         request.session["predictor_default_dim"] = default_dim
         print("default dim on chnage", seasonality)
         print("default dim on chnage", default_dim)
@@ -433,6 +438,7 @@ def predictor_ajax_date_dimension_onchange(request):
             weekly_predictions_df = global_weekly_predictions_df
             monthly_predictions_df = global_monthly_predictions_df
             d_cpm = global_d_cpm
+            unique_dim = global_unique_dim.copy()
             # as cpm is selected
             enter_cpm = d_cpm[default_dim]
             enter_cpm = round(enter_cpm, 2)
@@ -450,6 +456,7 @@ def predictor_ajax_date_dimension_onchange(request):
             d_cpm = None
             weekly_predictions_df = global_weekly_predictions_df
             monthly_predictions_df = global_monthly_predictions_df
+            unique_dim = global_unique_dim.copy()
         print("df_param\n", df_param)
         print("df_score_final\n", df_score_final)
         print("scatter_plot_df\n", scatter_plot_df)
@@ -458,6 +465,14 @@ def predictor_ajax_date_dimension_onchange(request):
         df_score_final.sort_values(
             by=["data_points_post_outlier_treatment"], ascending=False, inplace=True
         )
+        # if user is discarding some dimension we have to remove it from curve list 
+        if discard_dimension == 'true':
+            dimension_to_be_discarded = request.GET.get('dimension_to_be_discarded')
+            unique_dim.remove(dimension_to_be_discarded)
+            global_unique_dim = unique_dim.copy()
+            unique_dim.remove(default_dim)
+         
+        dimension_value_selector = unique_dim
         # converting from string to datetime
         scatter_plot_df["date"] = pd.to_datetime(scatter_plot_df["date"]).dt.date
 
@@ -494,6 +509,8 @@ def predictor_ajax_date_dimension_onchange(request):
         context["drop_dimension"] = drop_dimension
         context["weekly_predictions_json"] = weekly_predictions_json
         context["monthly_predictions_json"] = monthly_predictions_json
+        context["dimension_value_selector"] = dimension_value_selector
+        context["default_dimension"] = default_dim
         return JsonResponse(context, status=200)
 
     except Exception as exp:
@@ -679,7 +696,6 @@ def predictor_ajax_predictor_discard(request):
             drop_dimension_from_session.append(item)
         drop_dimension_from_session = list(set(drop_dimension_from_session))
         global global_drop_dimension_with_user_discarded
-        print('deeps',  global_drop_dimension_with_user_discarded )
         global_drop_dimension_with_user_discarded = drop_dimension_from_session 
         request.session['drop_dimension'] = drop_dimension_from_session
         df_predictor_page_latest_data = pd.read_pickle(
@@ -795,7 +811,8 @@ def predictor_window_on_load(request):
         #     for col in np.array(df_score_final["dimension"])
         #     if (col in np.array(scatter_plot_df["dimension"].unique()))
         # ]
-        unique_dim = list(df_score_final["dimension"])
+        global global_unique_dim
+        unique_dim = global_unique_dim.copy()
         default_dim = unique_dim[0]
         unique_dim.remove(default_dim)
         dimension_value_selector = unique_dim
