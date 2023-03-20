@@ -49,6 +49,7 @@ global_d_cpm = None
 global_weekly_predictions_df = None
 global_monthly_predictions_df = None
 global_unique_dim = None
+global_multi_line_chart_data = None
 # Create your views here.
 
 # helper function
@@ -369,7 +370,9 @@ def predictor_ajax_left_panel_submit(request):
                 (scatter_plot_df["dimension"] == default_dim)
                ]
         multi_line_chart_data = create_pdf_for_multiple_plots(multi_line_chart_json, seasonality, cpm_checked)
-        plot_curve(multi_line_chart_data, seasonality, cpm_checked, df_score_final,weekly_predictions_df, monthly_predictions_df, request)
+        global global_multi_line_chart_data 
+        global_multi_line_chart_data = multi_line_chart_data
+        plot_curve(multi_line_chart_data, seasonality, cpm_checked, df_score_final, weekly_predictions_df, monthly_predictions_df, None, request)
         df_score_final = df_score_final[(df_score_final["dimension"] == default_dim)]
         if seasonality == 1:
             weekly_predictions_df = weekly_predictions_df[
@@ -471,7 +474,11 @@ def predictor_ajax_date_dimension_onchange(request):
             unique_dim.remove(dimension_to_be_discarded)
             global_unique_dim = unique_dim.copy()
             unique_dim.remove(default_dim)
-         
+            cpm_checked = request.session.get("cpm_checked")
+            # replotting the curves for downloading 
+            global global_multi_line_chart_data 
+            multi_line_chart_data = global_multi_line_chart_data
+            plot_curve(multi_line_chart_data, seasonality, cpm_checked, df_score_final, weekly_predictions_df, monthly_predictions_df, global_unique_dim, request) 
         dimension_value_selector = unique_dim
         # converting from string to datetime
         scatter_plot_df["date"] = pd.to_datetime(scatter_plot_df["date"]).dt.date
