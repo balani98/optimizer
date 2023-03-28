@@ -13,8 +13,11 @@ class UserRegisterForm(UserCreationForm):
         data = self.cleaned_data['email']
         if User.objects.filter(email=data).exists():
             raise forms.ValidationError("This email already used")
-        elif "@xmedia.com" not in data:   
-            raise forms.ValidationError("Must be Xmedia Email Address")
+        elif "@xmedia.com" not in data:
+            if "@crossmedia.com" in data:
+                return data
+            else:
+                raise forms.ValidationError("Must be Xmedia / Crossmedia Email Address")
         return data
 
     class Meta:
