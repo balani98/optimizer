@@ -191,6 +191,7 @@ def dimension_min_max(request):
         total_budget = int(body["total_budget"])
         discarded_dimensions = json.loads(body["discarded_dimensions"])
         constraint_type = request.session.get("mean_median_selection")
+        selected_dimensions = body['selected_dimensions'].split(",")
         # cpm_checked = request.session.get('cpm_checked')
         if seasonality:
             print(
@@ -218,7 +219,7 @@ def dimension_min_max(request):
             )
             number_of_days = int(body["number_of_days"])
             df_spend_dis = pd.DataFrame(request.session.get('df_spend_dis'))
-            optimizer_object = optimizer_iterative(df_predictor_page_latest_data,constraint_type)
+            optimizer_object = optimizer_iterative(df_predictor_page_latest_data, constraint_type)
             try:
                  
                 (
