@@ -17,7 +17,7 @@ class UserRegisterForm(UserCreationForm):
                 if "@crossmedia.com" in data:
                     return data
                 else:
-                    raise forms.ValidationError("Must be Xmedia Email Address")
+                    raise forms.ValidationError("Must be Xmedia / Crossmedia Email Address")
         return data
 
     class Meta:
