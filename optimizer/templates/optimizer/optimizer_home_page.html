@@ -785,7 +785,7 @@
 
     <main
       class="col-md-9 ms-sm-auto col-lg-10 px-md-4"
-      style="display: block; align-items: center"
+      style="display: block; align-items: center;left:9%;width:100vw"
     >
       <div id="right_div" style="display: none; align-items: center">
         <div
@@ -855,7 +855,7 @@
                     <th scope="col">Original Mean Budget Allocation %</th>
                   {% endif %}
                   <th scope="col">Recommended Budget Allocation %</th>
-                  <th scope="col">Total Recommended Budget Allocation</th>
+                  <th scope="col">Recommended Total Budget Allocation</th>
                   <th scope="col">Target per day</th>
                   <th scope="col">% of Target</th>
                   <th scope="col">Overall Target</th>
@@ -1357,17 +1357,21 @@
           });
         // renaming the table column (conversion)
         var table_element0 = document.getElementById('table_1_optimizer').
-                      children[0].children[0].children[6];
-        var table_element1 = document.getElementById('table_1_optimizer').
-                      children[0].children[0].children[8];
-        var table_element2 = document.getElementById('table_1_optimizer').
                       children[0].children[0].children[7];
+        var table_element1 = document.getElementById('table_1_optimizer').
+                      children[0].children[0].children[9];
+        var table_element2 = document.getElementById('table_1_optimizer').
+                      children[0].children[0].children[8];
+        var table_element3 = document.getElementById('table_1_optimizer').
+                      children[0].children[0].children[10];
         if(get_is_weekly_selected() == 1 || get_convert_to_weekly_data() == 1)
           table_element0.innerText = window.localStorage.getItem('target_selector') + " per week";
         else
           table_element0.innerText = window.localStorage.getItem('target_selector') + " per day";
         table_element1.innerText = "Overall " + window.localStorage.getItem('target_selector');
         table_element2.innerText = "% of " + window.localStorage.getItem('target_selector');
+        constraint_type = window.localStorage.getItem('constraint_type')
+        table_element3.innerText = window.localStorage.getItem('target_selector') + " at Original " + constraint_type +" Allocation %";
         $('#optimizer_date_picker').on("apply.daterangepicker", function (ev, picker) {
           $('#total_budget').val(null);
           global_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');

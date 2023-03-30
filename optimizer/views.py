@@ -192,6 +192,7 @@ def dimension_min_max(request):
         discarded_dimensions = json.loads(body["discarded_dimensions"])
         constraint_type = request.session.get("mean_median_selection")
         selected_dimensions = body['selected_dimensions'].split(",")
+        target_selector =  request.session.get("TargetSelector")
         # cpm_checked = request.session.get('cpm_checked')
         if seasonality:
             print(
@@ -291,16 +292,37 @@ def dimension_min_max(request):
         df_table_for_csv = pd.DataFrame()
        
         if is_weekly_selected or convert_to_weekly_data:
-            dynamic_column_for_original_budget_per_week = 'original_median_budget_per_week' if constraint_type == 'median' else 'original_mean_budget_per_week'
+            dynamic_column_for_original_budget_per_week = 'Original Median Budget per Week' if constraint_type == 'median' else 'Original Mean Budget Per Week'
+            dynamic_column_for_budget_allocation_perc_for_csv = 'Original Median Budget Allocation %' if constraint_type == 'median' else 'Original Mean Budget Allocation %'
+            dynamic_column_for_overall_projections = target_selector +'at Original Median Allocation %' if constraint_type == 'median' else target_selector + ' at Original Mean Allocation %'
             df_table_for_csv =  df_table_1_data.rename(columns = {dynamic_column_for_original_budget_per_day :dynamic_column_for_original_budget_per_week,
-                                           'recommended_budget_per_day':'recommended_budget_per_week',
-                                           'recommended_budget_for_n_days':'recommended_budget_for_n_weeks',
-                                            'estimated_return_per_day':'estimated_return_per_week',
-                                            'estimated_return_for_n_days':'estimated_return_for_n_weeks',
-                                            'current_projections_for_n_days':'current_projections_for_n_weeks'
+                                           'dimension':'Dimension',
+                                           'recommended_budget_per_day':'Recommended Budget per Week',
+                                            'total_buget_allocation_old_%':'Original Total Budget Allocation %',
+                                            dynamic_column_for_budget_allocation_perc:dynamic_column_for_budget_allocation_perc_for_csv,
+                                            'buget_allocation_new_%':'Recommended Budget Allocation %',
+                                           'recommended_budget_for_n_days':'Total Recommended Budget Allocation',
+                                            'estimated_return_per_day': target_selector + ' Per Week',
+                                             'estimated_return_%':'% of ' + target_selector,
+                                            'estimated_return_for_n_days':'Overall ' + target_selector,
+                                            'current_projections_for_n_days': dynamic_column_for_overall_projections
                                            }, inplace = False)
         else:
-            df_table_for_csv = df_table_1_data
+            dynamic_column_for_original_budget_per_week = 'Original Median Budget per Week' if constraint_type == 'median' else 'Original Mean Budget Per Week'
+            dynamic_column_for_budget_allocation_perc_for_csv = 'Original Median Budget Allocation %' if constraint_type == 'median' else 'Original Mean Budget Allocation %'
+            dynamic_column_for_overall_projections = target_selector + ' at Original Median Allocation %' if constraint_type == 'median' else target_selector + 'at Original Mean Allocation %'
+            df_table_for_csv = df_table_1_data.rename(columns = {dynamic_column_for_original_budget_per_day :dynamic_column_for_original_budget_per_week,
+                                           'dimension':'Dimension',
+                                           'recommended_budget_per_day':'Recommended Budget per Day',
+                                            'total_buget_allocation_old_%':'Original Total Budget Allocation %',
+                                            dynamic_column_for_budget_allocation_perc:dynamic_column_for_budget_allocation_perc_for_csv,
+                                            'buget_allocation_new_%':'Recommended Budget Allocation %',
+                                           'recommended_budget_for_n_days':'Total Recommended Budget Allocation',
+                                            'estimated_return_per_day': target_selector + ' Per Day',
+                                            'estimated_return_%':'% of ' + target_selector,
+                                            'estimated_return_for_n_days':'Overall ' + target_selector,
+                                            'current_projections_for_n_days': dynamic_column_for_overall_projections
+                                           }, inplace = False)
         csv_optimizer_download_csv_data = df_table_for_csv.to_csv()
         json_dumped_optimizer_download_csv = json.dumps(
             csv_optimizer_download_csv_data, separators=(",", ":")

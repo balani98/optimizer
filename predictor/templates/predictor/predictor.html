@@ -926,6 +926,8 @@
     window.localStorage.setItem('predictor_left_hand_dimensions_start_and_end_dates',predictor_left_hand_dimensions_start_and_end_dates) 
     // updating the seasonality on user selection or by session 
     select_seasonality_userselection = document.getElementById('select_seasonality').value == "No" ? 0 : 1;
+    mean_median_selection = document.getElementById("select_mean_median").value
+    window.localStorage.setItem("constraint_type",mean_median_selection) 
     if (select_seasonality_userselection) {
       data = {
         mean_median_selection:mean_median_selection,
