@@ -655,7 +655,7 @@ class optimizer_iterative:
         df_res['buget_allocation_new_%'] = ((df_res['recommended_budget_per_day']/sum(df_res['recommended_budget_per_day']))*100).round(2)
 
         df_res = df_res.merge(df_spend_dis[['dimension', 'median spend', 'mean spend', 'spend']], on='dimension', how='left')
-        # df_res['buget_allocation_old_%'] = ((df_res['spend']/df_res['spend'].sum())*100).round(2)
+        df_res['total_buget_allocation_old_%'] = ((df_res['spend']/df_res['spend'].sum())*100).round(2)
 
         if self.constraint_type == 'median':
             df_res['buget_allocation_old_%'] = ((df_res['median spend']/df_res['median spend'].sum())*100)
@@ -680,9 +680,11 @@ class optimizer_iterative:
         df_res = df_res.replace({np.nan: None})
 
         if self.constraint_type == 'median':
-            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days', 'current_projections_for_n_days']]
+            df_res = df_res.rename(columns={"buget_allocation_old_%": "median_buget_allocation_old_%"})
+            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'median_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days']]
         else:
-            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days', 'current_projections_for_n_days']]
+            df_res = df_res.rename(columns={"buget_allocation_old_%": "mean_buget_allocation_old_%"})
+            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days']]
         
         int_cols = [i for i in df_res.columns if ((i != "dimension") & ('%' not in i))]
         for i in int_cols:
@@ -746,13 +748,30 @@ class optimizer_iterative:
         return oldSpendVec, oldReturn, oldImpVec
             
                 
-    def execute(self, df_grp, budget, days, df_spend_dis, discard_json, dimension_bound):
+    def execute(self, df_grp, budget, days, df_spend_dis, discard_json, dimension_bound, lst_dim):
         """main function for calculating target conversion
         
         Returns:
             Dataframe:
                 Final Result Dataframe: Optimized Spend/Impression and Conversion for every dimension
         """
+        d_param_old=copy.deepcopy(self.d_param)
+        df_param_temp= pd.DataFrame(self.d_param).T.reset_index(drop=False).rename({'index':'dimension'}, axis=1)
+        df_param_temp=df_param_temp[df_param_temp['dimension'].isin(lst_dim)].reset_index(drop=True)
+        df_param_opt = df_param_temp.T
+        df_param_opt.columns = df_param_opt.iloc[0, :]
+        d_param = df_param_opt.iloc[1:, :].to_dict()
+        self.d_param=d_param
+
+        dimension_bound_old=copy.deepcopy(dimension_bound)
+        dim_bnd_temp= pd.DataFrame(dimension_bound).T.reset_index(drop=False).rename({'index':'dimension'}, axis=1)
+        dim_bnd_temp=dim_bnd_temp[dim_bnd_temp['dimension'].isin(lst_dim)].reset_index(drop=True)
+        dim_bnd_opt = dim_bnd_temp.T
+        dim_bnd_opt.columns = dim_bnd_opt.iloc[0, :]
+        dimension_bound = dim_bnd_opt.iloc[1:, :].to_dict()
+
+        self.dimension_names = list(self.d_param.keys())
+
         # Restricting dimensions budget to max conversion budget if enetered budget is greater for any dimension
         dimension_bound_actual = copy.deepcopy(dimension_bound)
         dimension_bound = self.dimension_bound_max_check(dimension_bound)
@@ -1552,7 +1571,7 @@ class optimizer_iterative_seasonality:
         df_res['buget_allocation_new_%'] = ((df_res['recommended_budget_for_n_days']/sum(df_res['recommended_budget_for_n_days']))*100).round(2)
 
         df_res = df_res.merge(df_spend_dis[['dimension', 'median spend', 'mean spend', 'spend']], on='dimension', how='left')
-        # df_res['buget_allocation_old_%'] = ((df_res['spend']/df_res['spend'].sum())*100).round(2)
+        df_res['total_buget_allocation_old_%'] = ((df_res['spend']/df_res['spend'].sum())*100).round(2)
 
         if self.constraint_type == 'median':
             df_res['buget_allocation_old_%'] = ((df_res['median spend']/df_res['median spend'].sum())*100)
@@ -1591,9 +1610,11 @@ class optimizer_iterative_seasonality:
         df_res = df_res.replace({np.nan: None})
 
         if self.constraint_type == 'median':
-            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days', 'current_projections_for_n_days']]
+            df_res = df_res.rename(columns={"buget_allocation_old_%": "median_buget_allocation_old_%"})
+            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'median_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days']]
         else:
-            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days', 'current_projections_for_n_days']]
+            df_res = df_res.rename(columns={"buget_allocation_old_%": "mean_buget_allocation_old_%"})
+            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days']]
         
         int_cols = [i for i in df_res.columns if ((i != "dimension") & ('%' not in i))]
         for i in int_cols:
@@ -1673,13 +1694,30 @@ class optimizer_iterative_seasonality:
         return oldSpendVec, oldReturn, oldImpVec
             
                 
-    def execute(self, df_grp, budget, date_range, df_spend_dis, discard_json, dimension_bound):
+    def execute(self, df_grp, budget, date_range, df_spend_dis, discard_json, dimension_bound, lst_dim):
         """main function for calculating target conversion
         
         Returns:
             Dataframe:
                 Final Result Dataframe: Optimized Spend/Impression and Conversion for every dimension
         """
+        d_param_old=copy.deepcopy(self.d_param)
+        df_param_temp= pd.DataFrame(self.d_param).T.reset_index(drop=False).rename({'index':'dimension'}, axis=1)
+        df_param_temp=df_param_temp[df_param_temp['dimension'].isin(lst_dim)].reset_index(drop=True)
+        df_param_opt = df_param_temp.T
+        df_param_opt.columns = df_param_opt.iloc[0, :]
+        d_param = df_param_opt.iloc[1:, :].to_dict()
+        self.d_param=d_param
+
+        dimension_bound_old=copy.deepcopy(dimension_bound)
+        dim_bnd_temp= pd.DataFrame(dimension_bound).T.reset_index(drop=False).rename({'index':'dimension'}, axis=1)
+        dim_bnd_temp=dim_bnd_temp[dim_bnd_temp['dimension'].isin(lst_dim)].reset_index(drop=True)
+        dim_bnd_opt = dim_bnd_temp.T
+        dim_bnd_opt.columns = dim_bnd_opt.iloc[0, :]
+        dimension_bound = dim_bnd_opt.iloc[1:, :].to_dict()
+
+        self.dimension_names = list(self.d_param.keys())
+
         # Restricting dimensions budget to max conversion budget if enetered budget is greater for any dimension
         dimension_bound_actual = copy.deepcopy(dimension_bound)
         dimension_bound = self.dimension_bound_max_check(dimension_bound)

@@ -191,6 +191,7 @@ def dimension_min_max(request):
         total_budget = int(body["total_budget"])
         discarded_dimensions = json.loads(body["discarded_dimensions"])
         constraint_type = request.session.get("mean_median_selection")
+        selected_dimensions = body['selected_dimensions'].split(",")
         # cpm_checked = request.session.get('cpm_checked')
         if seasonality:
             print(
@@ -209,7 +210,7 @@ def dimension_min_max(request):
             try:
                 (
                     df_optimizer_results_post_min_max
-                ) = optimizer_object.execute(scatter_plot_df, total_budget, date_range, df_spend_dis, discarded_dimensions, dimension_min_max)
+                ) = optimizer_object.execute(scatter_plot_df, total_budget, date_range, df_spend_dis, discarded_dimensions, dimension_min_max, selected_dimensions)
             except Exception as error:
                 return JsonResponse({"error": str(error)}, status=501)
         else:
@@ -218,13 +219,13 @@ def dimension_min_max(request):
             )
             number_of_days = int(body["number_of_days"])
             df_spend_dis = pd.DataFrame(request.session.get('df_spend_dis'))
-            optimizer_object = optimizer_iterative(df_predictor_page_latest_data,constraint_type)
+            optimizer_object = optimizer_iterative(df_predictor_page_latest_data, constraint_type)
             try:
                  
                 (
                     df_optimizer_results_post_min_max
                 ) = optimizer_object.execute(
-                    scatter_plot_df, total_budget, number_of_days, df_spend_dis, discarded_dimensions, dimension_min_max
+                    scatter_plot_df, total_budget, number_of_days, df_spend_dis, discarded_dimensions, dimension_min_max, selected_dimensions
                 )
             except Exception as error:
                 return JsonResponse({"error": str(error)}, status=501)
@@ -249,12 +250,14 @@ def dimension_min_max(request):
         )
         # Table1
         dynamic_column_for_original_budget_per_day = 'original_median_budget_per_day' if constraint_type == 'median' else 'original_mean_budget_per_day'
+        dynamic_column_for_budget_allocation_perc = "median_buget_allocation_old_%" if constraint_type == 'median' else 'mean_buget_allocation_old_%' 
         df_table_1_data = df_optimizer_results_post_min_max[
             [
                 "dimension",
-                dynamic_column_for_original_budget_per_day, 
+                dynamic_column_for_original_budget_per_day,
                 "recommended_budget_per_day",
-                "buget_allocation_old_%",
+                "total_buget_allocation_old_%",
+                dynamic_column_for_budget_allocation_perc,
                 "buget_allocation_new_%",
                 "recommended_budget_for_n_days",
                 'estimated_return_per_day', 
@@ -267,14 +270,15 @@ def dimension_min_max(request):
         df_sum_ = df_table_1_data.sum()
         df_sum_[dynamic_column_for_original_budget_per_day] = df_sum_[dynamic_column_for_original_budget_per_day ].round()
         df_sum_['recommended_budget_per_day'] = df_sum_['recommended_budget_per_day'].round()
-        df_sum_['buget_allocation_old_%'] = round(df_sum_['buget_allocation_old_%'])
+        df_sum_["total_buget_allocation_old_%"] = df_sum_["total_buget_allocation_old_%"].round()
+        df_sum_[dynamic_column_for_budget_allocation_perc] = round(df_sum_[dynamic_column_for_budget_allocation_perc])
         df_sum_['buget_allocation_new_%'] = round(df_sum_['buget_allocation_new_%'])
         df_sum_['recommended_budget_for_n_days'] = df_sum_['recommended_budget_for_n_days']
         df_sum_['current_projections_for_n_days'] = df_sum_['current_projections_for_n_days']
         df_sum_[df_sum_.index == "dimension"] = "Total"
         df_table_1_data[dynamic_column_for_original_budget_per_day] = df_table_1_data[dynamic_column_for_original_budget_per_day].round()
         df_table_1_data['recommended_budget_per_day'] = df_table_1_data['recommended_budget_per_day'].round()
-        df_table_1_data['buget_allocation_old_%'] = df_table_1_data['buget_allocation_old_%']
+        df_table_1_data[dynamic_column_for_budget_allocation_perc] = df_table_1_data[dynamic_column_for_budget_allocation_perc]
         df_table_1_data['buget_allocation_new_%'] = df_table_1_data['buget_allocation_new_%']
         df_table_1_data['recommended_budget_for_n_days'] = df_table_1_data['recommended_budget_for_n_days'].round()
         df_table_1_data = df_table_1_data.append(df_sum_, ignore_index=True)
@@ -310,8 +314,8 @@ def dimension_min_max(request):
             "dimension"
         ].tolist()
         dict_donut_chart_data[
-            "buget_allocation_old_%"
-        ] = df_optimizer_results_post_min_max["buget_allocation_old_%"].tolist()
+            dynamic_column_for_budget_allocation_perc
+        ] = df_optimizer_results_post_min_max[dynamic_column_for_budget_allocation_perc].tolist()
         dict_donut_chart_data[
             "buget_allocation_new_%"
         ] = df_optimizer_results_post_min_max["buget_allocation_new_%"].tolist()

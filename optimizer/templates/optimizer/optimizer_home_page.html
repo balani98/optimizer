@@ -23,7 +23,12 @@
     .hide_scroller::-webkit-scrollbar {
       display: none; /* Safari and Chrome */
     }
-
+    .multiple_inputs {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
     .optimiser-date-input {
       padding: 10px;
       width: 100%;
@@ -304,26 +309,26 @@
               style="color: white; margin-right: 10px"
             ></i>
             {% if constraint_type == 'median' %}
-              <span class="tooltiptext"
-                >Please enter a minimum and maximum spend per day/week. The ranges
-                in the placeholders are calculated from data. Max values are the
-                3x the median spend per day/week. Application will not accept
-                values beyond the placeholder ranges. Min cannot be equal to max
-                value as the optimizer needs a non-zero search space. This is an
-                optional input. If no input is provided the placeholder ranges are
-                used</span
-              >
-            {% else %}
-              <span class="tooltiptext"
+            <span class="tooltiptext"
               >Please enter a minimum and maximum spend per day/week. The ranges
               in the placeholders are calculated from data. Max values are the
-              3x the mean spend per day/week. Application will not accept
+              3x the median spend per day/week. Application will not accept
               values beyond the placeholder ranges. Min cannot be equal to max
               value as the optimizer needs a non-zero search space. This is an
               optional input. If no input is provided the placeholder ranges are
               used</span
-              >
-            {% endif %}  
+            >
+            {% else %}
+            <span class="tooltiptext"
+              >Please enter a minimum and maximum spend per day/week. The ranges
+              in the placeholders are calculated from data. Max values are the
+              3x the mean spend per day/week. Application will not accept values
+              beyond the placeholder ranges. Min cannot be equal to max value as
+              the optimizer needs a non-zero search space. This is an optional
+              input. If no input is provided the placeholder ranges are
+              used</span
+            >
+            {% endif %}
           </div>
           <div class="mb-3 pt-2 pb-2 ml-1 searchbox_div">
             <i class="fa fa-search" style="color: #fff; font-size: 1.2rem"></i>
@@ -359,17 +364,19 @@
               flex-direction: row;
               justify-content: space-between;
               margin-bottom: 10px;
+              width: 84%;
+              margin-left: 16%;
             "
           >
-          {% if constraint_type == 'median' %}
+            {% if constraint_type == 'median' %}
             <p class="label_for_inputs label_styling">% less than median</p>
             <p class="label_for_inputs label_styling">Median Spend</p>
             <p class="label_for_inputs label_styling">% more than median</p>
-          {% else %}
+            {% else %}
             <p class="label_for_inputs label_styling">% less than mean</p>
             <p class="label_for_inputs label_styling">Mean Spend</p>
             <p class="label_for_inputs label_styling">% more than mean</p>
-          {% endif %}
+            {% endif %}
           </div>
           <div
             id="labels_div_absolute"
@@ -378,6 +385,8 @@
               flex-direction: row;
               justify-content: space-between;
               margin-bottom: 10px;
+              width: 84%;
+              margin-left: 16%;
             "
           >
             <p class="label_for_inputs label_styling">Min</p>
@@ -394,6 +403,8 @@
               flex-direction: row;
               justify-content: space-between;
               margin-bottom: 10px;
+              width: 84%;
+              margin-left: 16%;
             "
           >
             <div
@@ -453,12 +464,42 @@
             class="mb-4 hide_scroller"
             style="display: none; overflow-y: scroll; height: 15rem"
           >
+            <div
+              id="multiple_inputs"
+              class="get_all_the_key_value multiple_inputs"
+              key="{{key}}"
+            >
+              <input
+                type="checkbox"
+                name="selectAll"
+                class="styled_checkbox"
+                id="selectAll_perc"
+                value="selectAll"
+                style="width: 2em; height: 2em"
+                checked
+              />
+              <div
+                id="optimizer__left_panel_dimension_name_for_min_max"
+                class="optimizer_left_panel_dimension_name selectAll"
+              >
+                Select All
+              </div>
+            </div>
             {% for key, value in optimizer_left_pannel_data.items %}
             <div
               id="multiple_inputs"
-              class="get_all_the_key_value"
+              class="get_all_the_key_value multiple_inputs"
               key="{{key}}"
             >
+              <input
+                type="checkbox"
+                class="styled_checkbox input_checkbox_perc"
+                name="{{key}}"
+                value="{{key}}"
+                style="width: 2em; height: 2em"
+                checked
+              />
+
               <div
                 id="optimizer__left_panel_dimension_name_for_min_max"
                 class="optimizer_left_panel_dimension_name_perc"
@@ -468,105 +509,135 @@
               >
                 {{key}}
               </div>
-              <div
-                id="percentage_div"
-                style="
-                  display: flex;
-                  flex-direction: row;
-                  justify-content: space-between;
-                  margin-bottom: 10px;
-                "
-              >
-                <div
-                  style="
-                    width: 30%;
-                    margin-right: 2px;
-                    display: inline;
-                    background-color: #fff;
-                    outline: none;
-                    border: none;
-                  "
-                >
-                  <input
-                    value="{{value.3}}"
-                    id="min_perc_input"
-                    placeholder="{{value.3}}"
-                    type="text"
-                    class="min_perc_value"
-                    style="width: 50%; outline: none; border: none"
-                    onblur="check_keys_min_max_value(this)"
-                    onchange="update_total_limits_min_value_perc('{{key}}', this)"
-                  />
-                  <span class="bg-grey float-right mr-2">%</span>
-                </div>
-                <input
-                  value="{{value.2}}"
-                  id="median_spend"
-                  placeholder="{{value.2}}"
-                  type="text"
-                  style="width: 40%"
-                  class="median_spend_value"
-                  disabled
-                />
-                <div
-                  style="
-                    width: 30%;
-                    margin-left: 2px;
-                    display: inline;
-                    background-color: #fff;
-                    outline: none;
-                    border: none;
-                  "
-                >
-                  <input
-                    value="{{value.4}}"
-                    id="max_perc_input"
-                    placeholder="{{value.4}}"
-                    type="text"
-                    class="max_perc_value"
-                    style="width: 50%; outline: none; border: none"
-                    onblur="check_keys_min_max_value(this)"
-                    onchange="update_total_limits_max_value_perc('{{key}}', this)"
-                  />
-                  <span class="bg-grey float-right mr-2" aria-hidden="true"
-                    >%</span
-                  >
-                </div>
-              </div>
-              {% if cpm_checked %}
-              <div
-                style="
-                  display: flex;
-                  flex-direction: row;
-                  justify-content: space-between;
-                  margin-bottom: 10px;
-                "
-              >
-                <input
-                  value="{{value.5}}"
-                  placeholder="CPM"
-                  id="cpm_input_with_min_max"
-                  style="width: 100%"
-                  type="number"
-                  class="cpm_perc_value"
-                  onchange="update_cpm_value_with_min_max('{{key}}', this)"
-                />
-              </div>
-              {% endif %}
             </div>
-            {% endfor %}
+            <div
+              id="percentage_div"
+              style="
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                margin-bottom: 10px;
+                width: 84%;
+                margin-left: 16%;
+              "
+            >
+              <div
+                style="
+                  width: 30%;
+                  margin-right: 2px;
+                  display: inline;
+                  background-color: #fff;
+                  outline: none;
+                  border: none;
+                "
+              >
+                <input
+                  value="{{value.3}}"
+                  id="min_perc_input"
+                  placeholder="{{value.3}}"
+                  type="text"
+                  class="min_perc_value"
+                  style="width: 50%; outline: none; border: none"
+                  onblur="check_keys_min_max_value(this)"
+                  onchange="update_total_limits_min_value_perc('{{key}}', this)"
+                />
+                <span class="bg-grey float-right mr-2">%</span>
+              </div>
+              <input
+                value="{{value.2}}"
+                id="median_spend"
+                placeholder="{{value.2}}"
+                type="text"
+                style="width: 40%"
+                class="median_spend_value"
+                disabled
+              />
+              <div
+                style="
+                  width: 30%;
+                  margin-left: 2px;
+                  display: inline;
+                  background-color: #fff;
+                  outline: none;
+                  border: none;
+                "
+              >
+                <input
+                  value="{{value.4}}"
+                  id="max_perc_input"
+                  placeholder="{{value.4}}"
+                  type="text"
+                  class="max_perc_value"
+                  style="width: 50%; outline: none; border: none"
+                  onblur="check_keys_min_max_value(this)"
+                  onchange="update_total_limits_max_value_perc('{{key}}', this)"
+                />
+                <span class="bg-grey float-right mr-2" aria-hidden="true"
+                  >%</span
+                >
+              </div>
+            </div>
+            {% if cpm_checked %}
+            <div
+              style="
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                margin-bottom: 10px;
+              "
+            >
+              <input
+                value="{{value.5}}"
+                placeholder="CPM"
+                id="cpm_input_with_min_max"
+                style="width: 100%"
+                type="number"
+                class="cpm_perc_value"
+                onchange="update_cpm_value_with_min_max('{{key}}', this)"
+              />
+            </div>
+            {% endif %} {% endfor %}
           </div>
           <div
             id="outer_div_multiple_inputs"
             class="mb-4 hide_scroller"
             style="overflow-y: scroll; height: 15rem"
           >
+            <div
+              id="multiple_inputs"
+              class="get_all_the_key_value multiple_inputs"
+              key="{{key}}"
+            >
+              <input
+                type="checkbox"
+                name="selectAll"
+                class="styled_checkbox"
+                id="selectAll"
+                value="selectAll"
+                style="width: 2em; height: 2em"
+                checked
+              />
+              <div
+                id="optimizer__left_panel_dimension_name_for_min_max"
+                class="optimizer_left_panel_dimension_name selectAll"
+              >
+                Select All
+              </div>
+            </div>
             {% for key, value in optimizer_left_pannel_data.items %}
             <div
               id="multiple_inputs"
-              class="get_all_the_key_value"
+              class="get_all_the_key_value multiple_inputs"
               key="{{key}}"
             >
+              <input
+                type="checkbox"
+                class="styled_checkbox input_checkbox"
+                name="{{key}}"
+                value="{{key}}"
+                style="width: 2em; height: 2em"
+                checked
+              />
               <div
                 id="optimizer__left_panel_dimension_name_for_min_max"
                 class="optimizer_left_panel_dimension_name"
@@ -576,54 +647,56 @@
               >
                 {{key}}
               </div>
-              <div
-                id="min_max_div"
-                style="
-                  display: flex;
-                  flex-direction: row;
-                  justify-content: space-between;
-                  margin-bottom: 10px;
-                "
-              >
-                <input
-                  value="{{value.0}}"
-                  id="min_input"
-                  placeholder="{{value.0}}"
-                  type="text"
-                  class="min_value"
-                  style="width: 50%"
-                  min="{{value.0}}"
-                  max="{{value.1}}"
-                  onkeyup="add_commas_min_max_value(this)"
-                  oninput="check_keys_min_max_value(this)"
-                  onblur="add_commas_min_max_value(this)"
-                  onchange="update_total_limits_min_value('{{key}}', this)"
-                />
-                <input
-                  value="{{value.1}}"
-                  id="max_input"
-                  placeholder="{{value.1}}"
-                  type="text"
-                  class="max_value"
-                  style="width: 50%"
-                  min="{{value.1}}"
-                  onkeyup="add_commas_min_max_value(this)"
-                  oninput="check_keys_min_max_value(this)"
-                  onblur="add_commas_min_max_value(this)"
-                  onchange="update_total_limits_max_value('{{key}}', this)"
-                />
-                {% if cpm_checked %}
-                <input
-                  value="{{value.5}}"
-                  placeholder="CPM"
-                  id="cpm_input_with_min_max"
-                  style="width: 50%"
-                  type="number"
-                  class="cpm_value"
-                  onchange="update_cpm_value_with_min_max('{{key}}', this)"
-                />
-                {% endif %}
-              </div>
+            </div>
+            <div
+              id="min_max_div"
+              style="
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                margin-bottom: 10px;
+                width: 84%;
+                margin-left: 16%;
+              "
+            >
+              <input
+                value="{{value.0}}"
+                id="min_input"
+                placeholder="{{value.0}}"
+                type="text"
+                class="min_value"
+                style="width: 50%"
+                min="{{value.0}}"
+                max="{{value.1}}"
+                onkeyup="add_commas_min_max_value(this)"
+                oninput="check_keys_min_max_value(this)"
+                onblur="add_commas_min_max_value(this)"
+                onchange="update_total_limits_min_value('{{key}}', this)"
+              />
+              <input
+                value="{{value.1}}"
+                id="max_input"
+                placeholder="{{value.1}}"
+                type="text"
+                class="max_value"
+                style="width: 50%"
+                min="{{value.1}}"
+                onkeyup="add_commas_min_max_value(this)"
+                oninput="check_keys_min_max_value(this)"
+                onblur="add_commas_min_max_value(this)"
+                onchange="update_total_limits_max_value('{{key}}', this)"
+              />
+              {% if cpm_checked %}
+              <input
+                value="{{value.5}}"
+                placeholder="CPM"
+                id="cpm_input_with_min_max"
+                style="width: 50%"
+                type="number"
+                class="cpm_value"
+                onchange="update_cpm_value_with_min_max('{{key}}', this)"
+              />
+              {% endif %}
             </div>
             {% endfor %}
           </div>
@@ -760,23 +833,28 @@
                     </div>
                     Dimension
                   </th>
-                  {% if is_weekly_selected == 1 or convert_to_weekly_data == 1 %}
+                  {% if is_weekly_selected == 1 or convert_to_weekly_data == 1%}
                     {% if constraint_type == 'median' %}
                       <th scope="col">Original Median Budget/week</th>
                     {% else %}
                       <th scope="col">Original Mean Budget/week</th>
                     {% endif %}
-                    <th scope="col">Recommended Budget/week</th>
+                  <th scope="col">Recommended Budget/week</th>
                   {% else %}
-                    {% if constraint_type == 'median' %}
+                   {% if constraint_type == 'median' %}
                       <th scope="col">Original Median Budget/day</th>
-                    {% else %}
+                   {% else %}
                       <th scope="col">Original Mean Budget/day</th>
-                    {% endif %}
-                      <th scope="col">Recommended Budget/day</th>
+                   {% endif %}
+                   <th scope="col">Recommended Budget/day</th>
                   {% endif %}
-                  <th scope="col">Budget Allocation Original %</th>
-                  <th scope="col">Budget Allocation New %</th>
+                  <th scope="col">Original Total Budget Allocation %</th>
+                  {% if constraint_type == 'median' %}
+                    <th scope="col">Original Median Budget Allocation %</th>
+                  {% else %}
+                    <th scope="col">Original Mean Budget Allocation %</th>
+                  {% endif %}
+                  <th scope="col">Recommended Budget Allocation %</th>
                   <th scope="col">Total Recommended Budget Allocation</th>
                   <th scope="col">Target per day</th>
                   <th scope="col">% of Target</th>
@@ -991,7 +1069,7 @@
                 type="text"
                 style="width: 50%"
                 class="group_channel_min_budget"
-                onchange = "update_total_limits_min_value_grouped_panel(this,'{{key}}')"
+                onchange="update_total_limits_min_value_grouped_panel(this,'{{key}}')"
                 onkeyup="add_commas_min_max_value(this)"
                 oninput="check_keys_min_max_value(this)"
                 onblur="add_commas_min_max_value(this)"
@@ -1001,7 +1079,7 @@
                 type="text"
                 style="width: 50%; margin-left: 5%"
                 class="group_channel_max_budget"
-                onchange = "update_total_limits_max_value_grouped_panel(this,'{{key}}')"
+                onchange="update_total_limits_max_value_grouped_panel(this,'{{key}}')"
                 onkeyup="add_commas_min_max_value(this)"
                 oninput="check_keys_min_max_value(this)"
                 onblur="add_commas_min_max_value(this)"
@@ -1066,6 +1144,48 @@
         div_to_collapsed.style.display = "flex";
       else div_to_collapsed.style.display = "none";
     }
+    // select All dimemsions functionality in case of absolute values
+    $('#selectAll').change(function(){
+      select_all_check = this.checked
+      $('.input_checkbox').each(function(){
+          if(select_all_check == true)
+              this.checked = true
+          else
+              this.checked = false
+      })
+  })
+    // select All dimensions functionality in case of percentages
+    $('#selectAll_perc').change(function(){
+      select_all_check = this.checked
+      $('.input_checkbox_perc').each(function(){
+          if(select_all_check == true)
+              this.checked = true
+          else
+              this.checked = false
+      })
+  })
+  // updating the left panel data and conversion on if user changes any selection
+      $('.input_checkbox').change(function(){
+        update_global_optimizer_left_pannel_data()
+      })
+      $('.input_checkbox_perc').change(function(){
+        update_global_optimizer_left_pannel_data()
+      })
+    // function to get selected dimensions
+    function getSelectedDimensions(){
+      checked_dimensions = [];
+      type_of_input = document.getElementById('customSwitch1').checked == true ? 'perc' : 'abs';
+        if(type_of_input  == 'abs'){
+              $('.input_checkbox:checked').each(function(){
+                  checked_dimensions.push(this.name)
+              })
+            }else{
+              $('.input_checkbox_perc:checked').each(function(){
+                  checked_dimensions.push(this.name)
+              })
+            }
+        return checked_dimensions;
+        }
     // function to change input budget values on selection or unselection
     function selectDeselectGroupedDimensions(this_value,key){
       // changing budget as per user selection and deselection
@@ -1132,10 +1252,13 @@
       class_name = type_of_input == 'abs' ? '.optimizer_left_panel_dimension_name': '.optimizer_left_panel_dimension_name_perc'
       $(class_name).each(function(index,element){
         character_present = element.innerHTML.replaceAll('&amp;','&');
-        if(character_present.includes(character_to_searched))
-          element.parentElement.style.display = 'block';
-        else
+        if(character_present.includes(character_to_searched)){
+          element.parentElement.style.display = 'flex';
+          element.parentElement.nextElementSibling.style.display = "flex"
+        }else{
           element.parentElement.style.display = 'none';
+          element.parentElement.nextElementSibling.style.display = "none"
+        }
       })
     }
 
@@ -1212,7 +1335,7 @@
       {% comment %} Graphs and Charts variables  {% endcomment %}
       global_my_optimizer_bar_chart = 0
       global_my_optimizer_line_chart = 0
-      validation_of_inputs = false 
+      validation_of_inputs = false
       console.log("global_seasonality", global_seasonality)
 
       $(window).on('load',function(){
@@ -1302,7 +1425,7 @@
         update_global_optimizer_left_pannel_data()
       }
     }
-    // function to update values in right panel 
+    // function to update values in right panel
     function update_total_limits_min_value_grouped_panel(this_value,key){
       original_min_value = const_unchanged_global_grouped_optimizer_left_pannel_data[key]["constraints"][0];
       original_max_value = const_unchanged_global_grouped_optimizer_left_pannel_data[key]["constraints"][1];
@@ -1600,6 +1723,8 @@
       //console.log("global_optimizer_left_pannel_data", global_optimizer_left_pannel_data)
       sum_min_values = 0
       sum_max_values = 0
+      // get the selected checked dimensions
+      selectedDimensions = getSelectedDimensions()
       if(global_seasonality){
         date_format_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate._d;
           date_format_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate._d;
@@ -1609,6 +1734,7 @@
       }
       type_of_input = document.getElementById('customSwitch1').checked == true ? 'perc' : 'abs';
       for (let key in global_optimizer_left_pannel_data){
+        if(selectedDimensions.indexOf(key) != -1){
         if (key in optimizer_left_panel_user_selected_final_dict){
           global_optimizer_left_pannel_data[key] = optimizer_left_panel_user_selected_final_dict[key]
         }
@@ -1627,6 +1753,7 @@
         sum_min_values += min_values
         sum_max_values += max_values
       }
+    }
       // append the range for fixed budget
       global_sum_fixed_budget_values = 0;
       $('.fixed_budget_input').each(function(i,obj){
@@ -1675,8 +1802,8 @@
         success: function (data) {
           $(class_name).each((index,element)=>{
               element.style.color = "#000";
-              element.nextElementSibling.children[0].style.color = "#000"  
-              element.nextElementSibling.children[1].style.color = "#000"  
+              element.nextElementSibling.children[0].style.color = "#000"
+              element.nextElementSibling.children[1].style.color = "#000"
             })
           return true;
         },
@@ -1690,14 +1817,14 @@
               if(dimensions_to_be_corrected_json[element.innerText][0] == 1)
                 element.nextElementSibling.children[0].style.color = "red"
               else
-                element.nextElementSibling.children[0].style.color = "#000"   
+                element.nextElementSibling.children[0].style.color = "#000"
               if(dimensions_to_be_corrected_json[element.innerText][1] == 1)
                 element.nextElementSibling.children[1].style.color = "red"
-              else 
+              else
                 element.nextElementSibling.children[1].style.color = "#000"
              }
           })
-          return false; 
+          return false;
         }
       })
 
@@ -1725,6 +1852,11 @@
       if(validation_of_inputs == false && flag_to_show_grouped_dimensions == 1){
         alert("Please correct all inputs before submitting")
         return
+      }
+      checkedDimensions = getSelectedDimensions()
+      if(checkedDimensions.length == 0){
+        alert("Atleast one dimension must be selected")
+       return
       }
       $('#spinner-optimizer').css('display','block');
       $('#container').css('opacity',0.5);
@@ -1761,7 +1893,8 @@
           total_budget : optimizer_left_panel_total_budget,
           start_date: global_start_date,
           end_date:global_end_date,
-          discarded_dimensions:stringified_discarded_dimensions_json
+          discarded_dimensions:stringified_discarded_dimensions_json,
+          selected_dimensions:checkedDimensions.toString()
         }
       }else{
         data_to_submit = {
@@ -1769,7 +1902,8 @@
           dimension_min_max: stringified_global_optimizer_left_pannel_data,
           total_budget : optimizer_left_panel_total_budget,
           number_of_days : optimizer_left_panel_number_of_days,
-          discarded_dimensions:stringified_discarded_dimensions_json
+          discarded_dimensions:stringified_discarded_dimensions_json,
+          selected_dimensions:checkedDimensions.toString()
         }
       }
       console.log("sending data data_to_submit",data_to_submit )
@@ -1803,7 +1937,7 @@
               global_my_optimizer_bar_chart.destroy();
             }
 
-            populate_grouped_bar_chart(dict_donut_chart_data)
+            populate_grouped_bar_chart(dict_donut_chart_data,constraint_type)
             //$("#optimizer__total_1_value").val(5)
             //$("#optimizer__total_2_value").val(888)
         },
@@ -1867,7 +2001,7 @@
         td2 = document.createElement("td");
         if(constraint_type == 'median')
           textNode2 = document.createTextNode(`$ ${value["original_median_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-        else 
+        else
           textNode2 = document.createTextNode(`$ ${value["original_mean_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
         td2.appendChild(textNode2);
 
@@ -1876,52 +2010,58 @@
         td3.appendChild(textNode3);
 
         td4 = document.createElement("td");
-        textNode4 = document.createTextNode(value["buget_allocation_old_%"]+" %");
-        td4.appendChild(textNode4);
-
+        textNode4 = document.createTextNode(value["total_buget_allocation_old_%"]+" %");
+        td4.appendChild(textNode4);    
         td5 = document.createElement("td");
-        textNode5 = document.createTextNode(value["buget_allocation_new_%"]+" %");
+        if(constraint_type == 'median')
+          textNode5 = document.createTextNode(value["median_buget_allocation_old_%"]+" %");
+        else
+          textNode5 = document.createTextNode(value["mean_buget_allocation_old_%"]+" %");
         td5.appendChild(textNode5);
 
         td6 = document.createElement("td");
-        textNode6 = document.createTextNode(`$ ${value["recommended_budget_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        textNode6 = document.createTextNode(value["buget_allocation_new_%"]+" %");
         td6.appendChild(textNode6);
 
         td7 = document.createElement("td");
-        if(value["estimated_return_per_day"]){
-          textNode7 = document.createTextNode(`${value["estimated_return_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-          td7.appendChild(textNode7);
-        }else{
-          textNode7 = document.createTextNode(`${value["estimated_return_per_day"]}`);
-          td7.appendChild(textNode7);
-        }
-
+        textNode7 = document.createTextNode(`$ ${value["recommended_budget_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        td7.appendChild(textNode7);
 
         td8 = document.createElement("td");
-        if(value["dimension"] == "Total"){
-          textNode8 = document.createTextNode(Math.round(value["estimated_return_%"],2)+" %");
+        if(value["estimated_return_per_day"]){
+          textNode8 = document.createTextNode(`${value["estimated_return_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
           td8.appendChild(textNode8);
-        }
-        else{
-          textNode8 = document.createTextNode(value["estimated_return_%"] +" %");
+        }else{
+          textNode8 = document.createTextNode(`${value["estimated_return_per_day"]}`);
           td8.appendChild(textNode8);
         }
 
+
         td9 = document.createElement("td");
-        if(value["estimated_return_for_n_days"]){
-          textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-          td9.appendChild(textNode9);
-        }else{
-          textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"]}`);
+        if(value["dimension"] == "Total"){
+          textNode9 = document.createTextNode(Math.round(value["estimated_return_%"],2)+" %");
           td9.appendChild(textNode9);
         }
+        else{
+          textNode9 = document.createTextNode(value["estimated_return_%"] +" %");
+          td9.appendChild(textNode9);
+        }
+
         td10 = document.createElement("td");
-        if(value["current_projections_for_n_days"]){
-          textNode10 = document.createTextNode(`${value["current_projections_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        if(value["estimated_return_for_n_days"]){
+          textNode10 = document.createTextNode(`${value["estimated_return_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
           td10.appendChild(textNode10);
         }else{
-          textNode10 = document.createTextNode(`${value["current_projections_for_n_days"]}`);
+          textNode10 = document.createTextNode(`${value["estimated_return_for_n_days"]}`);
           td10.appendChild(textNode10);
+        }
+        td11 = document.createElement("td");
+        if(value["current_projections_for_n_days"]){
+          textNode11 = document.createTextNode(`${value["current_projections_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+          td11.appendChild(textNode11);
+        }else{
+          textNode11 = document.createTextNode(`${value["current_projections_for_n_days"]}`);
+          td11.appendChild(textNode11);
         }
         tableRow.appendChild(td1)
         tableRow.appendChild(td2)
@@ -1933,6 +2073,7 @@
         tableRow.appendChild(td8)
         tableRow.appendChild(td9)
         tableRow.appendChild(td10)
+        tableRow.appendChild(td11)
         table_body_1_optimizer.appendChild(tableRow)
 
 
@@ -1941,11 +2082,15 @@
     {% comment %} End : Populate Table  1 {% endcomment %}
 
     {% comment %} Start : Populate Donut Chart{% endcomment %}
-    function populate_grouped_bar_chart(dict_donut_chart_data){
+    function populate_grouped_bar_chart(dict_donut_chart_data, constraint_type){
         console.log("populate_grouped_bar_chart")
         let xValues = dict_donut_chart_data['dimension']
-        let buget_allocation_old = dict_donut_chart_data['buget_allocation_old_%']
-        let buget_allocation_new = dict_donut_chart_data['buget_allocation_new_%']
+        let buget_allocation_old = "";
+        if(constraint_type == 'median')
+          buget_allocation_old = dict_donut_chart_data['median_buget_allocation_old_%']
+        else
+          buget_allocation_old = dict_donut_chart_data['mean_buget_allocation_old_%']
+          let buget_allocation_new = dict_donut_chart_data['buget_allocation_new_%']
         let barColors = global_chart_colors
         ctx = "optimizer_bar_chart"
         config = {
