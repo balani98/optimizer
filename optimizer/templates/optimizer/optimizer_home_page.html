@@ -834,21 +834,27 @@
                     Dimension
                   </th>
                   {% if is_weekly_selected == 1 or convert_to_weekly_data == 1%}
-                  {% if constraint_type == 'median' %}
-                  <th scope="col">Original Median Budget/week</th>
-                  {% else %}
-                  <th scope="col">Original Mean Budget/week</th>
-                  {% endif %}
+                    {% if constraint_type == 'median' %}
+                      <th scope="col">Original Median Budget/week</th>
+                    {% else %}
+                      <th scope="col">Original Mean Budget/week</th>
+                    {% endif %}
                   <th scope="col">Recommended Budget/week</th>
-                  {% else %} {% if constraint_type == 'median' %}
-                  <th scope="col">Original Median Budget/day</th>
                   {% else %}
-                  <th scope="col">Original Mean Budget/day</th>
+                   {% if constraint_type == 'median' %}
+                      <th scope="col">Original Median Budget/day</th>
+                   {% else %}
+                      <th scope="col">Original Mean Budget/day</th>
+                   {% endif %}
+                   <th scope="col">Recommended Budget/day</th>
                   {% endif %}
-                  <th scope="col">Recommended Budget/day</th>
+                  <th scope="col">Original Total Budget Allocation %</th>
+                  {% if constraint_type == 'median' %}
+                    <th scope="col">Original Median Budget Allocation %</th>
+                  {% else %}
+                    <th scope="col">Original Mean Budget Allocation %</th>
                   {% endif %}
-                  <th scope="col">Budget Allocation Original %</th>
-                  <th scope="col">Budget Allocation New %</th>
+                  <th scope="col">Recommended Budget Allocation %</th>
                   <th scope="col">Total Recommended Budget Allocation</th>
                   <th scope="col">Target per day</th>
                   <th scope="col">% of Target</th>
@@ -1887,7 +1893,7 @@
           total_budget : optimizer_left_panel_total_budget,
           start_date: global_start_date,
           end_date:global_end_date,
-          discarded_dimensions:stringified_discarded_dimensions_json
+          discarded_dimensions:stringified_discarded_dimensions_json,
           selected_dimensions:checkedDimensions.toString()
         }
       }else{
@@ -1896,7 +1902,7 @@
           dimension_min_max: stringified_global_optimizer_left_pannel_data,
           total_budget : optimizer_left_panel_total_budget,
           number_of_days : optimizer_left_panel_number_of_days,
-          discarded_dimensions:stringified_discarded_dimensions_json
+          discarded_dimensions:stringified_discarded_dimensions_json,
           selected_dimensions:checkedDimensions.toString()
         }
       }
@@ -1931,7 +1937,7 @@
               global_my_optimizer_bar_chart.destroy();
             }
 
-            populate_grouped_bar_chart(dict_donut_chart_data)
+            populate_grouped_bar_chart(dict_donut_chart_data,constraint_type)
             //$("#optimizer__total_1_value").val(5)
             //$("#optimizer__total_2_value").val(888)
         },
@@ -2004,52 +2010,58 @@
         td3.appendChild(textNode3);
 
         td4 = document.createElement("td");
-        textNode4 = document.createTextNode(value["buget_allocation_old_%"]+" %");
-        td4.appendChild(textNode4);
-
+        textNode4 = document.createTextNode(value["total_buget_allocation_old_%"]+" %");
+        td4.appendChild(textNode4);    
         td5 = document.createElement("td");
-        textNode5 = document.createTextNode(value["buget_allocation_new_%"]+" %");
+        if(constraint_type == 'median')
+          textNode5 = document.createTextNode(value["median_buget_allocation_old_%"]+" %");
+        else
+          textNode5 = document.createTextNode(value["mean_buget_allocation_old_%"]+" %");
         td5.appendChild(textNode5);
 
         td6 = document.createElement("td");
-        textNode6 = document.createTextNode(`$ ${value["recommended_budget_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        textNode6 = document.createTextNode(value["buget_allocation_new_%"]+" %");
         td6.appendChild(textNode6);
 
         td7 = document.createElement("td");
-        if(value["estimated_return_per_day"]){
-          textNode7 = document.createTextNode(`${value["estimated_return_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-          td7.appendChild(textNode7);
-        }else{
-          textNode7 = document.createTextNode(`${value["estimated_return_per_day"]}`);
-          td7.appendChild(textNode7);
-        }
-
+        textNode7 = document.createTextNode(`$ ${value["recommended_budget_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        td7.appendChild(textNode7);
 
         td8 = document.createElement("td");
-        if(value["dimension"] == "Total"){
-          textNode8 = document.createTextNode(Math.round(value["estimated_return_%"],2)+" %");
+        if(value["estimated_return_per_day"]){
+          textNode8 = document.createTextNode(`${value["estimated_return_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
           td8.appendChild(textNode8);
-        }
-        else{
-          textNode8 = document.createTextNode(value["estimated_return_%"] +" %");
+        }else{
+          textNode8 = document.createTextNode(`${value["estimated_return_per_day"]}`);
           td8.appendChild(textNode8);
         }
 
+
         td9 = document.createElement("td");
-        if(value["estimated_return_for_n_days"]){
-          textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-          td9.appendChild(textNode9);
-        }else{
-          textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"]}`);
+        if(value["dimension"] == "Total"){
+          textNode9 = document.createTextNode(Math.round(value["estimated_return_%"],2)+" %");
           td9.appendChild(textNode9);
         }
+        else{
+          textNode9 = document.createTextNode(value["estimated_return_%"] +" %");
+          td9.appendChild(textNode9);
+        }
+
         td10 = document.createElement("td");
-        if(value["current_projections_for_n_days"]){
-          textNode10 = document.createTextNode(`${value["current_projections_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        if(value["estimated_return_for_n_days"]){
+          textNode10 = document.createTextNode(`${value["estimated_return_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
           td10.appendChild(textNode10);
         }else{
-          textNode10 = document.createTextNode(`${value["current_projections_for_n_days"]}`);
+          textNode10 = document.createTextNode(`${value["estimated_return_for_n_days"]}`);
           td10.appendChild(textNode10);
+        }
+        td11 = document.createElement("td");
+        if(value["current_projections_for_n_days"]){
+          textNode11 = document.createTextNode(`${value["current_projections_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+          td11.appendChild(textNode11);
+        }else{
+          textNode11 = document.createTextNode(`${value["current_projections_for_n_days"]}`);
+          td11.appendChild(textNode11);
         }
         tableRow.appendChild(td1)
         tableRow.appendChild(td2)
@@ -2061,6 +2073,7 @@
         tableRow.appendChild(td8)
         tableRow.appendChild(td9)
         tableRow.appendChild(td10)
+        tableRow.appendChild(td11)
         table_body_1_optimizer.appendChild(tableRow)
 
 
@@ -2069,11 +2082,15 @@
     {% comment %} End : Populate Table  1 {% endcomment %}
 
     {% comment %} Start : Populate Donut Chart{% endcomment %}
-    function populate_grouped_bar_chart(dict_donut_chart_data){
+    function populate_grouped_bar_chart(dict_donut_chart_data, constraint_type){
         console.log("populate_grouped_bar_chart")
         let xValues = dict_donut_chart_data['dimension']
-        let buget_allocation_old = dict_donut_chart_data['buget_allocation_old_%']
-        let buget_allocation_new = dict_donut_chart_data['buget_allocation_new_%']
+        let buget_allocation_old = "";
+        if(constraint_type == 'median')
+          buget_allocation_old = dict_donut_chart_data['median_buget_allocation_old_%']
+        else
+          buget_allocation_old = dict_donut_chart_data['mean_buget_allocation_old_%']
+          let buget_allocation_new = dict_donut_chart_data['buget_allocation_new_%']
         let barColors = global_chart_colors
         ctx = "optimizer_bar_chart"
         config = {
