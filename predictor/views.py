@@ -477,8 +477,24 @@ def predictor_ajax_date_dimension_onchange(request):
             cpm_checked = request.session.get("cpm_checked")
             # replotting the curves for downloading 
             global global_multi_line_chart_data 
+            # discarding the dimension for 1st curve also 
             multi_line_chart_data = global_multi_line_chart_data
             plot_curve(multi_line_chart_data, seasonality, cpm_checked, df_score_final, weekly_predictions_df, monthly_predictions_df, global_unique_dim, request) 
+            multi_line_chart_df = scatter_plot_df
+            multi_line_chart_df = multi_line_chart_df[multi_line_chart_df["dimension"].isin(global_unique_dim)]
+            if cpm_checked == "True":
+                sort_multi = ['dimension', 'impression']
+                max_spend = multi_line_chart_df.loc[multi_line_chart_df["impression"].idxmax()]["impression"]
+            else:
+                sort_multi = ['dimension', 'spend']
+                max_spend = multi_line_chart_df.loc[multi_line_chart_df["spend"].idxmax()]["spend"]
+            multi_line_chart_df = multi_line_chart_df.sort_values(by=sort_multi)
+            max_predictions = multi_line_chart_df.loc[multi_line_chart_df["predictions"].idxmax()]["predictions"]
+            multi_line_chart_json = multi_line_chart_df.to_dict("records")
+            multi_line_chart_data2 = get_multi_line_chart_data2(multi_line_chart_json, cpm_checked)
+            context["multi_line_chart_data2"] = multi_line_chart_data2
+            context["max_spend"] = max_spend
+            context["max_predictions"] = max_predictions
         dimension_value_selector = unique_dim
         # converting from string to datetime
         scatter_plot_df["date"] = pd.to_datetime(scatter_plot_df["date"]).dt.date
@@ -764,7 +780,7 @@ def predictor_window_on_load(request):
         print("seasonality", seasonality)
         print("default_dim", default_dim)
         print("cpm_checked", cpm_checked)
-
+        global global_unique_dim
         if cpm_checked == "True":
             print("CPM selected ,reading impdata")
             # data = pd.read_csv("data/impression_sample.csv")
@@ -795,6 +811,7 @@ def predictor_window_on_load(request):
             monthly_predictions_df = global_monthly_predictions_df
             d_cpm = None
         multi_line_chart_df = scatter_plot_df
+        multi_line_chart_df = multi_line_chart_df[multi_line_chart_df["dimension"].isin(global_unique_dim)]
         if cpm_checked == "True":
             sort_multi = ['dimension', 'impression']
             max_spend = multi_line_chart_df.loc[multi_line_chart_df["impression"].idxmax()]["impression"]
@@ -802,7 +819,6 @@ def predictor_window_on_load(request):
             sort_multi = ['dimension', 'spend']
             max_spend = multi_line_chart_df.loc[multi_line_chart_df["spend"].idxmax()]["spend"]
         multi_line_chart_df = multi_line_chart_df.sort_values(by=sort_multi)
-        
         max_predictions = multi_line_chart_df.loc[multi_line_chart_df["predictions"].idxmax()]["predictions"]
         # multi_line_chart_df = multi_line_chart_df[(multi_line_chart_df["dimension"] == "SEM Brand")]
         multi_line_chart_json = multi_line_chart_df.to_dict("records")
@@ -818,7 +834,6 @@ def predictor_window_on_load(request):
         #     for col in np.array(df_score_final["dimension"])
         #     if (col in np.array(scatter_plot_df["dimension"].unique()))
         # ]
-        global global_unique_dim
         unique_dim = global_unique_dim.copy()
         default_dim = unique_dim[0]
         unique_dim.remove(default_dim)
