@@ -725,7 +725,7 @@
     data_to_submit = {
       seasonality: global_seasonality_from_session,
       dimension_value_selector: dimensionValueSelector,
-      discard_dimension:discard_dimension,
+      discard_dimension:discard_dimension, // boolean variable to tell is to discard dimension or chane dimension
       dimension_to_be_discarded:dimension_to_be_discarded
       // start_date: startDate,
       // end_date: endDate,
@@ -747,6 +747,12 @@
         monthly_predictions_json = data.monthly_predictions_json;
         predictor_table_data = data.predictor_table_data[0];
         enter_cpm = data.enter_cpm;
+        if(discard_dimension == true){
+          max_spend = data.max_spend;
+          max_predictions = data.max_predictions;
+          multi_line_chart_data2 = data.multi_line_chart_data2;
+          plot_multi_line_chart_checkboxes(multi_line_chart_data2, enter_cpm ,max_spend, max_predictions)    
+        }
         console.log(
           `\n scatterplot_data, ${scatterplot_data} 
           \n predictor_table_data, ${predictor_table_data} 
