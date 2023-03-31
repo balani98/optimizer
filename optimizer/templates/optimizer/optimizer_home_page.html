@@ -857,8 +857,8 @@
                   <th scope="col">Recommended Budget Allocation %</th>
                   <th scope="col">Recommended Total Budget Allocation</th>
                   <th scope="col">Target per day</th>
-                  <th scope="col">% of Target</th>
                   <th scope="col">Overall Target</th>
+                  <th scope="col">% of Target</th>
                   <th scope="col">Overall Current Projections</th>
                 </tr>
               </thead>
@@ -1153,6 +1153,8 @@
           else
               this.checked = false
       })
+      // upating the budget ranges
+      update_global_optimizer_left_pannel_data()
   })
     // select All dimensions functionality in case of percentages
     $('#selectAll_perc').change(function(){
@@ -1163,6 +1165,8 @@
           else
               this.checked = false
       })
+      // updating the budget ranges
+      update_global_optimizer_left_pannel_data()
   })
   // updating the left panel data and conversion on if user changes any selection
       $('.input_checkbox').change(function(){
@@ -1359,9 +1363,9 @@
         var table_element0 = document.getElementById('table_1_optimizer').
                       children[0].children[0].children[7];
         var table_element1 = document.getElementById('table_1_optimizer').
-                      children[0].children[0].children[9];
-        var table_element2 = document.getElementById('table_1_optimizer').
                       children[0].children[0].children[8];
+        var table_element2 = document.getElementById('table_1_optimizer').
+                      children[0].children[0].children[9];
         var table_element3 = document.getElementById('table_1_optimizer').
                       children[0].children[0].children[10];
         if(get_is_weekly_selected() == 1 || get_convert_to_weekly_data() == 1)
@@ -2039,24 +2043,22 @@
           textNode8 = document.createTextNode(`${value["estimated_return_per_day"]}`);
           td8.appendChild(textNode8);
         }
-
-
         td9 = document.createElement("td");
-        if(value["dimension"] == "Total"){
-          textNode9 = document.createTextNode(Math.round(value["estimated_return_%"],2)+" %");
+        if(value["estimated_return_for_n_days"]){
+          textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
           td9.appendChild(textNode9);
-        }
-        else{
-          textNode9 = document.createTextNode(value["estimated_return_%"] +" %");
+        }else{
+          textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"]}`);
           td9.appendChild(textNode9);
         }
 
         td10 = document.createElement("td");
-        if(value["estimated_return_for_n_days"]){
-          textNode10 = document.createTextNode(`${value["estimated_return_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        if(value["dimension"] == "Total"){
+          textNode10 = document.createTextNode(Math.round(value["estimated_return_%"],2)+" %");
           td10.appendChild(textNode10);
-        }else{
-          textNode10 = document.createTextNode(`${value["estimated_return_for_n_days"]}`);
+        }
+        else{
+          textNode10 = document.createTextNode(value["estimated_return_%"] +" %");
           td10.appendChild(textNode10);
         }
         td11 = document.createElement("td");
