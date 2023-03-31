@@ -303,12 +303,12 @@ def dimension_min_max(request):
                                             'buget_allocation_new_%':'Recommended Budget Allocation %',
                                            'recommended_budget_for_n_days':'Total Recommended Budget Allocation',
                                             'estimated_return_per_day': target_selector + ' Per Week',
-                                             'estimated_return_%':'% of ' + target_selector,
                                             'estimated_return_for_n_days':'Overall ' + target_selector,
+                                            'estimated_return_%':'% of ' + target_selector,
                                             'current_projections_for_n_days': dynamic_column_for_overall_projections
                                            }, inplace = False)
         else:
-            dynamic_column_for_original_budget_per_week = 'Original Median Budget per Week' if constraint_type == 'median' else 'Original Mean Budget Per Week'
+            dynamic_column_for_original_budget_per_week = 'Original Median Budget per Day' if constraint_type == 'median' else 'Original Mean Budget Per Day'
             dynamic_column_for_budget_allocation_perc_for_csv = 'Original Median Budget Allocation %' if constraint_type == 'median' else 'Original Mean Budget Allocation %'
             dynamic_column_for_overall_projections = target_selector + ' at Original Median Allocation %' if constraint_type == 'median' else target_selector + 'at Original Mean Allocation %'
             df_table_for_csv = df_table_1_data.rename(columns = {dynamic_column_for_original_budget_per_day :dynamic_column_for_original_budget_per_week,
@@ -319,8 +319,8 @@ def dimension_min_max(request):
                                             'buget_allocation_new_%':'Recommended Budget Allocation %',
                                            'recommended_budget_for_n_days':'Total Recommended Budget Allocation',
                                             'estimated_return_per_day': target_selector + ' Per Day',
-                                            'estimated_return_%':'% of ' + target_selector,
                                             'estimated_return_for_n_days':'Overall ' + target_selector,
+                                            'estimated_return_%':'% of ' + target_selector,
                                             'current_projections_for_n_days': dynamic_column_for_overall_projections
                                            }, inplace = False)
         csv_optimizer_download_csv_data = df_table_for_csv.to_csv()
