@@ -1096,7 +1096,8 @@
             <div class="individual_channel">
               <input
                 type="checkbox"
-                class="styled_checkbox"
+                name = '{{item}}'
+                class="styled_checkbox input_checkbox_group_constraint"
                 onchange="selectDeselectGroupedDimensions(this,'{{key}}')"
                 checked
               />
@@ -1170,9 +1171,35 @@
   })
   // updating the left panel data and conversion on if user changes any selection
       $('.input_checkbox').change(function(){
+        // functionality to change the values / checkboxes on right hand side 
+        input_checkbox_value  = this.checked;
+        input_checkbox_name = this.name 
+      
+        $('.input_checkbox_group_constraint').each(function(index,obj){
+          if(input_checkbox_name == this.name){
+            // this will disable/ enable the checkboxes dynamically    
+              this.checked = input_checkbox_value;
+              this.disabled = !input_checkbox_value;
+              obj.dispatchEvent(
+                  new Event('change',{
+                  bubbles:true
+                })
+              );
+            }        
+          })
         update_global_optimizer_left_pannel_data()
       })
       $('.input_checkbox_perc').change(function(){
+        // functionality to change the values / checkboxes on right hand side 
+        /* input_checkbox_value  = this.checked;
+        input_checkbox_name = this.name; 
+        $('.input_checkbox_group_constraint').each(function(){
+          if(input_checkbox_name == this.name){
+            // this will disable/ enable the checkboxes dynamically    
+              this.checked = input_checkbox_value;
+              this.disabled = !input_checkbox_value;
+            }        
+          })  */
         update_global_optimizer_left_pannel_data()
       })
     // function to get selected dimensions
@@ -1194,20 +1221,24 @@
     function selectDeselectGroupedDimensions(this_value,key){
       // changing budget as per user selection and deselection
       var dimensionBudget = 0;
+      var dimensionMinBudget = 0;
       var sub_dimension_array = [];
       var dimensionObjectSiblings = this_value.parentElement.parentElement.children;
       var dimensionBudgetDiv = this_value.parentElement.parentElement.previousElementSibling.children[1].children[1]
+      var dimensionMinBudgetDiv = this_value.parentElement.parentElement.previousElementSibling.children[1].children[0]
       for(let i=0;i<dimensionObjectSiblings.length;i++){
           if(dimensionObjectSiblings[i].children[0].checked == true)
             sub_dimension_array.push(dimensionObjectSiblings[i].children[1].innerText)
       }
       sub_dimension_array.forEach((key)=>{
+        dimensionMinBudget += global_optimizer_left_pannel_data[key][0]
         dimensionBudget += global_optimizer_left_pannel_data[key][1]
       })
     dimensionBudgetDiv.value ='$' + dimensionBudget.toString().replace("$","").replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");;
+    dimensionMinBudgetDiv.value = '$' + dimensionMinBudget.toString().replace("$","").replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");;
     // updating the dictionary
     global_grouped_optimizer_left_panel_data[key] = {
-     'constraints':[0,dimensionBudget],
+     'constraints':[dimensionMinBudget,dimensionBudget],
      'sub_dimension':sub_dimension_array
     }
     const_unchanged_global_grouped_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_grouped_optimizer_left_panel_data))
@@ -1431,6 +1462,16 @@
         }
         //console.log("optimizer_left_panel_user_selected_final_dict",optimizer_left_panel_user_selected_final_dict)
         update_global_optimizer_left_pannel_data()
+        // dispatching event when user changes something on left to reflect changes on right 
+        $('.input_checkbox_group_constraint').each(function(index,obj){
+          if(key == this.name){
+                obj.dispatchEvent(
+                  new Event('change',{
+                  bubbles:true
+                })
+              );
+            }        
+        })
       }
     }
     // function to update values in right panel
@@ -1509,6 +1550,7 @@
           update_user_selected_final_dict(key, min_value, max_value, median_spend, -100, 200, 0)
 
         }
+        
       }
     }
     // function to max values update left pannel inputs if it is in percentages
@@ -1810,8 +1852,8 @@
         success: function (data) {
           $(class_name).each((index,element)=>{
               element.style.color = "#000";
-              element.nextElementSibling.children[0].style.color = "#000"
-              element.nextElementSibling.children[1].style.color = "#000"
+              element.parentElement.nextElementSibling.children[0].style.color = "#000"
+              element.parentElement.nextElementSibling.children[1].style.color = "#000"
             })
           return true;
         },
@@ -1823,19 +1865,26 @@
             if(dimensions_to_be_corrected_keys.indexOf(element.innerText) != -1){
               element.style.color = "red";
               if(dimensions_to_be_corrected_json[element.innerText][0] == 1)
-                element.nextElementSibling.children[0].style.color = "red"
+                element.parentElement.nextElementSibling.children[0].style.color = "red"
               else
-                element.nextElementSibling.children[0].style.color = "#000"
+                element.parentElement.nextElementSibling.children[0].style.color = "#000"
               if(dimensions_to_be_corrected_json[element.innerText][1] == 1)
-                element.nextElementSibling.children[1].style.color = "red"
+                element.parentElement.nextElementSibling.children[1].style.color = "red"
               else
-                element.nextElementSibling.children[1].style.color = "#000"
+                element.parentElement.nextElementSibling.children[1].style.color = "#000"
              }
           })
           return false;
         }
       })
 
+    }
+    function getIsolatedDimensionsFromGroup(){
+      isolated_dimensions = []
+      $('.input_checkbox_group_constraint').each(function(){
+        if(this.checked == false)
+          isolated_dimensions.push(this.name)
+      })
     }
     function submit_predictor_left_pannel_chart_inputs() {
       console.log("inputs submitted")
@@ -1862,6 +1911,7 @@
         return
       }
       checkedDimensions = getSelectedDimensions()
+      isolatedDimensions = getIsolatedDimensionsFromGroup()
       if(checkedDimensions.length == 0){
         alert("Atleast one dimension must be selected")
        return
@@ -1880,6 +1930,7 @@
         global_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
       }
       stringified_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data).replaceAll('&amp;', '&'));
+      stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(global_grouped_optimizer_left_panel_data)
       var dimension_keys = Object.keys(stringified_global_optimizer_left_pannel_data)
       // splicing the elements at 2 , 3 , 4
       const removeValFromIndex = [2 , 3, 4];
@@ -1902,7 +1953,9 @@
           start_date: global_start_date,
           end_date:global_end_date,
           discarded_dimensions:stringified_discarded_dimensions_json,
-          selected_dimensions:checkedDimensions.toString()
+          selected_dimensions:checkedDimensions.toString(),
+          isolated_dimensions:isolated_dimensions.toString(),
+          dimension_capping_constraints:stringified_global_grouped_optimizer_left_pannel_data
         }
       }else{
         data_to_submit = {
@@ -1911,7 +1964,9 @@
           total_budget : optimizer_left_panel_total_budget,
           number_of_days : optimizer_left_panel_number_of_days,
           discarded_dimensions:stringified_discarded_dimensions_json,
-          selected_dimensions:checkedDimensions.toString()
+          selected_dimensions:checkedDimensions.toString(),
+          isolated_dimensions:isolated_dimensions.toString(),
+          dimension_capping_constraints:stringified_global_grouped_optimizer_left_pannel_data
         }
       }
       console.log("sending data data_to_submit",data_to_submit )
