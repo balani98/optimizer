@@ -1485,8 +1485,8 @@
         console.log("Min value lower than the given bound values or higer than the max value")
         this_value.value = original_min_value
       }else{
-        global_grouped_optimizer_left_panel_data[key]["constraints"][0] = min_value
-        global_grouped_optimizer_left_panel_data[key]["constraints"][1] = max_value
+        global_grouped_optimizer_left_panel_data[key]["constraints"][0] = parseInt(min_value)
+        global_grouped_optimizer_left_panel_data[key]["constraints"][1] = parseInt(max_value)
       }
     }
     // function to update values in right side navbar panel
@@ -1500,8 +1500,8 @@
         console.log("Max value higer than the given bound values or lower than the min value")
         this_value.value = original_max_value
       }else{
-        global_grouped_optimizer_left_panel_data[key]["constraints"][0] = min_value
-        global_grouped_optimizer_left_panel_data[key]["constraints"][1] = max_value
+        global_grouped_optimizer_left_panel_data[key]["constraints"][0] = parseInt(min_value)
+        global_grouped_optimizer_left_panel_data[key]["constraints"][1] = parseInt(max_value)
       }
     }
      function add_commas_min_max_value(this_value){
