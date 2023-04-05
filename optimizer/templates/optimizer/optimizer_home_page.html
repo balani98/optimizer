@@ -1238,7 +1238,7 @@
     dimensionMinBudgetDiv.value = '$' + dimensionMinBudget.toString().replace("$","").replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");;
     // updating the dictionary
     global_grouped_optimizer_left_panel_data[key] = {
-     'constraints':[dimensionMinBudget,dimensionBudget],
+     'constraints':[parseInt(dimensionMinBudget),parseInt(dimensionBudget)],
      'sub_dimension':sub_dimension_array
     }
     const_unchanged_global_grouped_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_grouped_optimizer_left_panel_data))
@@ -1752,8 +1752,6 @@
       }
      function update_budget(this_value){
       optimizer_left_panel_total_budget = parseInt(this_value.value.replace(/,/g, '').replace('$',''));
-      if(flag_to_show_grouped_dimensions == 1)
-        validation_of_inputs = validate_inputs_for_left_pannel_as_per_right_pannel()
       console.log("optimizer_left_panel_total_budget",optimizer_left_panel_total_budget)
       if(optimizer_left_panel_total_budget < global_range_min || optimizer_left_panel_total_budget > global_range_max){
         this_value.value = global_range_min
@@ -1885,6 +1883,7 @@
         if(this.checked == false)
           isolated_dimensions.push(this.name)
       })
+      return isolated_dimensions
     }
     function submit_predictor_left_pannel_chart_inputs() {
       console.log("inputs submitted")
@@ -1904,12 +1903,7 @@
         alert("Please add valid Total Budget before submitting")
         return
       }
-      if(flag_to_show_grouped_dimensions == 1)
-        validation_of_inputs = validate_inputs_for_left_pannel_as_per_right_pannel()
-      if(validation_of_inputs == false && flag_to_show_grouped_dimensions == 1){
-        alert("Please correct all inputs before submitting")
-        return
-      }
+     
       checkedDimensions = getSelectedDimensions()
       isolatedDimensions = getIsolatedDimensionsFromGroup()
       if(checkedDimensions.length == 0){
@@ -1944,7 +1938,6 @@
       stringified_discarded_dimensions_json = JSON.stringify(discarded_dimensions_json)
       document.getElementById('right_div').style.display = "block";
       data_to_submit = 0
-
       if(global_seasonality){
         data_to_submit = {
           seasonality : global_seasonality,
@@ -1954,7 +1947,7 @@
           end_date:global_end_date,
           discarded_dimensions:stringified_discarded_dimensions_json,
           selected_dimensions:checkedDimensions.toString(),
-          isolated_dimensions:isolated_dimensions.toString(),
+          isolated_dimensions:isolatedDimensions.toString(),
           dimension_capping_constraints:stringified_global_grouped_optimizer_left_pannel_data
         }
       }else{
@@ -1965,7 +1958,7 @@
           number_of_days : optimizer_left_panel_number_of_days,
           discarded_dimensions:stringified_discarded_dimensions_json,
           selected_dimensions:checkedDimensions.toString(),
-          isolated_dimensions:isolated_dimensions.toString(),
+          isolated_dimensions:isolatedDimensions.toString(),
           dimension_capping_constraints:stringified_global_grouped_optimizer_left_pannel_data
         }
       }

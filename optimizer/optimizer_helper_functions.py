@@ -79,6 +79,32 @@ def dimension_bound(df_param, dimension_data, constraint_type, is_group_dimensio
     return dim_bound, grp_dim_bound
 
 
+def investment_range(dim_bound, group_constraint, isolate_dim_list):
+    """investment range for optimizer
+
+    Returns:
+        list: [lower bound for investment range, upper bound for investment range]
+    """
+    dim_lower_bnds = 0
+    dim_upper_bnds= 0
+
+    if group_constraint==None:
+        for dim in dim_bound:
+                dim_lower_bnds = dim_lower_bnds + dim_bound[dim][0]
+                dim_upper_bnds = dim_upper_bnds + dim_bound[dim][1]
+    else:
+        for dim in group_constraint:
+            dim_lower_bnds = dim_lower_bnds + group_constraint[dim]['constraints'][0]
+            dim_upper_bnds = dim_upper_bnds + group_constraint[dim]['constraints'][1]
+
+        if isolate_dim_list!=None:       
+            for dim in isolate_dim_list:
+                dim_lower_bnds = dim_lower_bnds + dim_bound[dim][0]
+                dim_upper_bnds = dim_upper_bnds + dim_bound[dim][1]
+        
+    return [dim_lower_bnds, dim_upper_bnds]
+
+
 class optimizer_iterative:
     def __init__(self, df_param, constraint_type):
         """initialization
@@ -109,6 +135,8 @@ class optimizer_iterative:
                 self.const_var = 'mean spend'        
             
         self.dimension_names = list(self.d_param.keys())
+        # Setting if group dimension constraint selected or not as False, updating the flag in execute function if group dimension constraint selected is selected
+        self.is_group_dimension_selected = False
         # Precision used for optimization
         self.precision = 1e-0
         # Max iterations used for optimization
@@ -174,8 +202,31 @@ class optimizer_iterative:
             dimension_bound[dim][1]=dim_max_budget
         return dimension_bound
     
+
+    def transform_grouped_dimension_bound(self, dimension_bound, group_constraint, isolate_dim_list):
+        """Transforming grouped dimension dictionary to use for constarints for optimization
+
+        Returns:
+            Dictionary: grp_dim_bound
+        """
+
+        grp_dim_bound = {}
+
+        for dim in group_constraint:
+            sub_dim_list = group_constraint[dim]['sub_dimension']
+            sub_dim_constraint = group_constraint[dim]['constraints'][1]
+            for dim_ in sub_dim_list:
+                grp_dim_bound[dim_] = {'dimension' : sub_dim_list,
+                                    'constraints':sub_dim_constraint}
+                
+        for dim_ in isolate_dim_list:
+            grp_dim_bound[dim_] = {'dimension' : [dim_],
+                                    'constraints':dimension_bound[dim_][1]}
+            
+        return grp_dim_bound
     
-    def ini_start_value(self, df_grp, dimension_bound, increment):
+    
+    def ini_start_value(self, df_grp, dimension_bound, increment, grouped_dimension_bound):
         """initialization of initial metric (spend or impression) to overcome the local minima for each dimension
         
         Returns:
@@ -232,6 +283,19 @@ class optimizer_iterative:
                     oldSpendVec[dim]=input_start_spend
                 else:
                     oldSpendVec[dim]=start_value_spend
+
+        if self.is_group_dimension_selected == True:
+            checked_dim_list = []
+            for dim in self.dimension_names:
+                if dim in checked_dim_list:
+                    continue
+                sub_dim_list = grouped_dimension_bound[dim]['dimension']
+                groupSpendConstraint = grouped_dimension_bound[dim]['constraints']
+                agg_iniSpend=sum(oldSpendVec[dim_ini] for dim_ini in sub_dim_list)
+                if(agg_iniSpend>=groupSpendConstraint):
+                    for sub_dim in sub_dim_list:
+                        oldSpendVec[sub_dim] = 0
+                checked_dim_list = checked_dim_list + sub_dim_list
                 
         if self.use_impression:
             return oldSpendVec, oldImpVec
@@ -268,9 +332,24 @@ class optimizer_iterative:
                                           self.d_param[dim]["param c"]))
 
         return oldReturn
-
     
-    def get_conversion_dimension(self, newSpendVec, dimension_bound, increment, newImpVec):
+
+    def get_grouped_dimension_constraint(self, grouped_dimension_bound, dim, newSpendVec):
+        """Function to get allocated spend to sub-dimensions under a group and the group dimension's spend constarint
+        Returns:
+            Spend variable - 
+                subDimSpend: Aggregated allocated spend to each dimension
+                grp_dim_const: Group dimension spend constraint         
+        """
+        subDimSpend = 0
+        sub_dim_list = grouped_dimension_bound[dim]['dimension']
+        grp_dim_const = grouped_dimension_bound[dim]['constraints']
+        for sub_dim in sub_dim_list:
+            subDimSpend = subDimSpend + newSpendVec[sub_dim]
+        return subDimSpend, grp_dim_const
+    
+
+    def get_conversion_dimension(self, newSpendVec, dimension_bound, increment, grouped_dimension_bound, newImpVec):
         """Function to get dimension and their conversion for increment budget - to derive dimension having maximum conversion
         
         Returns:
@@ -284,44 +363,71 @@ class optimizer_iterative:
         for dim in self.dimension_names:
 
             oldSpendTemp = newSpendVec[dim]
-            
             if self.use_impression:
-                oldImpTemp = newImpVec[dim]
+                oldImpTemp = newImpVec[dim]  
+
+            # getting sum of allocated budget to group of dimensions and grouped budget constraint
+            if self.is_group_dimension_selected == True:
+                subDimSpend, groupSpendConstraint = self.get_grouped_dimension_constraint(grouped_dimension_bound, dim, newSpendVec)              
             
             # check if spend allocated to a dimension + increment is less or equal to max constarint and get incremental converstions
             if((newSpendVec[dim] + increment)<=dimension_bound[dim][1]):
-                
-                incBudget[dim] = increment
-                newSpendTemp = newSpendVec[dim] + incBudget[dim]
-                
-                if self.use_impression:
-                    newImpTemp = ((newSpendTemp*1000)/(dimension_bound[dim][2]))
-                    incReturns[dim]=(self.s_curve_hill(newImpTemp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
-                             -  self.s_curve_hill(oldImpTemp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]))
+                # checks if grouped constraints is selected
+                if self.is_group_dimension_selected == True:
+                    # check if post allocation of increment budget, grouped constraint is satisfied
+                    if ((subDimSpend + increment)<=groupSpendConstraint):
+                        incBudget[dim] = increment
+                    # check if grouped constraint is lies between before and post allocation of increment budget
+                    elif((subDimSpend<groupSpendConstraint) & ((subDimSpend + increment)>groupSpendConstraint)):
+                        incBudget[dim] = groupSpendConstraint-subDimSpend
+                    # if max budget for grouped constraint is reached
+                    else:
+                        incBudget[dim]=0
+                        incReturns[dim]=-1
+                        continue
+                # if grouped constraints is not selected
                 else:
-                    incReturns[dim]=(self.s_curve_hill(newSpendTemp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
-                             -  self.s_curve_hill(oldSpendTemp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]))
-            
+                    incBudget[dim] = increment
+       
             # check if spend allocated to a dimension + increment is greater than max constarint and get converstions for remaining budget for that dimension
             elif((newSpendVec[dim]<dimension_bound[dim][1]) & ((newSpendVec[dim] + increment)>dimension_bound[dim][1])):
-                
-                incBudget[dim] = dimension_bound[dim][1] - newSpendVec[dim]
-                newSpendTemp = newSpendVec[dim] + incBudget[dim]
-                
-                if self.use_impression:
-                    newImpTemp = ((newSpendTemp*1000)/(dimension_bound[dim][2]))
-                    incReturns[dim]=(self.s_curve_hill(newImpTemp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
-                             -  self.s_curve_hill(oldImpTemp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]))
+                # getting remaining increment budget if post increment allocation budget exceeds max bound for a dimension
+                temp_incBudget = dimension_bound[dim][1] - newSpendVec[dim]
+                # checks if grouped constraints is selected
+                if self.is_group_dimension_selected == True:
+                    # check if post allocation of increment budget, grouped constraint is satisfied
+                    if ((subDimSpend + temp_incBudget)<=groupSpendConstraint):
+                        incBudget[dim] = temp_incBudget
+                    # check if grouped constraint is lies between before and post allocation of increment budget
+                    elif((subDimSpend<groupSpendConstraint) & ((subDimSpend + temp_incBudget)>groupSpendConstraint)):
+                        incBudget[dim] = groupSpendConstraint-subDimSpend
+                    # if max budget for grouped constraint is reached
+                    else:
+                        incBudget[dim]=0
+                        incReturns[dim]=-1
+                        continue
+                # if grouped constraints is not selected
                 else:
-                    incReturns[dim]=(self.s_curve_hill(newSpendTemp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
-                             -  self.s_curve_hill(oldSpendTemp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]))
+                    incBudget[dim] = temp_incBudget
             
             # if max budget is exhausted for that dimension
             else:
-                newSpendTemp = newSpendVec[dim]
                 incBudget[dim]=0
                 incReturns[dim]=-1
+                continue
         
+            # updated spend post increment budget allocation
+            newSpendTemp = newSpendVec[dim] + incBudget[dim]
+
+            # check for increment return
+            if self.use_impression:
+                newImpTemp = ((newSpendTemp*1000)/(dimension_bound[dim][2]))
+                incReturns[dim]=(self.s_curve_hill(newImpTemp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
+                            -  self.s_curve_hill(oldImpTemp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]))
+            else:
+                incReturns[dim]=(self.s_curve_hill(newSpendTemp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
+                            -  self.s_curve_hill(oldSpendTemp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]))  
+
         return incReturns, incBudget
         
         
@@ -341,7 +447,7 @@ class optimizer_iterative:
         return totalReturn, newImpVec
     
     
-    def allocate_remaining_budget(self, budgetGoal, newSpendVec, dimension_bound_actual, totalReturn, iteration, msg, newImpVec):
+    def allocate_remaining_budget(self, budgetGoal, newSpendVec, dimension_bound_actual, totalReturn, grouped_dimension_bound, iteration, msg, newImpVec):
         """allocate remaining budget when total maximum possible conversion have been allocated
 
         Returns:
@@ -361,10 +467,17 @@ class optimizer_iterative:
 
             # Get list of dimensions which have not exhausted their entire budget
             for dim in self.d_param:
-                if (newSpendVec[dim]<dimension_bound_actual[dim][1]):
-                    allocation_dim_list = allocation_dim_list + [dim]
-                    newSpendVec_filtered[dim] = newSpendVec[dim]
 
+                if self.is_group_dimension_selected == True:
+                    subDimSpend, groupSpendConstraint = self.get_grouped_dimension_constraint(grouped_dimension_bound, dim, newSpendVec)              
+                    if (newSpendVec[dim]<dimension_bound_actual[dim][1]) and (subDimSpend<groupSpendConstraint):
+                        allocation_dim_list = allocation_dim_list + [dim]
+                        newSpendVec_filtered[dim] = newSpendVec[dim]
+                else:
+                    if (newSpendVec[dim]<dimension_bound_actual[dim][1]):
+                        allocation_dim_list = allocation_dim_list + [dim]
+                        newSpendVec_filtered[dim] = newSpendVec[dim]
+                
             # Check list if all remianing dimensions have been allocated some budget or not in optimization process
             check_noSpendDim = all(value == 0 for value in newSpendVec_filtered.values())
 
@@ -375,12 +488,12 @@ class optimizer_iterative:
                 agg_constSpend=sum((self.d_param[dim_filtered][self.const_var]*self.d_param[dim_filtered]['cpm'])/1000 for dim_filtered in allocation_dim_list)
             else:
                 agg_constSpend=sum(self.d_param[dim_filtered][self.const_var] for dim_filtered in allocation_dim_list)
+        
+            incrementCalibration = {}
             
             for dim in allocation_dim_list:
                 incrementProportion = 0
                 budgetRemainDim = 0
-                incrementCalibration = 0
-
                 if (check_noSpendDim == True):
                     if self.use_impression:
                         allocationSpendVec[dim] = ((self.d_param[dim][self.const_var]*self.d_param[dim]['cpm'])/1000)/agg_constSpend
@@ -393,13 +506,30 @@ class optimizer_iterative:
                 budgetRemainDim = dimension_bound_actual[dim][1] - newSpendVec[dim]
 
                 if (budgetRemainDim>=incrementProportion):
-                    incrementCalibration = incrementProportion
+                    incrementCalibration[dim] = incrementProportion
                 else:
-                    incrementCalibration = budgetRemainDim
+                    incrementCalibration[dim] = budgetRemainDim
 
-                newSpendVec[dim] = newSpendVec[dim] + incrementCalibration
-
-                totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, newImpVec)
+            if self.is_group_dimension_selected == True:
+                for dim in allocation_dim_list:
+                    sub_dim_list = grouped_dimension_bound[dim]['dimension']
+                    grp_dim_inc_list = list(np.intersect1d(sub_dim_list, list(incrementCalibration.keys())))
+                    agg_incSpend=sum(incrementCalibration[dim_inc] for dim_inc in grp_dim_inc_list)
+                    subDimSpend, groupSpendConstraint = self.get_grouped_dimension_constraint(grouped_dimension_bound, dim, newSpendVec)              
+                    for grp_dim in grp_dim_inc_list:
+                        if(subDimSpend+agg_incSpend>groupSpendConstraint):
+                            budgetRemainDimGroup = subDimSpend+agg_incSpend-groupSpendConstraint
+                            incrementCalibrationUpdate = incrementCalibration[grp_dim] - ((incrementCalibration[grp_dim]/agg_incSpend)*budgetRemainDimGroup)
+                        else:
+                            incrementCalibrationUpdate = incrementCalibration[grp_dim]
+                        newSpendVec[grp_dim] = newSpendVec[grp_dim] + incrementCalibrationUpdate
+                        totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, grp_dim, newImpVec)
+                        if(grp_dim!=dim):
+                            allocation_dim_list.remove(grp_dim)                
+            else:
+                for dim in allocation_dim_list:
+                    newSpendVec[dim] = newSpendVec[dim] + incrementCalibration[dim]
+                    totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, newImpVec)
 
             iteration+=1
             
@@ -410,7 +540,7 @@ class optimizer_iterative:
         return newSpendVec, totalReturn, msg, newImpVec
         
         
-    def projections_compare(self, newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, newImpVec):
+    def projections_compare(self, newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, grouped_dimension_bound, newImpVec):
         """Budget for each dimension is checked and adjusted based on comparing with historic budget projection,
             if the budget allocation by optimization is higher for same target
 
@@ -452,11 +582,20 @@ class optimizer_iterative:
                 dim_spend_estimate = dim_metric_estimate
             dim_spend = min(spend_projection[dim], dim_spend_estimate)
 
-            if ((dim_spend>=dimension_bound_actual[dim][0]) and (dim_spend<=dimension_bound_actual[dim][1])):
-                if ((round(totalReturn[dim])==round(return_projection[dim])) and (newSpendVec[dim]>dim_spend)):
-                    budgetDecrement = budgetDecrement + (newSpendVec[dim] - dim_spend)
-                    newSpendVec[dim] = dim_spend
-                    totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, newImpVec)
+            if self.is_group_dimension_selected == True:
+                subDimSpend, groupSpendConstraint = self.get_grouped_dimension_constraint(grouped_dimension_bound, dim, newSpendVec)              
+                subDimSpend_update=subDimSpend-newSpendVec[dim]+dim_spend
+                if ((dim_spend>=dimension_bound_actual[dim][0]) and (dim_spend<=dimension_bound_actual[dim][1]) and (subDimSpend_update<=groupSpendConstraint)):
+                    if ((round(totalReturn[dim])==round(return_projection[dim])) and (newSpendVec[dim]>dim_spend)):
+                        budgetDecrement = budgetDecrement + (newSpendVec[dim] - dim_spend)
+                        newSpendVec[dim] = dim_spend
+                        totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, newImpVec)
+            else:
+                if ((dim_spend>=dimension_bound_actual[dim][0]) and (dim_spend<=dimension_bound_actual[dim][1])):
+                    if ((round(totalReturn[dim])==round(return_projection[dim])) and (newSpendVec[dim]>dim_spend)):
+                        budgetDecrement = budgetDecrement + (newSpendVec[dim] - dim_spend)
+                        newSpendVec[dim] = dim_spend
+                        totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, newImpVec)
 
         return newSpendVec, totalReturn, newImpVec
 
@@ -471,6 +610,11 @@ class optimizer_iterative:
                 newSpendVec: Budget allocated to each dimension after adjustment
                 totalReturn: Conversion for allocated budget for each dimension after adjustment
                 newImpVec: Impression allocated to each dimension if applicable otherwise null value is allocated
+        """
+        """
+        Note: No requirement for checking grouped constraints for this function
+            Rounding error adjustment: Budget will remain same or floor level budget will be used
+            Zero conversion dimension: Budget will be reduced to 0 or lower bound where no conversion is generated
         """
         budgetDecrement = 0
 
@@ -502,7 +646,7 @@ class optimizer_iterative:
         return newSpendVec, totalReturn, newImpVec
 
 
-    def budget_optimize(self, increment_factor, oldSpendVec, oldReturn, budgetGoal, dimension_bound, dimension_bound_actual, oldImpVec):
+    def budget_optimize(self, increment_factor, oldSpendVec, oldReturn, budgetGoal, dimension_bound, dimension_bound_actual, grouped_dimension_bound, oldImpVec):
         """function for calculating budget when metric as spend is selected
         
         Returns:
@@ -532,10 +676,11 @@ class optimizer_iterative:
         check_noConversion = 0
 
         while(budgetGoal > sum(newSpendVec.values())):
-            
+            print(sum(newSpendVec.values()))
             # Get dim with max incremental conversion
-            incReturns, incBudget = self.get_conversion_dimension(newSpendVec, dimension_bound, increment, newImpVec)  
+            incReturns, incBudget = self.get_conversion_dimension(newSpendVec, dimension_bound, increment, grouped_dimension_bound, newImpVec)  
             dim_idx = max(incReturns, key=incReturns.get)
+            print(iteration," ",dim_idx," ",incReturns[dim_idx]," ",incBudget[dim_idx])
             
             # If incremental conversion is present
             if(incReturns[dim_idx] > 0):
@@ -546,7 +691,7 @@ class optimizer_iterative:
 
              # If incremental conversion is not present
             else:
-                newSpendVec, totalReturn, msg, newImpVec = self.allocate_remaining_budget(budgetGoal, newSpendVec, dimension_bound_actual, totalReturn, iteration, msg, newImpVec)
+                newSpendVec, totalReturn, msg, newImpVec = self.allocate_remaining_budget(budgetGoal, newSpendVec, dimension_bound_actual, totalReturn, grouped_dimension_bound, iteration, msg, newImpVec)
                 resultIter_df = resultIter_df.append({'spend':sum(newSpendVec.values()) , 'impression': sum(newImpVec.values()), 'return' : sum(totalReturn.values())}, ignore_index=True).reset_index(drop=True)
                 break
                 
@@ -554,7 +699,7 @@ class optimizer_iterative:
             if(math.isclose(sum(newSpendVec.values()), budgetGoal, abs_tol=self.precision)):
                 if (check_noConversion == 0):
                     check_noConversion = 1
-                    newSpendVec, totalReturn, newImpVec = self.projections_compare(newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, newImpVec)
+                    newSpendVec, totalReturn, newImpVec = self.projections_compare(newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, grouped_dimension_bound, newImpVec)
                     newSpendVec, totalReturn, newImpVec = self.adjust_budget(newSpendVec, totalReturn, dimension_bound_actual, newImpVec)
                     increment = increment_factor
                     resultIter_df = resultIter_df.append({'spend':sum(newSpendVec.values()) , 'impression': sum(newImpVec.values()), 'return' : sum(totalReturn.values())}, ignore_index=True).reset_index(drop=True)
@@ -614,8 +759,8 @@ class optimizer_iterative:
         result_df=result_df[['dimension', 'recommended_budget_per_day', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days']]
         
         return result_df
-    
-    
+
+
     def optimizer_result_adjust(self, discard_json, df_res, df_spend_dis, dimension_bound, budget_per_day, days):
         """re-calculation of result based on discarded dimension budget
 
@@ -685,15 +830,15 @@ class optimizer_iterative:
         else:
             df_res = df_res.rename(columns={"buget_allocation_old_%": "mean_buget_allocation_old_%"})
             df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days']]
-        
+     
         int_cols = [i for i in df_res.columns if ((i != "dimension") & ('%' not in i))]
         for i in int_cols:
             df_res.loc[df_res[i].values != None, i]=df_res.loc[df_res[i].values != None, i].astype(float).round().astype(int)
 
         return df_res
+        
     
-    
-    def check_initialization_required(self, increment, df_grp, dimension_bound, dimension_bound_actual, budget_per_day):
+    def check_initialization_required(self, increment, df_grp, dimension_bound, dimension_bound_actual, grouped_dimension_bound, budget_per_day):
         """Initialization to avoid local minima problem-
                 Budget: Minimum non-zero spend based on historic data is intialized
                 Target, impression (if selected): Respective target, impression based on spend is initialized 
@@ -707,7 +852,7 @@ class optimizer_iterative:
         """
         
         if self.use_impression:
-            oldSpendVec_initial, oldImpVec_initial = self.ini_start_value(df_grp, dimension_bound, increment)
+            oldSpendVec_initial, oldImpVec_initial = self.ini_start_value(df_grp, dimension_bound, increment, grouped_dimension_bound)
             oldReturn_initial = self.initial_conversion(oldImpVec_initial)
             initial_investment = sum(oldReturn_initial.values())
             
@@ -729,7 +874,7 @@ class optimizer_iterative:
                 oldReturn = copy.deepcopy(oldReturn_input)
                 
         else:
-            oldSpendVec_initial = self.ini_start_value(df_grp, dimension_bound, increment)
+            oldSpendVec_initial = self.ini_start_value(df_grp, dimension_bound, increment, grouped_dimension_bound)
             oldReturn_initial = self.initial_conversion(oldSpendVec_initial)
             initial_investment = sum(oldSpendVec_initial.values())
             
@@ -748,7 +893,7 @@ class optimizer_iterative:
         return oldSpendVec, oldReturn, oldImpVec
             
                 
-    def execute(self, df_grp, budget, days, df_spend_dis, discard_json, dimension_bound, lst_dim):
+    def execute(self, df_grp, budget, days, df_spend_dis, discard_json, dimension_bound, group_constraint, isolate_dim_list, lst_dim):
         """main function for calculating target conversion
         
         Returns:
@@ -780,6 +925,18 @@ class optimizer_iterative:
         budget_per_day = budget/days
         budget_per_day = (np.trunc(budget_per_day*100)/100)
         # budget_per_day = np.round((budget/days),2)
+
+        # Update if group dimension constraint selected
+        if group_constraint!=None:
+            self.is_group_dimension_selected = True
+
+        # Transform grouped dimension dict for adding group level constarints/bounds
+        if self.is_group_dimension_selected == True:
+            if isolate_dim_list == None:
+                isolate_dim_list = {}
+            grouped_dimension_bound = self.transform_grouped_dimension_bound(dimension_bound, group_constraint, isolate_dim_list)
+        else:
+            grouped_dimension_bound = None
                    
         # Calculating increment budget for optimization
         increment = self.increment_factor(df_grp)
@@ -788,13 +945,13 @@ class optimizer_iterative:
             Initialization if required
             Optimzation on budget and constarints
         """
-        oldSpendVec, oldReturn, oldImpVec = self.check_initialization_required(increment, df_grp, dimension_bound, dimension_bound_actual, budget_per_day)
+        oldSpendVec, oldReturn, oldImpVec = self.check_initialization_required(increment, df_grp, dimension_bound, dimension_bound_actual, grouped_dimension_bound, budget_per_day)
         if self.use_impression:
-            result_df, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, oldImpVec)
+            result_df, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, oldImpVec)
             result_df=result_df[['dimension', 'spend', 'impression', 'return']]
             result_df[['spend', 'impression', 'return']]=result_df[['spend', 'impression', 'return']].round(2)
         else:
-            result_df, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, None)
+            result_df, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, None)
             result_df=result_df[['dimension', 'spend', 'return']]
             result_df[['spend', 'return']]=result_df[['spend', 'return']].round(2)
 
@@ -838,6 +995,8 @@ class optimizer_iterative_seasonality:
                 self.const_var = 'mean spend'
             
         self.dimension_names = list(self.d_param.keys())
+        # Setting if group dimension constraint selected or not as False, updating the flag in execute function if group dimension constraint selected is selected
+        self.is_group_dimension_selected = False
         # Precision used for optimization
         self.precision = 1e-0
         # Max iterations used for optimization
@@ -976,8 +1135,31 @@ class optimizer_iterative_seasonality:
             dimension_bound[dim][1]=dim_max_budget
         return dimension_bound
     
+
+    def transform_grouped_dimension_bound(self, dimension_bound, group_constraint, isolate_dim_list):
+        """Transforming grouped dimension dictionary to use for constarints for optimization
+
+        Returns:
+            Dictionary: grp_dim_bound
+        """
+
+        grp_dim_bound = {}
+
+        for dim in group_constraint:
+            sub_dim_list = group_constraint[dim]['sub_dimension']
+            sub_dim_constraint = group_constraint[dim]['constraints'][1]
+            for dim_ in sub_dim_list:
+                grp_dim_bound[dim_] = {'dimension' : sub_dim_list,
+                                    'constraints':sub_dim_constraint}
+                
+        for dim_ in isolate_dim_list:
+            grp_dim_bound[dim_] = {'dimension' : [dim_],
+                                    'constraints':dimension_bound[dim_][1]}
+            
+        return grp_dim_bound
     
-    def ini_start_value(self, df_grp, dimension_bound, increment):
+    
+    def ini_start_value(self, df_grp, dimension_bound, increment, grouped_dimension_bound):
         """initialization of initial metric (spend or impression) to overcome the local minima for each dimension
         
         Returns:
@@ -1034,6 +1216,20 @@ class optimizer_iterative_seasonality:
                     oldSpendVec[dim]=input_start_spend
                 else:
                     oldSpendVec[dim]=start_value_spend
+        
+        if self.is_group_dimension_selected == True:
+            checked_dim_list = []
+            for dim in self.dimension_names:
+                if dim in checked_dim_list:
+                    continue
+                sub_dim_list = grouped_dimension_bound[dim]['dimension']
+                groupSpendConstraint = grouped_dimension_bound[dim]['constraints'] 
+                agg_iniSpend=sum(oldSpendVec[dim_ini] for dim_ini in sub_dim_list)
+                if(agg_iniSpend>=groupSpendConstraint):
+                    for sub_dim in sub_dim_list:
+                        oldSpendVec[sub_dim] = 0
+                checked_dim_list = checked_dim_list + sub_dim_list
+
                 
         if self.use_impression:
             return oldSpendVec, oldImpVec
@@ -1075,8 +1271,23 @@ class optimizer_iterative_seasonality:
 
         return oldReturn
 
+
+    def get_grouped_dimension_constraint(self, grouped_dimension_bound, dim, newSpendVec):
+        """Function to get allocated spend to sub-dimensions under a group and the group dimension's spend constarint
+        Returns:
+            Spend variable - 
+                subDimSpend: Aggregated allocated spend to each dimension
+                grp_dim_const: Group dimension spend constraint         
+        """
+        subDimSpend = 0
+        sub_dim_list = grouped_dimension_bound[dim]['dimension']
+        grp_dim_const = grouped_dimension_bound[dim]['constraints']
+        for sub_dim in sub_dim_list:
+            subDimSpend = subDimSpend + newSpendVec[sub_dim]
+        return subDimSpend, grp_dim_const
+
     
-    def get_conversion_dimension(self, newSpendVec, dimension_bound, increment, init_weekday, init_month, newImpVec):
+    def get_conversion_dimension(self, newSpendVec, dimension_bound, increment, grouped_dimension_bound, init_weekday, init_month, newImpVec):
         """Function to get dimension and their conversion for increment budget - to derive dimension having maximum conversion
         
         Returns:
@@ -1090,99 +1301,98 @@ class optimizer_iterative_seasonality:
         for dim in self.dimension_names:
 
             oldSpendTemp = newSpendVec[dim]
-            
             if self.use_impression:
-                oldImpTemp = newImpVec[dim]
+                oldImpTemp = newImpVec[dim]  
+
+            # getting sum of allocated budget to group of dimensions and grouped budget constraint
+            if self.is_group_dimension_selected == True:
+                subDimSpend, groupSpendConstraint = self.get_grouped_dimension_constraint(grouped_dimension_bound, dim, newSpendVec)              
             
             # check if spend allocated to a dimension + increment is less or equal to max constarint and get incremental converstions
             if((newSpendVec[dim] + increment)<=dimension_bound[dim][1]):
-                
-                incBudget[dim] = increment
-                newSpendTemp = newSpendVec[dim] + incBudget[dim]
-                
-                if self.use_impression:
-                    newImpTemp = ((newSpendTemp*1000)/(dimension_bound[dim][2]))
-                    incReturns[dim]=(self.s_curve_hill(newImpTemp,
-                                                        self.d_param[dim]["param a"],
-                                                        self.d_param[dim]["param b"],
-                                                        self.d_param[dim]["param c"],
-                                                        list(self.d_param[dim].values())[3:9],
-                                                        list(self.d_param[dim].values())[9:20],
-                                                        init_weekday,
-                                                        init_month)
-                                -  self.s_curve_hill(oldImpTemp,
-                                                        self.d_param[dim]["param a"],
-                                                        self.d_param[dim]["param b"],
-                                                        self.d_param[dim]["param c"],
-                                                        list(self.d_param[dim].values())[3:9],
-                                                        list(self.d_param[dim].values())[9:20],
-                                                        init_weekday,
-                                                        init_month))
+                # checks if grouped constraints is selected
+                if self.is_group_dimension_selected == True:
+                    # check if post allocation of increment budget, grouped constraint is satisfied
+                    if ((subDimSpend + increment)<=groupSpendConstraint):
+                        incBudget[dim] = increment
+                    # check if grouped constraint is lies between before and post allocation of increment budget
+                    elif((subDimSpend<groupSpendConstraint) & ((subDimSpend + increment)>groupSpendConstraint)):
+                        incBudget[dim] = groupSpendConstraint-subDimSpend
+                    # if max budget for grouped constraint is reached
+                    else:
+                        incBudget[dim]=0
+                        incReturns[dim]=-1
+                        continue
+                # if grouped constraints is not selected
                 else:
-                    incReturns[dim]=(self.s_curve_hill(newSpendTemp,
-                                                        self.d_param[dim]["param a"],
-                                                        self.d_param[dim]["param b"],
-                                                        self.d_param[dim]["param c"],
-                                                        list(self.d_param[dim].values())[3:9],
-                                                        list(self.d_param[dim].values())[9:20],
-                                                        init_weekday,
-                                                        init_month)
-                                -  self.s_curve_hill(oldSpendTemp,
-                                                        self.d_param[dim]["param a"],
-                                                        self.d_param[dim]["param b"],
-                                                        self.d_param[dim]["param c"],
-                                                        list(self.d_param[dim].values())[3:9],
-                                                        list(self.d_param[dim].values())[9:20],
-                                                        init_weekday,
-                                                        init_month))
-            
+                    incBudget[dim] = increment
+       
             # check if spend allocated to a dimension + increment is greater than max constarint and get converstions for remaining budget for that dimension
             elif((newSpendVec[dim]<dimension_bound[dim][1]) & ((newSpendVec[dim] + increment)>dimension_bound[dim][1])):
-                
-                incBudget[dim] = dimension_bound[dim][1] - newSpendVec[dim]
-                newSpendTemp = newSpendVec[dim] + incBudget[dim]
-                
-                if self.use_impression:
-                    newImpTemp = ((newSpendTemp*1000)/(dimension_bound[dim][2]))
-                    incReturns[dim]=(self.s_curve_hill(newImpTemp,
-                                                        self.d_param[dim]["param a"],
-                                                        self.d_param[dim]["param b"],
-                                                        self.d_param[dim]["param c"],
-                                                        list(self.d_param[dim].values())[3:9],
-                                                        list(self.d_param[dim].values())[9:20],
-                                                        init_weekday,
-                                                        init_month)
-                                -  self.s_curve_hill(oldImpTemp,
-                                                        self.d_param[dim]["param a"],
-                                                        self.d_param[dim]["param b"],
-                                                        self.d_param[dim]["param c"],
-                                                        list(self.d_param[dim].values())[3:9],
-                                                        list(self.d_param[dim].values())[9:20],
-                                                        init_weekday,
-                                                        init_month))
+                # getting remaining increment budget if post increment allocation budget exceeds max bound for a dimension
+                temp_incBudget = dimension_bound[dim][1] - newSpendVec[dim]
+                # checks if grouped constraints is selected
+                if self.is_group_dimension_selected == True:
+                    # check if post allocation of increment budget, grouped constraint is satisfied
+                    if ((subDimSpend + temp_incBudget)<=groupSpendConstraint):
+                        incBudget[dim] = temp_incBudget
+                    # check if grouped constraint is lies between before and post allocation of increment budget
+                    elif((subDimSpend<groupSpendConstraint) & ((subDimSpend + temp_incBudget)>groupSpendConstraint)):
+                        incBudget[dim] = groupSpendConstraint-subDimSpend
+                    # if max budget for grouped constraint is reached
+                    else:
+                        incBudget[dim]=0
+                        incReturns[dim]=-1
+                        continue
+                # if grouped constraints is not selected
                 else:
-                    incReturns[dim]=(self.s_curve_hill(newSpendTemp,
-                                                        self.d_param[dim]["param a"],
-                                                        self.d_param[dim]["param b"],
-                                                        self.d_param[dim]["param c"],
-                                                        list(self.d_param[dim].values())[3:9],
-                                                        list(self.d_param[dim].values())[9:20],
-                                                        init_weekday,
-                                                        init_month)
-                                -  self.s_curve_hill(oldSpendTemp,
-                                                        self.d_param[dim]["param a"],
-                                                        self.d_param[dim]["param b"],
-                                                        self.d_param[dim]["param c"],
-                                                        list(self.d_param[dim].values())[3:9],
-                                                        list(self.d_param[dim].values())[9:20],
-                                                        init_weekday,
-                                                        init_month))
-
+                    incBudget[dim] = temp_incBudget
+            
             # if max budget is exhausted for that dimension
             else:
-                newSpendTemp = newSpendVec[dim]
                 incBudget[dim]=0
                 incReturns[dim]=-1
+                continue
+        
+            # updated spend post increment budget allocation
+            newSpendTemp = newSpendVec[dim] + incBudget[dim]
+
+            # check for increment return
+            if self.use_impression:
+                newImpTemp = ((newSpendTemp*1000)/(dimension_bound[dim][2]))
+                incReturns[dim]=(self.s_curve_hill(newImpTemp,
+                                                    self.d_param[dim]["param a"],
+                                                    self.d_param[dim]["param b"],
+                                                    self.d_param[dim]["param c"],
+                                                    list(self.d_param[dim].values())[3:9],
+                                                    list(self.d_param[dim].values())[9:20],
+                                                    init_weekday,
+                                                    init_month)
+                            -  self.s_curve_hill(oldImpTemp,
+                                                    self.d_param[dim]["param a"],
+                                                    self.d_param[dim]["param b"],
+                                                    self.d_param[dim]["param c"],
+                                                    list(self.d_param[dim].values())[3:9],
+                                                    list(self.d_param[dim].values())[9:20],
+                                                    init_weekday,
+                                                    init_month))
+            else:
+                incReturns[dim]=(self.s_curve_hill(newSpendTemp,
+                                                    self.d_param[dim]["param a"],
+                                                    self.d_param[dim]["param b"],
+                                                    self.d_param[dim]["param c"],
+                                                    list(self.d_param[dim].values())[3:9],
+                                                    list(self.d_param[dim].values())[9:20],
+                                                    init_weekday,
+                                                    init_month)
+                            -  self.s_curve_hill(oldSpendTemp,
+                                                    self.d_param[dim]["param a"],
+                                                    self.d_param[dim]["param b"],
+                                                    self.d_param[dim]["param c"],
+                                                    list(self.d_param[dim].values())[3:9],
+                                                    list(self.d_param[dim].values())[9:20],
+                                                    init_weekday,
+                                                    init_month))
         
         return incReturns, incBudget
         
@@ -1217,7 +1427,7 @@ class optimizer_iterative_seasonality:
         return totalReturn, newImpVec
     
     
-    def allocate_remaining_budget(self, budgetGoal, newSpendVec, dimension_bound_actual, totalReturn, iteration, msg, init_weekday, init_month, newImpVec):
+    def allocate_remaining_budget(self, budgetGoal, newSpendVec, dimension_bound_actual, totalReturn, grouped_dimension_bound, iteration, msg, init_weekday, init_month, newImpVec):
         """allocate remaining budget when total maximum possible conversion have been allocated
 
         Returns:
@@ -1237,24 +1447,33 @@ class optimizer_iterative_seasonality:
 
             # Get list of dimensions which have not exhausted their entire budget
             for dim in self.d_param:
-                if (newSpendVec[dim]<dimension_bound_actual[dim][1]):
-                    allocation_dim_list = allocation_dim_list + [dim]
-                    newSpendVec_filtered[dim] = newSpendVec[dim]
+
+                if self.is_group_dimension_selected == True:
+                    subDimSpend, groupSpendConstraint = self.get_grouped_dimension_constraint(grouped_dimension_bound, dim, newSpendVec)              
+                    if (newSpendVec[dim]<dimension_bound_actual[dim][1]) and (subDimSpend<groupSpendConstraint):
+                        allocation_dim_list = allocation_dim_list + [dim]
+                        newSpendVec_filtered[dim] = newSpendVec[dim]
+                else:
+                    if (newSpendVec[dim]<dimension_bound_actual[dim][1]):
+                        allocation_dim_list = allocation_dim_list + [dim]
+                        newSpendVec_filtered[dim] = newSpendVec[dim]
 
             # Check list if all remianing dimensions have been allocated some budget or not in optimization process
             check_noSpendDim = all(value == 0 for value in newSpendVec_filtered.values())
 
             # Get proportion to allocate remaining budget: 
             # budget allocated during optimization process (or median/mean spend if no budget is allocated in optimization process)
+
             if self.use_impression:
                 agg_constSpend=sum((self.d_param[dim_filtered][self.const_var]*self.d_param[dim_filtered]['cpm'])/1000 for dim_filtered in allocation_dim_list)
             else:
                 agg_constSpend=sum(self.d_param[dim_filtered][self.const_var] for dim_filtered in allocation_dim_list)
             
+            incrementCalibration = {}
+
             for dim in allocation_dim_list:
                 incrementProportion = 0
                 budgetRemainDim = 0
-                incrementCalibration = 0
 
                 if (check_noSpendDim == True):
                     if self.use_impression:
@@ -1268,13 +1487,30 @@ class optimizer_iterative_seasonality:
                 budgetRemainDim = dimension_bound_actual[dim][1] - newSpendVec[dim]
 
                 if (budgetRemainDim>=incrementProportion):
-                    incrementCalibration = incrementProportion
+                    incrementCalibration[dim] = incrementProportion
                 else:
-                    incrementCalibration = budgetRemainDim
+                    incrementCalibration[dim] = budgetRemainDim
 
-                newSpendVec[dim] = newSpendVec[dim] + incrementCalibration
-
-                totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, init_weekday, init_month, newImpVec)
+            if self.is_group_dimension_selected == True:
+                for dim in allocation_dim_list:
+                    sub_dim_list = grouped_dimension_bound[dim]['dimension']
+                    grp_dim_inc_list = list(np.intersect1d(sub_dim_list, list(incrementCalibration.keys())))
+                    agg_incSpend=sum(incrementCalibration[dim_inc] for dim_inc in grp_dim_inc_list)
+                    subDimSpend, groupSpendConstraint = self.get_grouped_dimension_constraint(grouped_dimension_bound, dim, newSpendVec)              
+                    for grp_dim in grp_dim_inc_list:
+                        if(subDimSpend+agg_incSpend>groupSpendConstraint):
+                            budgetRemainDimGroup = subDimSpend+agg_incSpend-groupSpendConstraint
+                            incrementCalibrationUpdate = incrementCalibration[grp_dim] - ((incrementCalibration[grp_dim]/agg_incSpend)*budgetRemainDimGroup)
+                        else:
+                            incrementCalibrationUpdate = incrementCalibration[grp_dim]
+                        newSpendVec[grp_dim] = newSpendVec[grp_dim] + incrementCalibrationUpdate
+                        totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, init_weekday, init_month, newImpVec)
+                        if(grp_dim!=dim):
+                            allocation_dim_list.remove(grp_dim)                
+            else:
+                for dim in allocation_dim_list:
+                    newSpendVec[dim] = newSpendVec[dim] + incrementCalibration[dim]
+                    totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, init_weekday, init_month, newImpVec)
 
             iteration+=1
             
@@ -1285,7 +1521,7 @@ class optimizer_iterative_seasonality:
         return newSpendVec, totalReturn, msg, newImpVec
 
 
-    def projections_compare(self, newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, init_weekday, init_month,  newImpVec):
+    def projections_compare(self, newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, grouped_dimension_bound, init_weekday, init_month,  newImpVec):
         """Budget for each dimension is checked and adjusted based on comparing with historic budget projection,
             if the budget allocation by optimization is higher for same target
 
@@ -1356,11 +1592,20 @@ class optimizer_iterative_seasonality:
                 dim_spend_estimate = dim_metric_estimate
             dim_spend = min(spend_projection[dim], dim_spend_estimate)
 
-            if ((dim_spend>=dimension_bound_actual[dim][0]) and (dim_spend<=dimension_bound_actual[dim][1])):
-                if ((round(totalReturn[dim])==round(return_projection[dim])) and (newSpendVec[dim]>dim_spend)):
-                    budgetDecrement = budgetDecrement + (newSpendVec[dim] - dim_spend)
-                    newSpendVec[dim] = dim_spend
-                    totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, init_weekday, init_month, newImpVec)
+            if self.is_group_dimension_selected == True:
+                subDimSpend, groupSpendConstraint = self.get_grouped_dimension_constraint(grouped_dimension_bound, dim, newSpendVec)              
+                subDimSpend_update=subDimSpend-newSpendVec[dim]+dim_spend
+                if ((dim_spend>=dimension_bound_actual[dim][0]) and (dim_spend<=dimension_bound_actual[dim][1]) and (subDimSpend_update<=groupSpendConstraint)):
+                    if ((round(totalReturn[dim])==round(return_projection[dim])) and (newSpendVec[dim]>dim_spend)):
+                        budgetDecrement = budgetDecrement + (newSpendVec[dim] - dim_spend)
+                        newSpendVec[dim] = dim_spend
+                        totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, init_weekday, init_month, newImpVec)
+            else:    
+                if ((dim_spend>=dimension_bound_actual[dim][0]) and (dim_spend<=dimension_bound_actual[dim][1])):
+                    if ((round(totalReturn[dim])==round(return_projection[dim])) and (newSpendVec[dim]>dim_spend)):
+                        budgetDecrement = budgetDecrement + (newSpendVec[dim] - dim_spend)
+                        newSpendVec[dim] = dim_spend
+                        totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, init_weekday, init_month, newImpVec)
 
         return newSpendVec, totalReturn, newImpVec
 
@@ -1375,6 +1620,11 @@ class optimizer_iterative_seasonality:
                 newSpendVec: Budget allocated to each dimension after adjustment
                 totalReturn: Conversion for allocated budget for each dimension after adjustment
                 newImpVec: Impression allocated to each dimension if applicable otherwise null value is allocated
+        """
+        """
+        Note: No requirement for checking grouped constraints for this function
+            Rounding error adjustment: Budget will remain same or floor level budget will be used
+            Zero conversion dimension: Budget will be reduced to 0 or lower bound where no conversion is generated
         """
         budgetDecrement = 0
 
@@ -1418,7 +1668,7 @@ class optimizer_iterative_seasonality:
         return newSpendVec, totalReturn, newImpVec
               
     
-    def budget_optimize(self, increment_factor, oldSpendVec, oldReturn, budgetGoal, dimension_bound, dimension_bound_actual, init_weekday, init_month, oldImpVec):
+    def budget_optimize(self, increment_factor, oldSpendVec, oldReturn, budgetGoal, dimension_bound, dimension_bound_actual, grouped_dimension_bound, init_weekday, init_month, oldImpVec):
         """function for calculating budget when metric as spend is selected
         
         Returns:
@@ -1448,11 +1698,12 @@ class optimizer_iterative_seasonality:
         check_noConversion = 0
 
         while(budgetGoal > sum(newSpendVec.values())):
-            
+            # print(sum(newSpendVec.values()))
             # Get dim with max incremental conversion
-            incReturns, incBudget = self.get_conversion_dimension(newSpendVec, dimension_bound, increment, init_weekday, init_month, newImpVec)  
+            incReturns, incBudget = self.get_conversion_dimension(newSpendVec, dimension_bound, increment, grouped_dimension_bound, init_weekday, init_month, newImpVec)  
             dim_idx = max(incReturns, key=incReturns.get)
-            
+            # print(iteration," ",dim_idx," ",incReturns[dim_idx]," ",incBudget[dim_idx])
+
             # If incremental conversion is present
             if(incReturns[dim_idx] > 0):
                 iteration+=1
@@ -1462,7 +1713,7 @@ class optimizer_iterative_seasonality:
 
              # If incremental conversion is not present
             else:
-                newSpendVec, totalReturn, msg, newImpVec = self.allocate_remaining_budget(budgetGoal, newSpendVec, dimension_bound_actual, totalReturn, iteration, msg, init_weekday, init_month, newImpVec)
+                newSpendVec, totalReturn, msg, newImpVec = self.allocate_remaining_budget(budgetGoal, newSpendVec, dimension_bound_actual, totalReturn, grouped_dimension_bound, iteration, msg, init_weekday, init_month, newImpVec)
                 resultIter_df = resultIter_df.append({'spend':sum(newSpendVec.values()) , 'impression': sum(newImpVec.values()), 'return' : sum(totalReturn.values())}, ignore_index=True).reset_index(drop=True)
                 break
                 
@@ -1470,7 +1721,7 @@ class optimizer_iterative_seasonality:
             if(math.isclose(sum(newSpendVec.values()), budgetGoal, abs_tol=self.precision)):
                 if (check_noConversion == 0):
                     check_noConversion = 1
-                    newSpendVec, totalReturn, newImpVec = self.projections_compare(newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, init_weekday, init_month,  newImpVec)
+                    newSpendVec, totalReturn, newImpVec = self.projections_compare(newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, grouped_dimension_bound, init_weekday, init_month,  newImpVec)
                     newSpendVec, totalReturn, newImpVec = self.adjust_budget(newSpendVec, totalReturn, dimension_bound_actual, init_weekday, init_month,  newImpVec)
                     increment = increment_factor
                     resultIter_df = resultIter_df.append({'spend':sum(newSpendVec.values()) , 'impression': sum(newImpVec.values()), 'return' : sum(totalReturn.values())}, ignore_index=True).reset_index(drop=True)
@@ -1608,14 +1859,14 @@ class optimizer_iterative_seasonality:
         df_res['current_projections_%'] = ((df_res['current_projections_for_n_days']/df_res['current_projections_for_n_days'].sum())*100)
         df_res['buget_allocation_old_%']=df_res['buget_allocation_old_%'].round(2)
         df_res = df_res.replace({np.nan: None})
-
+            
         if self.constraint_type == 'median':
             df_res = df_res.rename(columns={"buget_allocation_old_%": "median_buget_allocation_old_%"})
             df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'median_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days']]
         else:
             df_res = df_res.rename(columns={"buget_allocation_old_%": "mean_buget_allocation_old_%"})
             df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days']]
-        
+           
         int_cols = [i for i in df_res.columns if ((i != "dimension") & ('%' not in i))]
         for i in int_cols:
             df_res.loc[df_res[i].values != None, i]=df_res.loc[df_res[i].values != None, i].astype(float).round().astype(int)
@@ -1623,7 +1874,7 @@ class optimizer_iterative_seasonality:
         return df_res
     
     
-    def check_initialization_required(self, increment, df_grp, dimension_bound, dimension_bound_actual, budget_per_day, init_weekday, init_month):
+    def check_initialization_required(self, increment, df_grp, dimension_bound, dimension_bound_actual, grouped_dimension_bound, budget_per_day, init_weekday, init_month):
         """Initialization to avoid local minima problem-
                 Budget: Minimum non-zero spend based on historic data is intialized
                 Target, impression (if selected): Respective target, impression based on spend is initialized 
@@ -1637,7 +1888,7 @@ class optimizer_iterative_seasonality:
         """
         
         if self.use_impression:
-            oldSpendVec_initial, oldImpVec_initial = self.ini_start_value(df_grp, dimension_bound, increment)
+            oldSpendVec_initial, oldImpVec_initial = self.ini_start_value(df_grp, dimension_bound, increment, grouped_dimension_bound)
             oldReturn_initial = self.initial_conversion(oldImpVec_initial, init_weekday, init_month)
             initial_investment = sum(oldReturn_initial.values())
             
@@ -1666,7 +1917,7 @@ class optimizer_iterative_seasonality:
                 oldReturn = copy.deepcopy(oldReturn_input)
                 
         else:
-            oldSpendVec_initial = self.ini_start_value(df_grp, dimension_bound, increment)
+            oldSpendVec_initial = self.ini_start_value(df_grp, dimension_bound, increment, grouped_dimension_bound)
             oldReturn_initial = self.initial_conversion(oldSpendVec_initial, init_weekday, init_month)
             initial_investment = sum(oldSpendVec_initial.values())
             
@@ -1694,7 +1945,7 @@ class optimizer_iterative_seasonality:
         return oldSpendVec, oldReturn, oldImpVec
             
                 
-    def execute(self, df_grp, budget, date_range, df_spend_dis, discard_json, dimension_bound, lst_dim):
+    def execute(self, df_grp, budget, date_range, df_spend_dis, discard_json, dimension_bound, group_constraint, isolate_dim_list, lst_dim):
         """main function for calculating target conversion
         
         Returns:
@@ -1728,6 +1979,18 @@ class optimizer_iterative_seasonality:
         budget_per_day = budget/days
         budget_per_day = (np.trunc(budget_per_day*100)/100)
         # budget_per_day = np.round((budget/days),2)
+
+        # Update if group dimension constraint selected
+        if group_constraint!=None:
+            self.is_group_dimension_selected = True
+
+        # Transform grouped dimension dict for adding group level constarints/bounds
+        if self.is_group_dimension_selected == True:
+            if isolate_dim_list == None:
+                isolate_dim_list = {}
+            grouped_dimension_bound = self.transform_grouped_dimension_bound(dimension_bound, group_constraint, isolate_dim_list)
+        else:
+            grouped_dimension_bound = None
 
         d_param_ = pd.DataFrame(self.d_param)
         d_param_.loc["spend_%", :] = (
@@ -1771,14 +2034,14 @@ class optimizer_iterative_seasonality:
             Initialization if required
             Optimzation on budget and constarints
             """
-            oldSpendVec, oldReturn, oldImpVec = self.check_initialization_required(increment, df_grp, dimension_bound, dimension_bound_actual, budget_per_day, init_weekday, init_month)
+            oldSpendVec, oldReturn, oldImpVec = self.check_initialization_required(increment, df_grp, dimension_bound, dimension_bound_actual, grouped_dimension_bound, budget_per_day, init_weekday, init_month)
             
             if self.use_impression:
-                result_df_, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, init_weekday, init_month, oldImpVec)
+                result_df_, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, init_weekday, init_month, oldImpVec)
                 result_df_=result_df_[['dimension', 'spend', 'impression', 'return']]
                 result_df_[['spend', 'impression', 'return']]=result_df_[['spend', 'impression', 'return']].round()
             else:
-                result_df_, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, init_weekday, init_month, None)
+                result_df_, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, init_weekday, init_month, None)
                 result_df_=result_df_[['dimension', 'spend', 'return']]
                 result_df_[['spend', 'return']]=result_df_[['spend', 'return']].round()
 
