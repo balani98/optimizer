@@ -19,6 +19,7 @@ from django.views.decorators.csrf import csrf_exempt
 # custom imports
 from .optimizer_helper_functions import (
     dimension_bound,
+    investment_range,
     optimizer_iterative,
     optimizer_iterative_seasonality
 )
@@ -148,6 +149,25 @@ def validate_dimension_budget_with_caps(request):
                             , status=200)
 
          
+def investment_range_from_group_dimension_constraints(request):
+    try:
+        context = {}
+        print("investment range fxn for optimizer")
+        # Get from request object
+        body = json.loads(request.body)
+        dimension_capping_constraints = json.loads(body["dimension_capping_constraints"])
+        dimension_min_max = json.loads(body["dimension_min_max"])
+        isolated_dimensions = body["isolated_dimensions"].split(",")
+        if len(isolated_dimensions) == 1 and isolated_dimensions[0] == '':
+            isolated_dimensions = []
+        investment_ranges = investment_range(dimension_min_max,
+                                            dimension_capping_constraints,
+                                            isolated_dimensions
+                                                                          )
+        context["investment_ranges"] = investment_ranges
+        return JsonResponse(context)
+    except Exception as e:
+        return JsonResponse({"error": ERROR_DICT[str(e)]}, status=500)
 
 def dimension_min_max(request):
     try:
@@ -174,7 +194,8 @@ def dimension_min_max(request):
         start_date = None
         end_date = None
         number_of_days = None
-
+        isolated_dimensions = None
+        grouped_dimension_constraints = None
         df_predictor_page_latest_data = pd.read_pickle(
             UPLOAD_FOLDER + "df_predictor_page_latest_data_{}.pkl".format(
                 request.session.get("_uuid")
@@ -192,7 +213,13 @@ def dimension_min_max(request):
         discarded_dimensions = json.loads(body["discarded_dimensions"])
         constraint_type = request.session.get("mean_median_selection")
         selected_dimensions = body['selected_dimensions'].split(",")
-        target_selector =  request.session.get("TargetSelector")
+        is_group_dimension_selected = request.session.get("dimension_grouping_check")
+        if is_group_dimension_selected == True:
+            isolated_dimensions = body['isolated_dimensions'].split(",")
+            grouped_dimension_constraints = json.loads(body['dimension_capping_constraints'])
+            if len(isolated_dimensions) == 1 and isolated_dimensions[0] == '':
+                isolated_dimensions = []
+        target_selector = request.session.get("TargetSelector")
         # cpm_checked = request.session.get('cpm_checked')
         if seasonality:
             print(
@@ -211,7 +238,15 @@ def dimension_min_max(request):
             try:
                 (
                     df_optimizer_results_post_min_max
-                ) = optimizer_object.execute(scatter_plot_df, total_budget, date_range, df_spend_dis, discarded_dimensions, dimension_min_max, selected_dimensions)
+                ) = optimizer_object.execute(scatter_plot_df,
+                                             total_budget,
+                                             date_range,
+                                             df_spend_dis,
+                                             discarded_dimensions,
+                                             dimension_min_max,
+                                             grouped_dimension_constraints,
+                                             isolated_dimensions,
+                                             selected_dimensions)
             except Exception as error:
                 return JsonResponse({"error": str(error)}, status=501)
         else:
@@ -222,11 +257,18 @@ def dimension_min_max(request):
             df_spend_dis = pd.DataFrame(request.session.get('df_spend_dis'))
             optimizer_object = optimizer_iterative(df_predictor_page_latest_data, constraint_type)
             try:
-                 
                 (
                     df_optimizer_results_post_min_max
                 ) = optimizer_object.execute(
-                    scatter_plot_df, total_budget, number_of_days, df_spend_dis, discarded_dimensions, dimension_min_max, selected_dimensions
+                    scatter_plot_df,
+                    total_budget,
+                    number_of_days,
+                    df_spend_dis,
+                    discarded_dimensions,
+                    dimension_min_max,
+                    grouped_dimension_constraints,
+                    isolated_dimensions,
+                    selected_dimensions
                 )
             except Exception as error:
                 return JsonResponse({"error": str(error)}, status=501)
