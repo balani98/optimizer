@@ -1955,7 +1955,6 @@
       }
      
       checkedDimensions = getSelectedDimensions()
-      isolatedDimensions = getIsolatedDimensionsFromGroup()
       if(checkedDimensions.length == 0){
         alert("Atleast one dimension must be selected")
        return
@@ -1974,8 +1973,11 @@
         global_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
       }
       stringified_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data).replaceAll('&amp;', '&'));
-      stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(global_grouped_optimizer_left_panel_data)
-      var dimension_keys = Object.keys(stringified_global_optimizer_left_pannel_data)
+      if(flag_to_show_grouped_dimensions == 1){
+        stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(global_grouped_optimizer_left_panel_data)
+        isolatedDimensions = getIsolatedDimensionsFromGroup()
+      }
+        var dimension_keys = Object.keys(stringified_global_optimizer_left_pannel_data)
       // splicing the elements at 2 , 3 , 4
       const removeValFromIndex = [2 , 3, 4];
       const indexSet = new Set(removeValFromIndex);
@@ -1997,8 +1999,6 @@
           end_date:global_end_date,
           discarded_dimensions:stringified_discarded_dimensions_json,
           selected_dimensions:checkedDimensions.toString(),
-          isolated_dimensions:isolatedDimensions.toString(),
-          dimension_capping_constraints:stringified_global_grouped_optimizer_left_pannel_data
         }
       }else{
         data_to_submit = {
@@ -2008,9 +2008,11 @@
           number_of_days : optimizer_left_panel_number_of_days,
           discarded_dimensions:stringified_discarded_dimensions_json,
           selected_dimensions:checkedDimensions.toString(),
-          isolated_dimensions:isolatedDimensions.toString(),
-          dimension_capping_constraints:stringified_global_grouped_optimizer_left_pannel_data
         }
+      }
+      if(flag_to_show_grouped_dimensions == 1){
+        data_to_submit["dimension_capping_constraints"] = stringified_global_grouped_optimizer_left_pannel_data
+        data_to_submit["isolated_dimensions"] = isolatedDimensions.toString()
       }
       console.log("sending data data_to_submit",data_to_submit )
       $.ajax({
