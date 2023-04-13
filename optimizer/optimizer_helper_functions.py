@@ -79,7 +79,7 @@ def dimension_bound(df_param, dimension_data, constraint_type, is_group_dimensio
     return dim_bound, grp_dim_bound
 
 
-def investment_range(dim_bound, group_constraint, isolate_dim_list):
+def investment_range(dim_bound, group_constraint, isolate_dim_list, selected_lst_dim):
     """investment range for optimizer
 
     Returns:
@@ -88,21 +88,24 @@ def investment_range(dim_bound, group_constraint, isolate_dim_list):
     dim_lower_bnds = 0
     dim_upper_bnds= 0
 
-    if group_constraint==None:
-        for dim in dim_bound:
-                dim_lower_bnds = dim_lower_bnds + dim_bound[dim][0]
-                dim_upper_bnds = dim_upper_bnds + dim_bound[dim][1]
+    if not selected_lst_dim:
+        return [dim_lower_bnds, dim_upper_bnds]
     else:
-        for dim in group_constraint:
-            dim_lower_bnds = dim_lower_bnds + group_constraint[dim]['constraints'][0]
-            dim_upper_bnds = dim_upper_bnds + group_constraint[dim]['constraints'][1]
+        if group_constraint==None:
+            for dim in dim_bound:
+                    dim_lower_bnds = dim_lower_bnds + dim_bound[dim][0]
+                    dim_upper_bnds = dim_upper_bnds + dim_bound[dim][1]
+        else:
+            for dim in group_constraint:
+                dim_lower_bnds = dim_lower_bnds + group_constraint[dim]['constraints'][0]
+                dim_upper_bnds = dim_upper_bnds + group_constraint[dim]['constraints'][1]
 
-        if isolate_dim_list!=None:       
-            for dim in isolate_dim_list:
-                dim_lower_bnds = dim_lower_bnds + dim_bound[dim][0]
-                dim_upper_bnds = dim_upper_bnds + dim_bound[dim][1]
-        
-    return [dim_lower_bnds, dim_upper_bnds]
+            if isolate_dim_list!=None:       
+                for dim in isolate_dim_list:
+                    dim_lower_bnds = dim_lower_bnds + dim_bound[dim][0]
+                    dim_upper_bnds = dim_upper_bnds + dim_bound[dim][1]
+            
+        return [dim_lower_bnds, dim_upper_bnds]
 
 
 class optimizer_iterative:

@@ -1180,6 +1180,13 @@
             // this will disable/ enable the checkboxes dynamically    
               this.checked = input_checkbox_value;
               this.disabled = !input_checkbox_value;
+              // removing the key temporarily if user has deselected the dimension from left panel 
+              if(input_checkbox_value == false){
+                temporary_grouped_optimizer_left_panel_data[input_checkbox_name] = global_grouped_optimizer_left_panel_data[input_checkbox_name]
+                delete global_grouped_optimizer_left_panel_data[input_checkbox_name]
+              }else{
+              global_grouped_optimizer_left_panel_data[input_checkbox_name] = temporary_grouped_optimizer_left_panel_data[input_checkbox_name]
+              }
               obj.dispatchEvent(
                   new Event('change',{
                   bubbles:true
@@ -1242,6 +1249,7 @@
      'sub_dimension':sub_dimension_array
     }
     const_unchanged_global_grouped_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_grouped_optimizer_left_panel_data))
+    update_global_optimizer_left_pannel_data()
   }
     // function to display percentage inputs and hide absolute inputs
     function change_input_type_to_percentages(this_value){
@@ -1362,7 +1370,8 @@
         global_grouped_optimizer_left_panel_data = JSON.parse(id_stringified_grouped_optimizer_left_pannel_data.innerHTML)
         const_unchanged_global_grouped_optimizer_left_pannel_data = JSON.parse(id_stringified_grouped_optimizer_left_pannel_data.innerHTML);
       }
-        global_seasonality = {{seasonality}}
+      let temporary_grouped_optimizer_left_panel_data  = {}
+      global_seasonality = {{seasonality}}
       let global_chart_colors = ["#45B8AC", "#EFC050", "#5B5EA6", "#9B2335", "#DFCFBE", "#98B4D4", "#34568B", "#6B5B95","#88B04B","#F7CAC9","#92A8D1", "#955251", "#B565A7", "#009B77", "#DD4124", "#D65076"];
       let global_sum_fixed_budget_values = 0;
       let discarded_dimensions_json = {};
@@ -1794,7 +1803,8 @@
       data_to_submit =  {
         dimension_capping_constraints:stringified_global_grouped_optimizer_left_pannel_data,
         dimension_min_max:stringified_global_optimizer_left_pannel_data,
-        isolated_dimensions:isolated_dimensions.toString()
+        isolated_dimensions:isolated_dimensions.toString(),
+        selected_dimensions:selectedDimensions.toString()
       }
       $.ajax({
         url: '/optimizer/ajax/investment_range_for_group_dimension_constraints/',
@@ -1940,7 +1950,7 @@
     function getIsolatedDimensionsFromGroup(){
       isolated_dimensions = []
       $('.input_checkbox_group_constraint').each(function(){
-        if(this.checked == false)
+        if(this.checked == false && this.disabled == false)
           isolated_dimensions.push(this.name)
       })
       return isolated_dimensions

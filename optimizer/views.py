@@ -158,12 +158,16 @@ def investment_range_from_group_dimension_constraints(request):
         dimension_capping_constraints = json.loads(body["dimension_capping_constraints"])
         dimension_min_max = json.loads(body["dimension_min_max"])
         isolated_dimensions = body["isolated_dimensions"].split(",")
+        selected_dimensions = body["selected_dimensions"].split(",")
         if len(isolated_dimensions) == 1 and isolated_dimensions[0] == '':
             isolated_dimensions = []
+        if len(selected_dimensions) == 1 and selected_dimensions[0] == '':
+            selected_dimensions = []
         investment_ranges = investment_range(dimension_min_max,
                                             dimension_capping_constraints,
-                                            isolated_dimensions
-                                                                          )
+                                            isolated_dimensions,
+                                            selected_dimensions
+                                                            )
         context["investment_ranges"] = investment_ranges
         return JsonResponse(context)
     except Exception as e:
