@@ -313,7 +313,7 @@ def dimension_min_max(request):
         df_sum_ = df_table_1_data.sum()
         df_sum_[dynamic_column_for_original_budget_per_day] = df_sum_[dynamic_column_for_original_budget_per_day ].round()
         df_sum_['recommended_budget_per_day'] = df_sum_['recommended_budget_per_day'].round()
-        df_sum_["total_buget_allocation_old_%"] = df_sum_["total_buget_allocation_old_%"].round()
+        df_sum_["total_buget_allocation_old_%"] = df_sum_["total_buget_allocation_old_%"]
         df_sum_[dynamic_column_for_budget_allocation_perc] = round(df_sum_[dynamic_column_for_budget_allocation_perc])
         df_sum_['buget_allocation_new_%'] = round(df_sum_['buget_allocation_new_%'])
         df_sum_['recommended_budget_for_n_days'] = df_sum_['recommended_budget_for_n_days']

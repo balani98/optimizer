@@ -1461,10 +1461,10 @@
           optimizer_left_panel_user_selected_final_dict[key]=[min_value, max_value, median_spend, min_perc, max_perc]
         }
         //console.log("optimizer_left_panel_user_selected_final_dict",optimizer_left_panel_user_selected_final_dict)
-        update_global_optimizer_left_pannel_data()
         // dispatching event when user changes something on left to reflect changes on right 
+        update_global_optimizer_left_pannel_data()
         $('.input_checkbox_group_constraint').each(function(index,obj){
-          if(key == this.name){
+          if(key == obj.name){
                 obj.dispatchEvent(
                   new Event('change',{
                   bubbles:true
@@ -1472,6 +1472,7 @@
               );
             }        
         })
+       
       }
     }
     // function to update values in right panel
@@ -1768,6 +1769,15 @@
                +   `$ ${Math.round(budget_per_day_week).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
      }
      function update_investment_range(){
+      // updating the global optimizer data 
+      selectedDimensions = getSelectedDimensions()
+      for (let key in global_optimizer_left_pannel_data){
+        if(selectedDimensions.indexOf(key) != -1){
+          if (key in optimizer_left_panel_user_selected_final_dict){
+            global_optimizer_left_pannel_data[key] = optimizer_left_panel_user_selected_final_dict[key]
+          }
+        }
+      }
       stringified_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data).replaceAll('&amp;', '&'));
       stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(global_grouped_optimizer_left_panel_data)
       var dimension_keys = Object.keys(stringified_global_optimizer_left_pannel_data)
@@ -2118,8 +2128,14 @@
         td3.appendChild(textNode3);
 
         td4 = document.createElement("td");
-        textNode4 = document.createTextNode(value["total_buget_allocation_old_%"]+" %");
+        if(value["dimension"] == "Total"){
+        textNode4 = document.createTextNode(Math.round(value["total_buget_allocation_old_%"],2)+" %");
         td4.appendChild(textNode4);    
+        }
+        else{
+          textNode4 = document.createTextNode(value["total_buget_allocation_old_%"]+" %");
+          td4.appendChild(textNode4);   
+        }
         td5 = document.createElement("td");
         if(constraint_type == 'median')
           textNode5 = document.createTextNode(value["median_buget_allocation_old_%"]+" %");
