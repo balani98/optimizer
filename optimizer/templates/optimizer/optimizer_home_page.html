@@ -1110,7 +1110,7 @@
       </div>
     </div>
     {% if flag_to_show_grouped_dimensions == 1 %}
-    <button class="openbtn" onclick="openNav()">
+    <button class="openbtn btn" id = "open_nav_rightside" onclick="openNav()">
       <i class="fa fa-plus-square-o fa-2x"></i>
     </button>
     {% endif %}
@@ -1154,6 +1154,25 @@
           else
               this.checked = false
       })
+      closeNav();
+      $('#open_nav_rightside').prop('disabled',!select_all_check)
+        $('.input_checkbox_group_constraint').each(function(index,obj){
+          // this will disable/ enable the checkboxes dynamically    
+            this.checked = select_all_check;
+            this.disabled = !select_all_check;
+            // removing the key temporarily if user has deselected the dimension from left panel 
+            if(select_all_check == false){
+              temporary_grouped_optimizer_left_panel_data[this.name] = global_grouped_optimizer_left_panel_data[this.name]
+              delete global_grouped_optimizer_left_panel_data[this.name]
+            }else{
+            global_grouped_optimizer_left_panel_data[this.name] = temporary_grouped_optimizer_left_panel_data[this.name]
+            }
+            obj.dispatchEvent(
+                new Event('change',{
+                bubbles:true
+              })
+            );        
+        })
       // upating the budget ranges
       update_global_optimizer_left_pannel_data()
   })
@@ -1174,7 +1193,7 @@
         // functionality to change the values / checkboxes on right hand side 
         input_checkbox_value  = this.checked;
         input_checkbox_name = this.name 
-      
+        $('#open_nav_rightside').prop('disabled',!input_checkbox_value)
         $('.input_checkbox_group_constraint').each(function(index,obj){
           if(input_checkbox_name == this.name){
             // this will disable/ enable the checkboxes dynamically    
@@ -1184,6 +1203,8 @@
               if(input_checkbox_value == false){
                 temporary_grouped_optimizer_left_panel_data[input_checkbox_name] = global_grouped_optimizer_left_panel_data[input_checkbox_name]
                 delete global_grouped_optimizer_left_panel_data[input_checkbox_name]
+                // close the navbar if open
+                closeNav()
               }else{
               global_grouped_optimizer_left_panel_data[input_checkbox_name] = temporary_grouped_optimizer_left_panel_data[input_checkbox_name]
               }

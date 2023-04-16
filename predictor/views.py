@@ -483,9 +483,11 @@ def predictor_ajax_date_dimension_onchange(request):
             multi_line_chart_df = scatter_plot_df
             multi_line_chart_df = multi_line_chart_df[multi_line_chart_df["dimension"].isin(global_unique_dim)]
             if cpm_checked == "True":
+                context["cpm_message"] = "cpm selected"
                 sort_multi = ['dimension', 'impression']
                 max_spend = multi_line_chart_df.loc[multi_line_chart_df["impression"].idxmax()]["impression"]
             else:
+                context["cpm_message"] = "cpm not selected"
                 sort_multi = ['dimension', 'spend']
                 max_spend = multi_line_chart_df.loc[multi_line_chart_df["spend"].idxmax()]["spend"]
             multi_line_chart_df = multi_line_chart_df.sort_values(by=sort_multi)

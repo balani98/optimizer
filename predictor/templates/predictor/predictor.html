@@ -707,6 +707,11 @@
     
   }
   function onChangeHelperFunction(discard_dimension=false) {
+    // display the spinner
+    $('#spinner-optimizer').css('display','block');
+    $('#container').css('opacity',0.5);
+    $("body").css("background-color", "#cecece");
+    $('#container').css('pointer-events','none');
     console.log("onChangeHelperFunction");
     // if user discards some dimension , change the dimension to 2nd dimension
     dimension_to_be_discarded = null
@@ -739,6 +744,11 @@
       url: "/predictor/ajax/date_dimension_onchange/",
       data: data_to_submit,
       success: function (data) {
+        // hide the spinner
+        $('#spinner-optimizer').css('display','none');
+        $('#container').css('opacity',1);
+        $("body").css("background-color", "#fff");
+        $('#container').css('pointer-events','auto');
         console.log("success in '/predictor/ajax/date_dimension_onchange/'");
         scatterplot_data = data.scatterplot_data;
         dimension_value_selector = data.dimension_value_selector
@@ -748,10 +758,8 @@
         predictor_table_data = data.predictor_table_data[0];
         enter_cpm = data.enter_cpm;
         if(discard_dimension == true){
-          max_spend = data.max_spend;
-          max_predictions = data.max_predictions;
           multi_line_chart_data2 = data.multi_line_chart_data2;
-          plot_multi_line_chart_checkboxes(multi_line_chart_data2, enter_cpm ,max_spend, max_predictions)    
+          plot_multi_line_chart_checkboxes(multi_line_chart_data2,data.cpm_message, data.max_spend, data.max_predictions)    
         }
         console.log(
           `\n scatterplot_data, ${scatterplot_data} 
@@ -1818,6 +1826,11 @@ function scatter_plot_chart(data) {
 
 
   function discard_plan(value) {
+      // display the spinner
+      $('#spinner-optimizer').css('display','block');
+      $('#container').css('opacity',0.5);
+      $("body").css("background-color", "#cecece");
+      $('#container').css('pointer-events','none');
       children_dimension_value_selector = document.getElementById("dimensionValueSelector").children;
       if(children_dimension_value_selector.length <=1)
         alert("There Atleast be a one dimension")
@@ -1833,13 +1846,18 @@ function scatter_plot_chart(data) {
       }
 
       console.log("discarded_items",discarded_items)
-
+         // set all the properties of screen back and hide the progress bar
+   
       $.ajax({
           url: '/predictor/ajax/predictor_discard/',
           data: {
               'discarded_items': discarded_items.toString(),
           },
           success: function (data) {
+              $('#spinner-optimizer').css('display','none');
+              $('#container').css('opacity',1);
+              $("body").css("background-color", "#fff");
+              $('#container').css('pointer-events','auto');
               onChangeHelperFunction(true)
                              // Start : Updating Drop dimension
               drop_dimension_from_session = data.drop_dimension_from_session
