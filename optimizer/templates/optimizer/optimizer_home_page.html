@@ -1085,7 +1085,7 @@
                 oninput="check_keys_min_max_value(this)"
                 onblur="add_commas_min_max_value(this)"
                 value="{{value.constraints.1}}"
-                onmouseover = "show_ranges_for_grouped_channel(this)" 
+                onmouseover = "show_ranges_for_grouped_channel(this,'{{key}}')" 
               />
             </div>
           </div>
@@ -1130,8 +1130,10 @@
         })
     })
     // function to display ranges on hover 
-    function show_ranges_for_grouped_channel(this_value){
-      this_value.title = this_value.previousElementSibling.value + " - " + this_value.value;
+    function show_ranges_for_grouped_channel(this_value,key){
+      min_range = global_grouped_optimizer_left_panel_data[key]['fixed_ranges'][0]
+      max_range = global_grouped_optimizer_left_panel_data[key]['fixed_ranges'][1]
+     this_value.title =  "$" + min_range.toString().replace("$","").replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",") + " - " + "$" + max_range.toString().replace("$","").replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
     }
     // functions on side navbar right side
     // open the right side navbar
@@ -1294,6 +1296,7 @@
     // updating the dictionary
     global_grouped_optimizer_left_panel_data[key] = {
      'constraints':[parseInt(dimensionMinBudget),parseInt(dimensionBudget)],
+     'fixed_ranges':[parseInt(dimensionMinBudget),parseInt(dimensionBudget)],
      'sub_dimension':sub_dimension_array
     }
     const_unchanged_global_grouped_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_grouped_optimizer_left_panel_data))

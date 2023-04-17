@@ -74,7 +74,8 @@ def dimension_bound(df_param, dimension_data, constraint_type, is_group_dimensio
             sub_dim_bound_min = sum([dim_bound[dim][0] for dim in sub_dim_list])
             sub_dim_bound_max = sum([dim_bound[dim][1] for dim in sub_dim_list])
             grp_dim_bound[grp_dim] = {'sub_dimension' : sub_dim_list,
-                                    'constraints':[sub_dim_bound_min, sub_dim_bound_max]}
+                                    'constraints': [sub_dim_bound_min, sub_dim_bound_max],
+                                    'fixed_ranges' : [sub_dim_bound_min, sub_dim_bound_max]}
         
     return dim_bound, grp_dim_bound
 
