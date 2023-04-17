@@ -1074,6 +1074,7 @@
                 oninput="check_keys_min_max_value(this)"
                 onblur="add_commas_min_max_value(this)"
                 value="{{value.constraints.0}}"
+                hidden
               />
               <input
                 type="text"
@@ -1084,6 +1085,7 @@
                 oninput="check_keys_min_max_value(this)"
                 onblur="add_commas_min_max_value(this)"
                 value="{{value.constraints.1}}"
+                onmouseover = "show_ranges_for_grouped_channel(this)" 
               />
             </div>
           </div>
@@ -1127,6 +1129,10 @@
           obj.value = '$' + Math.round(obj.value).toString().replace("$","").replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
         })
     })
+    // function to display ranges on hover 
+    function show_ranges_for_grouped_channel(this_value){
+      this_value.title = this_value.previousElementSibling.value + " - " + this_value.value;
+    }
     // functions on side navbar right side
     // open the right side navbar
     function openNav() {
@@ -1174,7 +1180,8 @@
             );        
         })
       // upating the budget ranges
-      update_global_optimizer_left_pannel_data()
+      if(flag_to_show_grouped_dimensions != 1)
+        update_global_optimizer_left_pannel_data()
   })
     // select All dimensions functionality in case of percentages
     $('#selectAll_perc').change(function(){
@@ -1186,7 +1193,8 @@
               this.checked = false
       })
       // updating the budget ranges
-      update_global_optimizer_left_pannel_data()
+      if(flag_to_show_grouped_dimensions != 1)
+        update_global_optimizer_left_pannel_data()
   })
   // updating the left panel data and conversion on if user changes any selection
       $('.input_checkbox').change(function(){
@@ -1203,8 +1211,10 @@
               if(input_checkbox_value == false){
                 temporary_grouped_optimizer_left_panel_data[input_checkbox_name] = global_grouped_optimizer_left_panel_data[input_checkbox_name]
                 delete global_grouped_optimizer_left_panel_data[input_checkbox_name]
-                // close the navbar if open
-                closeNav()
+                // close the navbar if open in this case no of selected dimensions should be zero 
+                selectedDimensions = getSelectedDimensions()
+                if(selectedDimensions.length == 0)
+                  closeNav()
               }else{
               global_grouped_optimizer_left_panel_data[input_checkbox_name] = temporary_grouped_optimizer_left_panel_data[input_checkbox_name]
               }
@@ -1215,11 +1225,12 @@
               );
             }        
           })
-        update_global_optimizer_left_pannel_data()
+          if(flag_to_show_grouped_dimensions != 1)
+            update_global_optimizer_left_pannel_data()
       })
       $('.input_checkbox_perc').change(function(){
         // functionality to change the values / checkboxes on right hand side 
-        /* input_checkbox_value  = this.checked;
+       input_checkbox_value  = this.checked;
         input_checkbox_name = this.name; 
         $('.input_checkbox_group_constraint').each(function(){
           if(input_checkbox_name == this.name){
@@ -1227,8 +1238,9 @@
               this.checked = input_checkbox_value;
               this.disabled = !input_checkbox_value;
             }        
-          })  */
-        update_global_optimizer_left_pannel_data()
+          })
+          if(flag_to_show_grouped_dimensions != 1)
+            update_global_optimizer_left_pannel_data()    
       })
     // function to get selected dimensions
     function getSelectedDimensions(){
@@ -1270,7 +1282,7 @@
      'sub_dimension':sub_dimension_array
     }
     const_unchanged_global_grouped_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_grouped_optimizer_left_panel_data))
-    update_global_optimizer_left_pannel_data()
+    update_global_optimizer_left_pannel_data(investment_range_to_be_called = true)
   }
     // function to display percentage inputs and hide absolute inputs
     function change_input_type_to_percentages(this_value){
@@ -1492,7 +1504,11 @@
         }
         //console.log("optimizer_left_panel_user_selected_final_dict",optimizer_left_panel_user_selected_final_dict)
         // dispatching event when user changes something on left to reflect changes on right 
-        update_global_optimizer_left_pannel_data()
+        // it should not change if user has not selected dimension grouping
+        // this call is done to update the dimension min max 
+        // this call will update the dimension capping constraints
+        if(flag_to_show_grouped_dimensions == 1){
+          update_global_optimizer_left_pannel_data(investment_range_to_be_called = false)
         $('.input_checkbox_group_constraint').each(function(index,obj){
           if(key == obj.name){
                 obj.dispatchEvent(
@@ -1502,9 +1518,11 @@
               );
             }        
         })
-       
+      }else{
+        update_global_optimizer_left_pannel_data(investment_range_to_be_called = false)
       }
     }
+  }
     // function to update values in right panel
     function update_total_limits_min_value_grouped_panel(this_value,key){
       original_min_value = const_unchanged_global_grouped_optimizer_left_pannel_data[key]["constraints"][0];
@@ -1603,7 +1621,7 @@
         min_value = median_spend + ((min_perc_value/100)* median_spend);
         max_value = median_spend + ((max_perc_value/100) * median_spend);
         if (global_is_cpm_checked){
-          cpm_value = this_value.parentElement.nextElementSibling.children[0].value;
+          cpm_value = this_value.parentElement.parentElement.nextElementSibling.children[0].value;
           update_user_selected_final_dict(key, min_value, max_value, median_spend ,min_perc_value, max_perc_value, cpm_value)
         }
         else{
@@ -1633,7 +1651,7 @@
         min_value = median_spend + ((min_perc_value/100) * median_spend)
         max_value = median_spend + ((max_perc_value/100) * median_spend)
         if (global_is_cpm_checked){
-          cpm_value = this_value.parentElement.nextElementSibling.children[0].value;
+          cpm_value = this_value.parentElement.parentElement.nextElementSibling.children[0].value;
           update_user_selected_final_dict(key, min_value, max_value, median_spend, min_perc_value, max_perc_value, cpm_value)
         }
         else{
@@ -1854,12 +1872,12 @@
         }
       })
      }
-     function update_global_optimizer_left_pannel_data(){
+     function update_global_optimizer_left_pannel_data(investment_range_to_be_called = false){
       //console.log("global_optimizer_left_pannel_data", global_optimizer_left_pannel_data)
       sum_min_values = 0
       sum_max_values = 0
       // get the selected checked dimensions
-      if(flag_to_show_grouped_dimensions == 1){
+      if(flag_to_show_grouped_dimensions == 1 && investment_range_to_be_called == true){
         update_investment_range()
       }else{
           selectedDimensions = getSelectedDimensions()
