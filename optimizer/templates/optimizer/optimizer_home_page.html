@@ -1567,10 +1567,9 @@
         console.log("Max value higer than the given bound values or lower than the min value")
         this_value.value = original_max_value
       }else{
-        global_grouped_optimizer_left_panel_data[key]["constraints"][0] = parseInt(min_value)
         global_grouped_optimizer_left_panel_data[key]["constraints"][1] = parseInt(max_value)
       }
-    update_global_optimizer_left_pannel_data()
+    update_global_optimizer_left_pannel_data(investment_range_to_be_called=true)
     }
      function add_commas_min_max_value(this_value){
       var temp = this_value.value.replace(/,/g, '').replace('$','');
