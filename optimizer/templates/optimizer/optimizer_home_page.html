@@ -785,7 +785,7 @@
 
     <main
       class="col-md-9 ms-sm-auto col-lg-10 px-md-4"
-      style="display: block; align-items: center;left:9%;width:100vw"
+      style="display: block; align-items: center; left: 9%; width: 100vw"
     >
       <div id="right_div" style="display: none; align-items: center">
         <div
@@ -834,25 +834,24 @@
                     Dimension
                   </th>
                   {% if is_weekly_selected == 1 or convert_to_weekly_data == 1%}
-                    {% if constraint_type == 'median' %}
-                      <th scope="col">Original Median Budget/week</th>
-                    {% else %}
-                      <th scope="col">Original Mean Budget/week</th>
-                    {% endif %}
-                  <th scope="col">Recommended Budget/week</th>
+                  {% if constraint_type == 'median' %}
+                  <th scope="col">Original Median Budget/week</th>
                   {% else %}
-                   {% if constraint_type == 'median' %}
-                      <th scope="col">Original Median Budget/day</th>
-                   {% else %}
-                      <th scope="col">Original Mean Budget/day</th>
-                   {% endif %}
-                   <th scope="col">Recommended Budget/day</th>
+                  <th scope="col">Original Mean Budget/week</th>
+                  {% endif %}
+                  <th scope="col">Recommended Budget/week</th>
+                  {% else %} {% if constraint_type == 'median' %}
+                  <th scope="col">Original Median Budget/day</th>
+                  {% else %}
+                  <th scope="col">Original Mean Budget/day</th>
+                  {% endif %}
+                  <th scope="col">Recommended Budget/day</th>
                   {% endif %}
                   <th scope="col">Original Total Budget Allocation %</th>
                   {% if constraint_type == 'median' %}
-                    <th scope="col">Original Median Budget Allocation %</th>
+                  <th scope="col">Original Median Budget Allocation %</th>
                   {% else %}
-                    <th scope="col">Original Mean Budget Allocation %</th>
+                  <th scope="col">Original Mean Budget Allocation %</th>
                   {% endif %}
                   <th scope="col">Recommended Budget Allocation %</th>
                   <th scope="col">Recommended Total Budget Allocation</th>
@@ -1069,6 +1068,7 @@
                 type="text"
                 style="width: 50%"
                 class="group_channel_min_budget"
+                name="{{key}}"
                 onchange="update_total_limits_min_value_grouped_panel(this,'{{key}}')"
                 onkeyup="add_commas_min_max_value(this)"
                 oninput="check_keys_min_max_value(this)"
@@ -1080,12 +1080,13 @@
                 type="text"
                 style="width: 50%; margin-left: 5%"
                 class="group_channel_max_budget"
+                name="{{key}}"
                 onchange="update_total_limits_max_value_grouped_panel(this,'{{key}}')"
                 onkeyup="add_commas_min_max_value(this)"
                 oninput="check_keys_min_max_value(this)"
                 onblur="add_commas_min_max_value(this)"
                 value="{{value.constraints.1}}"
-                onmouseover = "show_ranges_for_grouped_channel(this,'{{key}}')" 
+                onmouseover="show_ranges_for_grouped_channel(this,'{{key}}')"
               />
             </div>
           </div>
@@ -1098,7 +1099,7 @@
             <div class="individual_channel">
               <input
                 type="checkbox"
-                name = '{{item}}'
+                name="{{item}}"
                 class="styled_checkbox input_checkbox_group_constraint"
                 onchange="selectDeselectGroupedDimensions(this,'{{key}}')"
                 checked
@@ -1112,7 +1113,7 @@
       </div>
     </div>
     {% if flag_to_show_grouped_dimensions == 1 %}
-    <button class="openbtn btn" id = "open_nav_rightside" onclick="openNav()">
+    <button class="openbtn btn" id="open_nav_rightside" onclick="openNav()">
       <i class="fa fa-plus-square-o fa-2x"></i>
     </button>
     {% endif %}
@@ -1129,7 +1130,7 @@
           obj.value = '$' + Math.round(obj.value).toString().replace("$","").replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
         })
     })
-    // function to display ranges on hover 
+    // function to display ranges on hover
     function show_ranges_for_grouped_channel(this_value,key){
       min_range = global_grouped_optimizer_left_panel_data[key]['fixed_ranges'][0]
       max_range = global_grouped_optimizer_left_panel_data[key]['fixed_ranges'][1]
@@ -1165,10 +1166,10 @@
       closeNav();
       $('#open_nav_rightside').prop('disabled',!select_all_check)
         $('.input_checkbox_group_constraint').each(function(index,obj){
-          // this will disable/ enable the checkboxes dynamically    
+          // this will disable/ enable the checkboxes dynamically
             this.checked = select_all_check;
             this.disabled = !select_all_check;
-            // removing the key temporarily if user has deselected the dimension from left panel 
+            // removing the key temporarily if user has deselected the dimension from left panel
             if(select_all_check == false){
               temporary_grouped_optimizer_left_panel_data[this.name] = global_grouped_optimizer_left_panel_data[this.name]
               delete global_grouped_optimizer_left_panel_data[this.name]
@@ -1179,7 +1180,7 @@
                 new Event('change',{
                 bubbles:true
               })
-            );        
+            );
         })
       // upating the budget ranges
       if(flag_to_show_grouped_dimensions != 1)
@@ -1200,7 +1201,7 @@
   })
   // updating the left panel data and conversion on if user changes any selection
       $('.input_checkbox').change(function(){
-        // functionality to change the values / checkboxes on right hand side 
+        // functionality to change the values / checkboxes on right hand side
         input_checkbox_value  = this.checked;
         input_checkbox_name = this.name
         selectedDimensions = getSelectedDimensions()
@@ -1212,10 +1213,10 @@
           closeNav()
         $('.input_checkbox_group_constraint').each(function(index,obj){
           if(input_checkbox_name == this.name){
-            // this will disable/ enable the checkboxes dynamically    
+            // this will disable/ enable the checkboxes dynamically
               this.checked = input_checkbox_value;
               this.disabled = !input_checkbox_value;
-              // removing the key temporarily if user has deselected the dimension from left panel 
+              // removing the key temporarily if user has deselected the dimension from left panel
               if(input_checkbox_value == false){
                 temporary_grouped_optimizer_left_panel_data[input_checkbox_name] = global_grouped_optimizer_left_panel_data[input_checkbox_name]
                 delete global_grouped_optimizer_left_panel_data[input_checkbox_name]
@@ -1227,25 +1228,25 @@
                   bubbles:true
                 })
               );
-            }        
+            }
           })
           if(flag_to_show_grouped_dimensions != 1)
             update_global_optimizer_left_pannel_data()
       })
       $('.input_checkbox_perc').change(function(){
-        // functionality to change the values / checkboxes on right hand side 
+        // functionality to change the values / checkboxes on right hand side
        input_checkbox_value  = this.checked;
         input_checkbox_name = this.name;
         selectedDimensions = getSelectedDimensions()
         selectedDimensions.length == 0 ?
         $('#open_nav_rightside').prop('disabled', true):
-        $('#open_nav_rightside').prop('disabled', false); 
+        $('#open_nav_rightside').prop('disabled', false);
         // close the navbar if open in this case no of selected dimensions should be zero
         if(selectedDimensions.length == 0)
           closeNav()
         $('.input_checkbox_group_constraint').each(function(index, obj){
           if(input_checkbox_name == this.name){
-            // this will disable/ enable the checkboxes dynamically    
+            // this will disable/ enable the checkboxes dynamically
               this.checked = input_checkbox_value;
               this.disabled = !input_checkbox_value;
               if(input_checkbox_value == false){
@@ -1260,7 +1261,7 @@
                   bubbles:true
                 })
               );
-            }        
+            }
           })
           if(flag_to_show_grouped_dimensions != 1)
             update_global_optimizer_left_pannel_data()
@@ -1308,6 +1309,23 @@
     const_unchanged_global_grouped_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_grouped_optimizer_left_panel_data))
     update_global_optimizer_left_pannel_data(investment_range_to_be_called = true)
   }
+    // function to reset the inputs
+    function reset_inputs(){
+      $('.input_checkbox_group_constraint').each(function(index,element){
+        element.checked = true;
+        element.disabled = false;
+      })
+      $('.group_channel_min_budget').each(function(index,element){
+        original_min_value = original_global_grouped_optimizer_left_pannel_data[element.name]["fixed_ranges"][0]
+        element.value = "$" + original_min_value.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+      })
+      $('.group_channel_max_budget').each(function(index,element){
+        original_max_value =  original_global_grouped_optimizer_left_pannel_data[element.name]["fixed_ranges"][1]
+        element.value = "$" + original_max_value.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+      })
+      // make the grouped panel dictionary same as original one
+      global_grouped_optimizer_left_panel_data  = JSON.parse(JSON.stringify(original_global_grouped_optimizer_left_pannel_data))
+    }
     // function to display percentage inputs and hide absolute inputs
     function change_input_type_to_percentages(this_value){
       if(this_value.checked){
@@ -1320,6 +1338,10 @@
         $('.max_perc_value').val('200')
         $('.min_perc_value').val('-100')
         global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(original_optimizer_left_pannel_data));
+        if(flag_to_show_grouped_dimensions == 1){
+          // reseting the right hand side input if user changes the type of input
+            reset_inputs()
+        }
       }else {
         $('#labels_div_percentages').css('display','none')
         $('#labels_div_absolute').css('display','flex')
@@ -1329,6 +1351,10 @@
         $('#outer_div_multiple_inputs_percentages').hide();
         // reloading the browser to refresh all inputs
         location.reload()
+        if(flag_to_show_grouped_dimensions == 1){
+           // reseting the right hand side input if user changes the type of input
+            reset_inputs()
+        }
       }
       $('#total_budget').val(null)
       $('#total_days').val(null)
@@ -1426,6 +1452,7 @@
       if(flag_to_show_grouped_dimensions == 1){
         global_grouped_optimizer_left_panel_data = JSON.parse(id_stringified_grouped_optimizer_left_pannel_data.innerHTML)
         const_unchanged_global_grouped_optimizer_left_pannel_data = JSON.parse(id_stringified_grouped_optimizer_left_pannel_data.innerHTML);
+        original_global_grouped_optimizer_left_pannel_data = JSON.parse(id_stringified_grouped_optimizer_left_pannel_data.innerHTML);
       }
       let temporary_grouped_optimizer_left_panel_data  = {}
       global_seasonality = {{seasonality}}
@@ -1527,9 +1554,9 @@
           optimizer_left_panel_user_selected_final_dict[key]=[min_value, max_value, median_spend, min_perc, max_perc]
         }
         //console.log("optimizer_left_panel_user_selected_final_dict",optimizer_left_panel_user_selected_final_dict)
-        // dispatching event when user changes something on left to reflect changes on right 
+        // dispatching event when user changes something on left to reflect changes on right
         // it should not change if user has not selected dimension grouping
-        // this call is done to update the dimension min max 
+        // this call is done to update the dimension min max
         // this call will update the dimension capping constraints
         if(flag_to_show_grouped_dimensions == 1){
           update_global_optimizer_left_pannel_data(investment_range_to_be_called = false)
@@ -1540,7 +1567,7 @@
                   bubbles:true
                 })
               );
-            }        
+            }
         })
       }else{
         update_global_optimizer_left_pannel_data(investment_range_to_be_called = false)
@@ -1623,7 +1650,7 @@
           update_user_selected_final_dict(key, min_value, max_value, median_spend, -100, 200, 0)
 
         }
-        
+
       }
     }
     // function to max values update left pannel inputs if it is in percentages
@@ -1840,7 +1867,7 @@
                +   `$ ${Math.round(budget_per_day_week).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
      }
      function update_investment_range(){
-      // updating the global optimizer data 
+      // updating the global optimizer data
       selectedDimensions = getSelectedDimensions()
       for (let key in global_optimizer_left_pannel_data){
         if(selectedDimensions.indexOf(key) != -1){
@@ -1888,7 +1915,7 @@
           global_range_max = parseInt(optimizer_left_panel_number_of_days * optimizer_left_panel_max_value)
           total_budget.setAttribute('placeholder',
           `$${global_range_min.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")} -
-           $${global_range_max.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`)    
+           $${global_range_max.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`)
           console.log("success")
         },error:function(error){
             console.log(error)
@@ -1952,63 +1979,6 @@
 
 {% comment %} on submit {% endcomment %}
 <script>
-
-    function validate_inputs_for_left_pannel_as_per_right_pannel(){
-      stringified_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data).replaceAll('&amp;', '&'));
-      var dimension_keys = Object.keys(stringified_global_optimizer_left_pannel_data)
-      type_of_input = document.getElementById('customSwitch1').checked == true ? 'perc' : 'abs';
-      class_name = type_of_input == 'abs' ? '.optimizer_left_panel_dimension_name' : '.optimizer_left_panel_dimension_name_perc';
-      // splicing the elements at 2 , 3 , 4
-      const removeValFromIndex = [2 , 3, 4];
-      const indexSet = new Set(removeValFromIndex);
-      dimension_keys.forEach((key)=>{
-        stringified_global_optimizer_left_pannel_data[key] =
-        stringified_global_optimizer_left_pannel_data[key].filter((value, i) => !indexSet.has(i));
-      })
-      // re stringifiying the json
-      stringified_global_optimizer_left_pannel_data = JSON.stringify(stringified_global_optimizer_left_pannel_data)
-      stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(global_grouped_optimizer_left_panel_data)
-      data_to_submit = {
-        dimension_min_max: stringified_global_optimizer_left_pannel_data,
-        dimension_capping_constraints: stringified_global_grouped_optimizer_left_pannel_data,
-      }
-      $.ajax({
-        url: '/optimizer/ajax/validate_dimension_min_max/',
-        data: JSON.stringify(data_to_submit),
-        type : 'POST',
-        headers: {
-          'X-CSRFToken': getCookie('csrftoken')
-        },
-        success: function (data) {
-          $(class_name).each((index,element)=>{
-              element.style.color = "#000";
-              element.parentElement.nextElementSibling.children[0].style.color = "#000"
-              element.parentElement.nextElementSibling.children[1].style.color = "#000"
-            })
-          return true;
-        },
-        error: function(error){
-          dimensions_to_be_corrected_json = JSON.parse(error.responseJSON.error.dimensions_to_be_corrected);
-          dimensions_to_be_corrected_keys = Object.keys(dimensions_to_be_corrected_json)
-          alert(error.responseJSON.message)
-         $(class_name).each((index,element)=>{
-            if(dimensions_to_be_corrected_keys.indexOf(element.innerText) != -1){
-              element.style.color = "red";
-              if(dimensions_to_be_corrected_json[element.innerText][0] == 1)
-                element.parentElement.nextElementSibling.children[0].style.color = "red"
-              else
-                element.parentElement.nextElementSibling.children[0].style.color = "#000"
-              if(dimensions_to_be_corrected_json[element.innerText][1] == 1)
-                element.parentElement.nextElementSibling.children[1].style.color = "red"
-              else
-                element.parentElement.nextElementSibling.children[1].style.color = "#000"
-             }
-          })
-          return false;
-        }
-      })
-
-    }
     function getIsolatedDimensionsFromGroup(){
       isolated_dimensions = []
       $('.input_checkbox_group_constraint').each(function(){
@@ -2035,7 +2005,7 @@
         alert("Please add valid Total Budget before submitting")
         return
       }
-     
+
       checkedDimensions = getSelectedDimensions()
       if(checkedDimensions.length == 0){
         alert("Atleast one dimension must be selected")
@@ -2202,11 +2172,11 @@
         td4 = document.createElement("td");
         if(value["dimension"] == "Total"){
         textNode4 = document.createTextNode(Math.round(value["total_buget_allocation_old_%"],2)+" %");
-        td4.appendChild(textNode4);    
+        td4.appendChild(textNode4);
         }
         else{
           textNode4 = document.createTextNode(value["total_buget_allocation_old_%"]+" %");
-          td4.appendChild(textNode4);   
+          td4.appendChild(textNode4);
         }
         td5 = document.createElement("td");
         if(constraint_type == 'median')
