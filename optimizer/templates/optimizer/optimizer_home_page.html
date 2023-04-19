@@ -590,7 +590,7 @@
                 value="{{value.5}}"
                 placeholder="CPM"
                 id="cpm_input_with_min_max"
-                style="width: 100%"
+                style="width: 84%; margin-left: 16%"
                 type="number"
                 class="cpm_perc_value"
                 onchange="update_cpm_value_with_min_max('{{key}}', this)"
@@ -1163,8 +1163,12 @@
           else
               this.checked = false
       })
-      closeNav();
-      $('#open_nav_rightside').prop('disabled',!select_all_check)
+       // upating the budget ranges
+       if(flag_to_show_grouped_dimensions != 1)
+        update_global_optimizer_left_pannel_data()
+       else {
+        closeNav();
+        $('#open_nav_rightside').prop('disabled',!select_all_check)
         $('.input_checkbox_group_constraint').each(function(index,obj){
           // this will disable/ enable the checkboxes dynamically
             this.checked = select_all_check;
@@ -1182,9 +1186,7 @@
               })
             );
         })
-      // upating the budget ranges
-      if(flag_to_show_grouped_dimensions != 1)
-        update_global_optimizer_left_pannel_data()
+      }
   })
     // select All dimensions functionality in case of percentages
     $('#selectAll_perc').change(function(){
@@ -1195,9 +1197,29 @@
           else
               this.checked = false
       })
-      // updating the budget ranges
       if(flag_to_show_grouped_dimensions != 1)
-        update_global_optimizer_left_pannel_data()
+      update_global_optimizer_left_pannel_data()
+      else {
+        closeNav();
+       $('#open_nav_rightside').prop('disabled',!select_all_check)
+      $('.input_checkbox_group_constraint').each(function(index,obj){
+        // this will disable/ enable the checkboxes dynamically
+          this.checked = select_all_check;
+          this.disabled = !select_all_check;
+          // removing the key temporarily if user has deselected the dimension from left panel
+          if(select_all_check == false){
+            temporary_grouped_optimizer_left_panel_data[this.name] = global_grouped_optimizer_left_panel_data[this.name]
+            delete global_grouped_optimizer_left_panel_data[this.name]
+          }else{
+          global_grouped_optimizer_left_panel_data[this.name] = temporary_grouped_optimizer_left_panel_data[this.name]
+          }
+          obj.dispatchEvent(
+              new Event('change',{
+              bubbles:true
+            })
+          );
+      })
+    }
   })
   // updating the left panel data and conversion on if user changes any selection
       $('.input_checkbox').change(function(){
