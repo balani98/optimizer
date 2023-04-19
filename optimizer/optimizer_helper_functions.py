@@ -298,7 +298,7 @@ class optimizer_iterative:
                 agg_iniSpend=sum(oldSpendVec[dim_ini] for dim_ini in sub_dim_list)
                 if(agg_iniSpend>=groupSpendConstraint):
                     for sub_dim in sub_dim_list:
-                        oldSpendVec[sub_dim] = 0
+                        oldSpendVec[sub_dim] = dimension_bound[sub_dim][0]
                 checked_dim_list = checked_dim_list + sub_dim_list
                 
         if self.use_impression:
@@ -1231,7 +1231,7 @@ class optimizer_iterative_seasonality:
                 agg_iniSpend=sum(oldSpendVec[dim_ini] for dim_ini in sub_dim_list)
                 if(agg_iniSpend>=groupSpendConstraint):
                     for sub_dim in sub_dim_list:
-                        oldSpendVec[sub_dim] = 0
+                        oldSpendVec[sub_dim] = dimension_bound[sub_dim][0]
                 checked_dim_list = checked_dim_list + sub_dim_list
 
                 
