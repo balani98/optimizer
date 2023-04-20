@@ -625,19 +625,31 @@ class optimizer_iterative:
         # adjust budget due to rounding error
         for dim in self.d_param:
             dim_spend=newSpendVec[dim]
+            dim_return = 0
             conv=totalReturn[dim]
             if (round(conv)>conv):
-                totalReturn[dim]=np.trunc(conv*10)/10
+                dim_return=np.trunc(conv*10)/10
             elif (round(conv)<conv):
-                totalReturn[dim]==int(conv)
+                dim_return=int(conv)
             else:
                 continue
             dim_metric = self.s_curve_hill_inv(totalReturn[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
+            
             if self.use_impression:
-                newImpVec[dim] = dim_metric
-                newSpendVec[dim] = (newImpVec[dim] * dimension_bound_actual[dim][2])/1000
+                dim_metric_spend=(newImpVec[dim] * dimension_bound_actual[dim][2])/1000
+                if(dim_metric_spend>=dimension_bound_actual[dim][0]):
+                    newImpVec[dim] = dim_metric
+                    newSpendVec[dim] = dim_metric_spend
+                    totalReturn[dim] = dim_return
+                else:
+                    continue   
             else:
-                newSpendVec[dim] = dim_metric
+                if(dim_metric>=dimension_bound_actual[dim][0]):
+                    newSpendVec[dim] = dim_metric
+                    totalReturn[dim] = dim_return
+                else:
+                    continue
+            
             budgetDecrement = budgetDecrement + (newSpendVec[dim] - dim_spend)
 
         # decrement unused budget from dimensions having almost zero conversion as part of budget allocation during initialization of initial budget value
@@ -1631,15 +1643,15 @@ class optimizer_iterative_seasonality:
             Zero conversion dimension: Budget will be reduced to 0 or lower bound where no conversion is generated
         """
         budgetDecrement = 0
-
         # adjust budget due to rounding error
         for dim in self.d_param:
             dim_spend=newSpendVec[dim]
+            dim_return = 0
             conv=totalReturn[dim]
             if (round(conv)>conv):
-                totalReturn[dim]=(np.trunc(conv*10)/10)
+                dim_return=(np.trunc(conv*10)/10)
             elif (round(conv)<conv):
-                totalReturn[dim]==int(conv)
+                dim_return=int(conv)
             else:
                 continue
             dim_metric = self.s_curve_hill_inv_seas(totalReturn[dim],
@@ -1651,10 +1663,20 @@ class optimizer_iterative_seasonality:
                                                     init_weekday,
                                                     init_month)
             if self.use_impression:
-                newImpVec[dim] = dim_metric
-                newSpendVec[dim] = (newImpVec[dim] * dimension_bound_actual[dim][2])/1000
+                dim_metric_spend=(newImpVec[dim] * dimension_bound_actual[dim][2])/1000
+                if(dim_metric_spend>=dimension_bound_actual[dim][0]):
+                    newImpVec[dim] = dim_metric
+                    newSpendVec[dim] = dim_metric_spend
+                    totalReturn[dim] = dim_return
+                else:
+                    continue   
             else:
-                newSpendVec[dim] = dim_metric
+                if(dim_metric>=dimension_bound_actual[dim][0]):
+                    newSpendVec[dim] = dim_metric
+                    totalReturn[dim] = dim_return
+                else:
+                    continue
+
             budgetDecrement = budgetDecrement + (newSpendVec[dim] - dim_spend)
 
         # decrement unused budget from dimensions having almost zero conversion as part of budget allocation during initialization of initial budget value
@@ -1663,7 +1685,7 @@ class optimizer_iterative_seasonality:
                 budgetDecrement = budgetDecrement + (newSpendVec[dim] - dimension_bound_actual[dim][0])
                 newSpendVec[dim] = dimension_bound_actual[dim][0]
                 totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, init_weekday, init_month, newImpVec)
-
+        
         # add seasonlaity related target when spend is 0
         for dim in self.d_param:
             if (newSpendVec[dim]==0):

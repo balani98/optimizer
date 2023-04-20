@@ -181,7 +181,7 @@
       display:flex;
       flex-direction:column;
       justify-content:space-between;
-      padding:5px 10px;
+      padding:2px 5px;
       margin:10px 0;
     }
     .group_of_individual_channels{
@@ -202,12 +202,12 @@
       border: none;
       outline: none;
       font-size: 15px;
-      margin-right:15px;
+      margin-right:8px;
     }
   .styled_checkbox {
       margin-right: 1em;
-      width: 1.2em;
-      height: 1.2em;
+      width: 1.5rem;
+      height: 1.5rem;
       margin-top: -0.5em;
   }
     {% comment %} #main {
@@ -475,7 +475,6 @@
                 class="styled_checkbox"
                 id="selectAll_perc"
                 value="selectAll"
-                style="width: 2em; height: 2em"
                 checked
               />
               <div
@@ -496,7 +495,6 @@
                 class="styled_checkbox input_checkbox_perc"
                 name="{{key}}"
                 value="{{key}}"
-                style="width: 2em; height: 2em"
                 checked
               />
 
@@ -614,7 +612,6 @@
                 class="styled_checkbox"
                 id="selectAll"
                 value="selectAll"
-                style="width: 2em; height: 2em"
                 checked
               />
               <div
@@ -635,7 +632,6 @@
                 class="styled_checkbox input_checkbox"
                 name="{{key}}"
                 value="{{key}}"
-                style="width: 2em; height: 2em"
                 checked
               />
               <div
@@ -1048,7 +1044,7 @@
                 justify-content: space-between;
               "
             >
-              <label>{{key}}</label>
+              <label style="font-weight: 800">{{key}}</label>
               <button
                 type="button"
                 class="collapsible"
@@ -1064,9 +1060,10 @@
                 justify-content: space-between;
               "
             >
+              <div style="width: 30%">Max</div>
               <input
                 type="text"
-                style="width: 50%"
+                style="width: 0%"
                 class="group_channel_min_budget"
                 name="{{key}}"
                 onchange="update_total_limits_min_value_grouped_panel(this,'{{key}}')"
@@ -1078,7 +1075,7 @@
               />
               <input
                 type="text"
-                style="width: 50%; margin-left: 5%"
+                style="width: 65%; margin-right: 5%"
                 class="group_channel_max_budget"
                 name="{{key}}"
                 onchange="update_total_limits_max_value_grouped_panel(this,'{{key}}')"
@@ -1100,6 +1097,7 @@
               <input
                 type="checkbox"
                 name="{{item}}"
+                style="width: 1.2rem; height: 1.2rem"
                 class="styled_checkbox input_checkbox_group_constraint"
                 onchange="selectDeselectGroupedDimensions(this,'{{key}}')"
                 checked
@@ -1231,6 +1229,9 @@
         $('#open_nav_rightside').prop('disabled', true):
         $('#open_nav_rightside').prop('disabled', false);
          // close the navbar if open in this case no of selected dimensions should be zero
+        if(flag_to_show_grouped_dimensions != 1)
+          update_global_optimizer_left_pannel_data()
+        else{
         if(selectedDimensions.length == 0)
           closeNav()
         $('.input_checkbox_group_constraint').each(function(index,obj){
@@ -1252,8 +1253,7 @@
               );
             }
           })
-          if(flag_to_show_grouped_dimensions != 1)
-            update_global_optimizer_left_pannel_data()
+        }
       })
       $('.input_checkbox_perc').change(function(){
         // functionality to change the values / checkboxes on right hand side
@@ -1263,7 +1263,10 @@
         selectedDimensions.length == 0 ?
         $('#open_nav_rightside').prop('disabled', true):
         $('#open_nav_rightside').prop('disabled', false);
-        // close the navbar if open in this case no of selected dimensions should be zero
+        if(flag_to_show_grouped_dimensions != 1)
+          update_global_optimizer_left_pannel_data()
+        else{
+          // close the navbar if open in this case no of selected dimensions should be zero
         if(selectedDimensions.length == 0)
           closeNav()
         $('.input_checkbox_group_constraint').each(function(index, obj){
@@ -1285,8 +1288,7 @@
               );
             }
           })
-          if(flag_to_show_grouped_dimensions != 1)
-            update_global_optimizer_left_pannel_data()
+        }
       })
     // function to get selected dimensions
     function getSelectedDimensions(){
@@ -2445,8 +2447,11 @@
         explorer_inputs['investment_selector'] = window.localStorage.getItem('investment_selector');
         explorer_inputs['dimension_selector'] = window.localStorage.getItem('dimension_selector');
         explorer_inputs['target_selector'] = window.localStorage.getItem('target_selector');
+        explorer_inputs['is_group_dimension_selected'] = flag_to_show_grouped_dimensions;
+        explorer_inputs['dimension_grouping_selector'] = window.localStorage.getItem('dimension_grouping_selector')
         params['explorer_inputs'] = explorer_inputs;
         predictor_inputs['seasonality'] = global_seasonality;
+        predictor_inputs['constraint_type'] = constraint_type;
         if(global_seasonality !=1){
           predictor_inputs['predictor_left_hand_dimensions_start_and_end_dates'] =  JSON.parse(
             window.localStorage.getItem('predictor_left_hand_dimensions_start_and_end_dates')
@@ -2454,8 +2459,10 @@
         }
         params['predictor_inputs'] = predictor_inputs;
         optimizer_inputs['left_panel_data'] = global_optimizer_left_pannel_data;
-        optimizer_inputs['discarded_dimensions'] = discarded_dimensions_json
+        optimizer_inputs['discarded_dimensions'] = discarded_dimensions_json;
         optimizer_inputs['total_budget'] = optimizer_left_panel_total_budget - global_sum_fixed_budget_values;
+        if(flag_to_show_grouped_dimensions == 1)
+          optimizer_inputs['dimension_capping_constraints'] = global_grouped_optimizer_left_panel_data
         if(global_seasonality == 1){
           optimizer_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
           optimizer_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
