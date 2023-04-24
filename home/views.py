@@ -261,7 +261,17 @@ def spent_check(request):
 
     except Exception as exp_date_check:
         return JsonResponse({"error": ERROR_DICT[str(exp_date_check)]}, status=403)
-
+def target_type_check(request):
+    try:
+        data = pd.read_pickle(UPLOAD_FOLDER+"{}.pkl".format(request.session.get("_uuid")))
+        eo = explorer(data)
+        print("submitted")
+        TargetTypeSelector = request.GET.get("target_type_check")
+        eo.target_type = TargetTypeSelector
+        request.session["target_type"] = TargetTypeSelector
+        return JsonResponse({"message": "Successfully published"}, status=200)
+    except Exception as exp_target_type_check:
+        return JsonResponse({"error": ERROR_DICT[str(exp_target_type_check)]}, status=403)
 
 def target_check(request):
     try:
@@ -342,13 +352,14 @@ def chart_filter(request):
             eo.dimension = request.session.get("DimensionSelector")
             eo.spend = request.session.get("SpentSelector")
             eo.target = request.session.get("TargetSelector")
+            eo.target_type = request.session.get("target_type")
             eo.cpm = request.session.get("CpmSelector")
             eo.group_dimension = request.session.get("dimension_grouping_selector")
             eo.is_group_dimension_selected = request.session.get("dimension_grouping_check")
-            if convert_to_weekly_data != None and int(convert_to_weekly_data) == 1:
-                eo.convert_to_weekly = True 
-            if is_weekly_selected != None and int(is_weekly_selected) == 1:
-                eo.is_weekly_selected = True 
+            if convert_to_weekly_data is not None and int(convert_to_weekly_data) == 1:
+                eo.convert_to_weekly = True
+            if is_weekly_selected is not None and int(is_weekly_selected) == 1:
+                eo.is_weekly_selected = True
             
             if request.session.get("cpm_checked") == "True":
                 eo.use_impression = True

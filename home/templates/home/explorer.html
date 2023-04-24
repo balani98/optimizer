@@ -195,7 +195,16 @@
             </select>
           </div>
           <p class="target_error" style="color: #fff; display: none;"></p>
-
+          <div class="dropdown" style="margin-bottom: 10px; width: 100%;">
+            <select name="targetTypeSelector" class="btn dropdown-toggle explorer-sidebar-dropdown"
+              onchange="targetTypeCheck(this.value)" id="target_type_value">
+              <option value="0">Target Type Selector</option>
+              <option value="leads">Leads</option>
+              <option value="acquisition">Acquisition</option>
+              <option value="revenue">Revenue</option>
+            </select>
+          </div>
+          <p class="target_type_error" style="color: #fff; display: none;"></p>
           <div>
             <div class="form-check" style="margin-bottom:10px;">
               <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault"
@@ -787,12 +796,14 @@
   function submit_chart_inputs() {
     // start progress
     console.log("inputs submitted");
-    $('#container').css('opacity',0.5);
-    $('#container').css('pointer-events','none');
-    $('#container').css('z-index',1);
-    $("body").css("background-color", "#cecece");
-    $('#spinner-optimizer').css('display','block');
-  
+    displaySpinner()
+    target_type_value = document.getElementById("target_type_value").value;
+    if(target_type_value == "0"){
+      $('.target_type_error').css("display", "block");
+      $('.target_type_error').html("Please select target type"); // add error to the dom
+      hideSpinner()
+      return;
+    }
     //var startDate = $('#date').data('daterangepicker').startDate.format('MM-DD-YY');
     //var endDate = $('#date').data('daterangepicker').endDate.format('MM-DD-YY');
     $.ajax({
@@ -804,11 +815,7 @@
         document.getElementById('right_div').style.display = "block";
         // close
         console.log("this is the selected type");
-        $('#container').css('opacity',1);
-        $("body").css("background-color", "#fff");
-        $('#container').css('pointer-events','auto');
-        $('#spinner-optimizer').css('display','none');
-
+        hideSpinner()
         let start_date = data.start_date
         let end_date = data.end_date
         // let default_dim = data.default_dim
@@ -874,10 +881,7 @@
       },
       error: function (error_object) {
         console.log("From errors submit_chart_inputs", error_object);
-        $('#container').css('opacity',1);
-        $("body").css("background-color", "#fff");
-        $('#container').css('pointer-events','auto');
-        $('#spinner-optimizer').css('display','none');
+        hideSpinner()
         alert("Error in sumission, please verify the inputs")
         document.getElementById('right_div').style.display = "none";
 
@@ -1087,11 +1091,7 @@
 <script>
   // function to send dimensiongrouping selector value to server 
   function dimensionGroupingCheck(value){
-    $('#container').css('opacity',0.5);
-    $('#container').css('pointer-events','none');
-    $('#container').css('z-index',1);
-    $("body").css("background-color", "#cecece");
-    $('#spinner-optimizer').css('display','block');
+    displaySpinner()
     checkbox = document.getElementById('flexCheckDefaultDimensionGrouping')
     window.localStorage.setItem('dimension_grouping_selector',value);
     $.ajax({
@@ -1101,18 +1101,12 @@
         'dimension_grouping_check':checkbox.checked
       },
       success : function(data){
-        $('#container').css('opacity',1);
-        $("body").css("background-color", "#fff");
-        $('#container').css('pointer-events','auto');
-        $('#spinner-optimizer').css('display','none');
+        hideSpinner()
         console.log(data.message)
 
       },
       error : function(error){
-        $('#container').css('opacity',1);
-        $("body").css("background-color", "#fff");
-        $('#container').css('pointer-events','auto');
-        $('#spinner-optimizer').css('display','none');
+        hideSpinner()
         console.log(error.responseJSON.error);  
       }
     })
@@ -1120,11 +1114,7 @@
   
   function spentCheck(value) {
     console.log(value)
-    $('#container').css('opacity',0.5);
-    $('#container').css('pointer-events','none');
-    $('#container').css('z-index',1);
-    $("body").css("background-color", "#cecece");
-    $('#spinner-optimizer').css('display','block');
+    displaySpinner()
     window.localStorage.setItem('investment_selector',value)
     $.ajax({
       url: 'ajax/spent_check/',
@@ -1132,18 +1122,12 @@
         'spent_check': value,
       },
       success: function (data) {
-        $('#container').css('opacity',1);
-        $("body").css("background-color", "#fff");
-        $('#container').css('pointer-events','auto');
-        $('#spinner-optimizer').css('display','none');
+        hideSpinner()
         console.log(data.message);
         $('.spent_error').css("display", "none");
       },
       error: function (data) {
-        $('#container').css('opacity',1);
-        $("body").css("background-color", "#fff");
-        $('#container').css('pointer-events','auto');
-        $('#spinner-optimizer').css('display','none');
+        hideSpinner()
         console.log(data.responseJSON.error);
 
         $('.spent_error').css("display", "block");
@@ -1156,6 +1140,38 @@
 
  {% comment %} validation check {% endcomment %}
 <script>
+  function displaySpinner(){
+    $('#container').css('opacity',0.5);
+    $('#container').css('pointer-events','none');
+    $('#container').css('z-index',1);
+    $("body").css("background-color", "#cecece");
+    $('#spinner-optimizer').css('display','block');
+  }
+  function hideSpinner(){
+    $('#container').css('opacity',1);
+    $("body").css("background-color", "#fff");
+    $('#container').css('pointer-events','auto');
+    $('#spinner-optimizer').css('display','none');
+  }
+  function targetTypeCheck(value) {
+    displaySpinner()
+    window.localStorage.setItem('target_type_selector',value)
+    $.ajax({
+      url: 'ajax/target_type_check/',
+      data: {
+        'target_type_check': value,
+      },
+      success: function (data) {
+        hideSpinner()
+        console.log(data.message);
+        $('.target_type_error').css("display", "none");
+      },
+      error: function (data) {
+        hideSpinner()
+        console.log(data.responseJSON.error);
+      }
+    });
+  }
   function targetCheck(value) {
     console.log(value)
     $('#container').css('opacity',0.5);
