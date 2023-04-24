@@ -344,7 +344,7 @@ class predictor:
             scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["spend"]).round(decimals=2)
         else:
             scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["spend"]/scatter_plot_df["predictions"]).round(decimals=2)
-        scatter_plot_df["spend_predictions_rate"] = scatter_plot_df["spend_predictions_rate"].replace([np.inf, -np.inf], 0)
+        scatter_plot_df["spend_predictions_rate"] = scatter_plot_df["spend_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
         self.df_param = df_param
         # df_score_final.drop(columns=["MAPE"], inplace=True)
 
@@ -354,7 +354,7 @@ class predictor:
                 scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["impression"]).round(decimals=2)
             else:
                 scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["impression"]/scatter_plot_df["predictions"]).round(decimals=2)
-            scatter_plot_df["impression_predictions_rate"] = scatter_plot_df["impression_predictions_rate"].replace([np.inf, -np.inf], 0)
+            scatter_plot_df["impression_predictions_rate"] = scatter_plot_df["impression_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
             self.df_param = df_param
             df_cpm = (
                 self.df.groupby("dimension").agg(
@@ -1019,6 +1019,7 @@ class predictor_with_seasonality:
             scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["spend"]).round(decimals=2)
         else:
             scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["spend"]/scatter_plot_df["predictions"]).round(decimals=2)
+        scatter_plot_df["spend_predictions_rate"] = scatter_plot_df["spend_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
 
         self.df_param = df_param
 
@@ -1030,7 +1031,7 @@ class predictor_with_seasonality:
                 scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["impression"]).round(decimals=2)
             else:
                 scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["impression"]/scatter_plot_df["predictions"]).round(decimals=2)
-
+            scatter_plot_df["impression_predictions_rate"] = scatter_plot_df["impression_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
             scatter_plot_df = scatter_plot_df[['date', 'spend', 'impression', 'target', 'dimension', 'weekday_',
                             'month_', 'spend_prediction', 'weekly_prediction', 'monthly_prediction',
                             'predictions', 'spend_predictions_rate', 'impression_predictions_rate']]

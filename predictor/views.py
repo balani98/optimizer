@@ -198,7 +198,7 @@ def get_multi_line_chart_data2(multi_line_chart_json, cpm_checked):
         if cpm_checked == "True":
             predictions_spend_obj["impression"] = obj["impression"]
             predictions_spend_obj["predictions"] = obj["predictions"]
-            predictions_spend_obj["impression_predictions_rate"] = float(obj["impression_predictions_rate"])
+            predictions_spend_obj["impression_predictions_rate"] = obj["impression_predictions_rate"]
             multi_line_chart_obj["values"].append(predictions_spend_obj)
         else:
             predictions_spend_obj["spend"] = obj["spend"]

@@ -398,8 +398,13 @@
             >
               <option value="0">Y axis Selector</option>
               <option value="predictions" selected>Predictions</option>
-              <option value="spend_predictions_rate">Spend Predictions Rate</option>
-            </select>
+              {%if cpm_message == "cpm selected" %}
+                <option value="impression_predictions_rate">Impression Predictions Rate</option>
+              {% else %}
+                <option value="spend_predictions_rate">Spend Predictions Rate</option>
+              {% endif %}
+              </select>
+             
           </div>  
         </div>
       </div>
@@ -821,6 +826,7 @@
     });
   }
   function fn_y_axis_selector(value){
+    displaySpinner()
     y_axis_selector_value = value;
     data_to_submit = {
       'y_axis_selector_value':y_axis_selector_value
@@ -834,6 +840,7 @@
       },
       contentType: 'application/json; charset=utf-8',
       success:function(data){
+        hideSpinner()
         plotting_data = data.multi_line_chart_data2;
         plot_multi_line_chart_checkboxes(plotting_data, data.cpm_message, data.max_spend, data.max_predictions, y_axis_selector_value)
       },error:function(error){
@@ -1295,7 +1302,9 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
                 }).y(function(d){
                 if (y_label == 'predictions')
                   return y(d.predictions)
-                else 
+                else if(y_label == 'impression_predictions_rate'  && cpm_message == "cpm selected")
+                  return y(d.impression_predictions_rate)
+                else if(y_label == 'spend_predictions_rate')
                   return y(d.spend_predictions_rate)
                 })
       svg.selectAll("myLines")
