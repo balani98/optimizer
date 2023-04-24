@@ -100,6 +100,11 @@
     text-align: center;
     height:2.5rem;
   }
+  .dropdown-flexbox{
+    display:flex;
+    flex-direction:row;
+    justify-content:space-between;
+  }
   .active {
     animation: progress-bar-stripes 1s linear infinite;
     border: none;
@@ -371,17 +376,32 @@
 
     <div id="right_div" style="display: none; align-items: center">
       <div class="explorer-chart mb-5" id="multi_line_chart_with_checkboxes" style="margin-top:20px;padding:1.5rem;position:relative;background-color:#fff">
-        <div class="piemultiselect">
-          <div class="pieselectBox" id="pieselectBox" onclick="showMenu()">
-            <select class="btn btn-secondary dropdown-toggle explorer-sidebar-dropdown">
-              <option id="pie_selected_value"hidden>Dimension Selector</option>
+        <div class="piemultiselect dropdown-flexbox">
+          <div>
+            <div class="pieselectBox" id="pieselectBox" onclick="showMenu()">
+              <select class="btn btn-secondary dropdown-toggle explorer-sidebar-dropdown">
+                <option id="pie_selected_value"hidden>Dimension Selector</option>
+              </select>
+              <div class="pieoverSelect"></div>
+            </div>
+            <div id="menu" class="mb-3 hide_scroller"
+              style="display:none;flex-direction:row;justify-content:space-between;background-color:#fff;position:absolute;width:12.5rem
+              ;overflow-y:scroll;max-height:20rem"></div>
+          </div>
+          <div class="dropdown">
+            <select
+              id="YAxisSelector"
+              name="YAxisSelector"
+              class="btn dropdown-toggle explorer-sidebar-dropdown"
+              style="padding: 10px"
+              onchange="fn_y_axis_selector(this.value)"
+            >
+              <option value="0">Y axis Selector</option>
+              <option value="predictions" selected>Predictions</option>
+              <option value="spend_predictions_rate">Spend Predictions Rate</option>
             </select>
-            <div class="pieoverSelect"></div>
-          </div>
-          <div id="menu" class="mb-3 hide_scroller"
-          style="display:none;flex-direction:row;justify-content:space-between;background-color:#fff;position:absolute;width:12.5rem
-          ;overflow-y:scroll;max-height:20rem"></div>
-          </div>
+          </div>  
+        </div>
       </div>
        
       
@@ -664,23 +684,32 @@
      $('#seasonality_plots_div').css('display','none')
     }
   }
+  // display the spinner 
+  function displaySpinner(){
+    $('#container').css('opacity',0.5);
+    $('#container').css('pointer-events','none');
+    $('#container').css('z-index',1);
+    $("body").css("background-color", "#cecece");
+    $('#spinner-optimizer').css('display','block');
+  }
+  // hide the spinner
+  function hideSpinner(){
+    $('#container').css('opacity',1);
+    $("body").css("background-color", "#fff");
+    $('#container').css('pointer-events','auto');
+    $('#spinner-optimizer').css('display','none');
+  }
   // Fuction to get start and End date
   function getPredictorStartAndEndDates() {
     console.log("addStartAndEndDate");
      // Ajax Call
     // make the sppinner visible
-    $("#container").css("pointer-events", "none");
-    $("#container").css("opacity", 0.5);
-    $("body").css("background-color", "#cecece");
-    $("#spinner-optimizer").css("display", "flex");
+    displaySpinner()
     console.log("inputs submitted"); 
      $.ajax({
       url: "/predictor/ajax/get_predictor_start_and_end_dates/",
       success: function (data) {
-        $("#container").css("pointer-events", "auto");
-        $("#container").css("opacity", 1);
-        $("body").css("background-color", "#fff");
-        $("#spinner-optimizer").css("display", "none");
+        hideSpinner()
         console.log("success in '/predictor/ajax/get_predictor_start_and_end_dates/'");
         unique_dimensions_json = data.unique_dimensions_json;
         global_unique_dimensions_json = unique_dimensions_json
@@ -704,14 +733,10 @@
         );
       },
     });
-    
   }
   function onChangeHelperFunction(discard_dimension=false) {
     // display the spinner
-    $('#spinner-optimizer').css('display','block');
-    $('#container').css('opacity',0.5);
-    $("body").css("background-color", "#cecece");
-    $('#container').css('pointer-events','none');
+    displaySpinner()
     console.log("onChangeHelperFunction");
     // if user discards some dimension , change the dimension to 2nd dimension
     dimension_to_be_discarded = null
@@ -745,10 +770,7 @@
       data: data_to_submit,
       success: function (data) {
         // hide the spinner
-        $('#spinner-optimizer').css('display','none');
-        $('#container').css('opacity',1);
-        $("body").css("background-color", "#fff");
-        $('#container').css('pointer-events','auto');
+        hideSpinner()
         console.log("success in '/predictor/ajax/date_dimension_onchange/'");
         scatterplot_data = data.scatterplot_data;
         dimension_value_selector = data.dimension_value_selector
@@ -798,7 +820,28 @@
       },
     });
   }
+  function fn_y_axis_selector(value){
+    y_axis_selector_value = value;
+    data_to_submit = {
+      'y_axis_selector_value':y_axis_selector_value
+    }
+    $.ajax({
+      url: "/predictor/ajax/y_axis_onchange/",
+      data: JSON.stringify(data_to_submit),
+      type:'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      contentType: 'application/json; charset=utf-8',
+      success:function(data){
+        plotting_data = data.multi_line_chart_data2;
+        plot_multi_line_chart_checkboxes(plotting_data, data.cpm_message, data.max_spend, data.max_predictions, y_axis_selector_value)
+      },error:function(error){
 
+      }
+    })
+    
+  }
   // Function to select Seasonality
   function selectSeasonality(this_object) {
     let value = this_object.value;
@@ -1169,12 +1212,13 @@
 {% comment %} scatter plot and multi line hart {% endcomment %}
 <script>
 // plot multiple line charts with checkboxes
-function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,max_predictions,dimension_to_uncheck=[],to_be_checked=true){
+function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,max_predictions, y_label = 'predictions', dimension_to_uncheck=[],to_be_checked=true){
     // set the dimensions and margins of the graph
     if (cpm_message == "cpm selected"){
       x_label = 'Impression'
     }else 
       x_label = 'Investment'
+    
     var margin = {top: 10, right: 50, bottom: 50, left: 70},
     currentWidth = parseInt(d3.select('#multi_line_chart_with_checkboxes').style('width'))
     width = currentWidth - margin.left - margin.right,
@@ -1234,7 +1278,7 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
       .attr("dy", "1em")
       .style("text-anchor", "middle")
       .style("fill", "black")
-      .text("predictions");      
+      .text(y_label);      
 
     var y = d3.scaleLinear()
               .domain( [0,max_predictions + 0.1 * max_predictions])
@@ -1249,7 +1293,10 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
                 else 
                   return x(d.spend) 
                 }).y(function(d){
+                if (y_label == 'predictions')
                   return y(d.predictions)
+                else 
+                  return y(d.spend_predictions_rate)
                 })
       svg.selectAll("myLines")
           .data(plotting_data)
@@ -1286,10 +1333,17 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
             };
           })
           .attr("transform",function(d){
-            if (cpm_message == "cpm selected")
-              return "translate(" + x(d.value.impression) + "," + y(d.value.predictions) + ")"; // put the text at the position of last point
-            else 
-              return "translate(" + x(d.value.spend) + "," + y(d.value.predictions) + ")";
+              if (cpm_message == "cpm selected"){
+                if(y_label == 'predictions')
+                  return "translate(" + x(d.value.impression) + "," + y(d.value.predictions) + ")"; // put the text at the position of last point
+                else 
+                  return "translate(" + x(d.value.impression) + "," + y(d.value.impression_predictions_rate) + ")";
+                }else{
+                  if(y_label == 'predictions') 
+                    return "translate(" + x(d.value.spend) + "," + y(d.value.predictions) + ")";
+                  else
+                    return "translate(" + x(d.value.spend) + "," + y(d.value.spend_predictions_rate) + ")";
+              }
             })
           .attr("x", 12) // shift the text a bit more right 
           .text(function(d){
@@ -1348,13 +1402,14 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
                 last_plotting_data = [];
                 unchecked_dimensions = [...dimension_groups];
                }
-               arr = changexydomain(last_plotting_data, cpm_message)
+               arr = changexydomain(last_plotting_data, cpm_message, y_label)
                d3.select("#multi_line_chart_with_checkboxes").select("svg").remove();
                const element = document.getElementById('menu');
                while (element.firstChild) {
                 element.removeChild(element.firstChild);
               }
-              plot_multi_line_chart_checkboxes(last_plotting_data, cpm_message, arr[0],arr[1],unchecked_dimensions,this.checked)
+              y_label = document.getElementById("YAxisSelector").value;
+              plot_multi_line_chart_checkboxes(last_plotting_data, cpm_message, arr[0],arr[1], y_label, unchecked_dimensions,this.checked)
       })
       for(let i = 0 ; i < dimension_groups.length ; i++){
           var tick = document.createElement('input');
@@ -1390,13 +1445,14 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
                 last_plotting_data = plotting_data.filter(a => a.name != this.value);
                 unchecked_dimensions.push(this.value)
                }
-               arr = changexydomain(last_plotting_data, cpm_message)
+               arr = changexydomain(last_plotting_data, cpm_message, y_label)
                d3.select("#multi_line_chart_with_checkboxes").select("svg").remove();
                const element = document.getElementById('menu');
                while (element.firstChild) {
                 element.removeChild(element.firstChild);
               }
-              plot_multi_line_chart_checkboxes(last_plotting_data,cpm_message, arr[0], arr[1], unchecked_dimensions,false)
+              y_label = document.getElementById("YAxisSelector").value;
+              plot_multi_line_chart_checkboxes(last_plotting_data,cpm_message, arr[0], arr[1], y_label, unchecked_dimensions,false)
           })
     var x_range = d3.scaleLinear().range([0, width]);
     var y_range = d3.scaleLinear().range([height, 0]);
@@ -1420,7 +1476,7 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
 
 
 // change xy domain
-function changexydomain(plotting_data,cpm_message){
+function changexydomain(plotting_data,cpm_message,  y_label){
     let max_spend = 0;
     let max_predictions = 0;
     x_label = cpm_message == "cpm selected" ? 'impression' : 'spend';
@@ -1432,8 +1488,8 @@ function changexydomain(plotting_data,cpm_message){
         plotting_data[index]['values'].forEach((obj)=>{
             if(obj[x_label] > max_spend)
                 max_spend = obj[x_label]
-            if(obj['predictions'] > max_predictions )
-              max_predictions = obj['predictions']
+            if(obj[y_label] > max_predictions )
+              max_predictions = obj[y_label]
           })
       })
     arr = [max_spend,max_predictions]
