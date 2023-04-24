@@ -429,7 +429,7 @@ body {
 
 /* pie chart dropdowncss */
 .piemultiselect {
-  width: 200px;
+  width: 100%;
 }
 
 .pieselectBox {
