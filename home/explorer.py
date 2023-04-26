@@ -22,10 +22,10 @@ class explorer:
         self.convert_to_weekly = False
         self.is_group_dimension_selected = False
         self.group_dimension = None
+        self.target_type = None
 
     def numeric_check(self, numeric_):
         """perform data validation for numeric columns
-
         Args:
             numeric_ (_type_): spend/target/cpm
         Raises:
@@ -47,7 +47,6 @@ class explorer:
 
     def date_check(self):
         """perform data audit for date format, null values
-
         Raises:
             Exception 5002: value error
             Exception 5004: date format error
@@ -69,7 +68,6 @@ class explorer:
     def dimension_check(self):
 
         """checking for null in dimension
-
         Raises:
             Exception 5002: value error
             Exception 5003: type error
@@ -89,7 +87,6 @@ class explorer:
 
     def data_aggregation(self):
         """data aggregation at selected dimension,day level
-
         Returns:
             dataframe: aggregated dataframe
         """
@@ -167,7 +164,6 @@ class explorer:
     def convert_to_weekly_granularity(self, df_grp):
         
         """convert daily data granularity to weekly data granularity - Week Starting Monday
-
         Returns:
             dataframe: dataframe with weekly data
         """
@@ -187,7 +183,6 @@ class explorer:
     def impute_missing_date(self, df_grp):
 
         """impute missing days with zero spend and target
-
         Returns:
             dataframe: dataframe with days imputed
         """

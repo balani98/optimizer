@@ -12,13 +12,11 @@ progress_var = [0, 0]
 
 
 class predictor:
-    def __init__(self, df, date_range):
+    def __init__(self, df, date_range, target_type):
         """
         intialization of the class
-
         df (dataframe) : aggregated dataframe
         date_range (array) : start and end date
-
         """
 
         self.df = df
@@ -28,6 +26,8 @@ class predictor:
             self.use_impression = True
         else:
             self.use_impression = False
+
+        self.target_type = target_type.lower()
 
         self.df_param = None
 
@@ -41,11 +41,9 @@ class predictor:
 
     def mape(self, actual, pred):
         """calculating mape
-
         Args:
             actual (series): target
             pred (series): predicted target
-
         Returns:
             float: mape
         """
@@ -53,11 +51,9 @@ class predictor:
 
     def SMAPE(self, actual, pred):
         """calculating Std. Error of Residual
-
         Args:
             actual (series): target
             pred (series): predicted target
-
         Returns:
             float: SMAPE
         """
@@ -68,12 +64,10 @@ class predictor:
 
     def RSE(self, actual, pred, nparam):
         """calculating Std. Error of Residual
-
         Args:
             actual (series): target
             pred (series): predicted target
             nparam: Number of parameters for calculating degrees of freedom
-
         Returns:
             float: RSE
         """
@@ -85,10 +79,8 @@ class predictor:
         
     def fit_curve(self, drop_dimension):
         """function to fit the model and find their optimal parameters
-
         Args:
             drop_dimension (list): dimensions with very less data
-
         Returns:
             df_param(dataframe) : model parameter
             df_score(dataframe) : mape,r2,drop points
@@ -218,12 +210,10 @@ class predictor:
     def predict_dimesion(self, dimension, date_range, budget, cpm=None):
 
         """function to predict target
-
          Args:
             dimension (string): dimensions for which predict run
             date_range (array) : start and end date
             budget(int) : budget
-
         Returns:
             float: target
         """
@@ -248,7 +238,6 @@ class predictor:
     def execute(self):
 
         """execute function
-
         Returns:
            df_param(dataframe) : parameter of the model
            df_score_final(dataframe) : quality metric of the curve
@@ -350,11 +339,23 @@ class predictor:
         scatter_plot_df = scatter_plot_df[
             ~scatter_plot_df["dimension"].isin(drop_dimension)
         ].reset_index(drop=True)
+
+        if self.target_type == "revenue":
+            scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["spend"]).round(decimals=2)
+        else:
+            scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["spend"]/scatter_plot_df["predictions"]).round(decimals=2)
+        scatter_plot_df["spend_predictions_rate"] = scatter_plot_df["spend_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
         self.df_param = df_param
         # df_score_final.drop(columns=["MAPE"], inplace=True)
 
         if self.use_impression:
 
+            if self.target_type == "revenue":
+                scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["impression"]).round(decimals=2)
+            else:
+                scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["impression"]/scatter_plot_df["predictions"]).round(decimals=2)
+            scatter_plot_df["impression_predictions_rate"] = scatter_plot_df["impression_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
+            self.df_param = df_param
             df_cpm = (
                 self.df.groupby("dimension").agg(
                     {"spend": "sum", "impression": [np.sum, np.median, np.mean]}
@@ -379,13 +380,11 @@ class predictor:
 
 
 class predictor_with_seasonality:
-    def __init__(self, df):
+    def __init__(self, df, target_type):
         """
         intialization of the class
-
         df (dataframe) : aggregated dataframe
         date_range (array) : start and end date
-
         """
 
         self.df = df
@@ -394,6 +393,8 @@ class predictor_with_seasonality:
             self.use_impression = True
         else:
             self.use_impression = False
+
+        self.target_type = target_type.lower()
 
         self.df_param = None
 
@@ -551,11 +552,9 @@ class predictor_with_seasonality:
 
     def mape(self, actual, pred):
         """calculating mape
-
         Args:
             actual (series): target
             pred (series): predicted target
-
         Returns:
             float: mape
         """
@@ -563,12 +562,10 @@ class predictor_with_seasonality:
     
     def RSE(self, actual, pred, nparam):
         """calculating Std. Error of Residual
-
         Args:
             actual (series): target
             pred (series): predicted target
             nparam: Number of parameters for calculating degrees of freedom
-
         Returns:
             float: RSE
         """
@@ -580,11 +577,9 @@ class predictor_with_seasonality:
 
     def SMAPE(self, actual, pred):
         """calculating Std. Error of Residual
-
         Args:
             actual (series): target
             pred (series): predicted target
-
         Returns:
             float: SMAPE
         """
@@ -596,7 +591,6 @@ class predictor_with_seasonality:
     def seas_check(self, df_sub):
 
         """to check weekly or monthly seasonality is applicable
-
         Returns:
             boolean: 0/1
         """
@@ -627,10 +621,8 @@ class predictor_with_seasonality:
 
     def fit_curve(self, drop_dimension):
         """function to fit the model and find their optimal parameters
-
         Args:
             drop_dimension (list): dimensions with very less data
-
         Returns:
             df_param(dataframe) : model parameter
             df_score(dataframe) : mape,r2,drop points
@@ -846,7 +838,6 @@ class predictor_with_seasonality:
     def param_adjust(self, df_param):
 
         """adjust parameter of seasonality
-
         Returns:
             df_param(dataframe) : model parameter
         """
@@ -878,7 +869,6 @@ class predictor_with_seasonality:
     def execute(self):
 
         """execute function
-
         Returns:
            df_param(dataframe) : parameter of the model
            df_score_final(dataframe) : quality metric of the curve
@@ -1025,15 +1015,26 @@ class predictor_with_seasonality:
             ~scatter_plot_df["dimension"].isin(drop_dimension)
         ].reset_index(drop=True)
 
+        if self.target_type == "revenue":
+            scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["spend"]).round(decimals=2)
+        else:
+            scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["spend"]/scatter_plot_df["predictions"]).round(decimals=2)
+        scatter_plot_df["spend_predictions_rate"] = scatter_plot_df["spend_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
+
         self.df_param = df_param
 
         # df_score_final.drop(columns=["MAPE"], inplace=True)
 
         if self.use_impression:
 
+            if self.target_type == "revenue":
+                scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["impression"]).round(decimals=2)
+            else:
+                scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["impression"]/scatter_plot_df["predictions"]).round(decimals=2)
+            scatter_plot_df["impression_predictions_rate"] = scatter_plot_df["impression_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
             scatter_plot_df = scatter_plot_df[['date', 'spend', 'impression', 'target', 'dimension', 'weekday_',
                             'month_', 'spend_prediction', 'weekly_prediction', 'monthly_prediction',
-                            'predictions']]
+                            'predictions', 'spend_predictions_rate', 'impression_predictions_rate']]
 
             df_cpm = (
                 self.df.groupby("dimension").agg(
@@ -1066,7 +1067,7 @@ class predictor_with_seasonality:
 
             scatter_plot_df = scatter_plot_df[['date', 'spend', 'target', 'dimension', 'weekday_',
                             'month_', 'spend_prediction', 'weekly_prediction', 'monthly_prediction',
-                            'predictions']]
+                            'predictions', 'spend_predictions_rate']]
 
             df_param = self.param_adjust(df_param)
             return df_param, df_score_final, scatter_plot_df, drop_dimension, df_spend_dis
@@ -1081,14 +1082,12 @@ def s_curve_hill(X, a, b, c):
 def predict_dimesion(df_param, dimension, total_days, budget, cpm=None):
 
     """function to predict target
-
      Args:
         df_param (dataframe) : model param dataframe
         dimension (string): dimensions for which predict run
         total_days (int) : number of days
         budget(int) : budget
         cpm (float) : when use impression is true
-
     Returns:
         float: target
     """
@@ -1168,14 +1167,12 @@ def predict_dimesion_with_seasonality(
 ):
 
     """function to predict target
-
      Args:
         df_param (dataframe) : model param dataframe
         dimension (string): dimensions for which predict run
         date_range (array) : start and end date
         budget(int) : budget
         cpm (float) : when use impression is true
-
     Returns:
         float: target
     """

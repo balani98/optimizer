@@ -19,6 +19,11 @@ urlpatterns = [
         name="predictor_ajax_date_dimension_onchange",
     ),
     path(
+        "ajax/y_axis_onchange/",
+        views.predictor_ajax_y_axis_onchange,
+        name="predictor_ajax_y_axis_onchange",
+    ),
+    path(
         "ajax/get_seasonality_from_session/",
         views.get_seasonality_from_session,
         name="get_seasonality_from_session",
