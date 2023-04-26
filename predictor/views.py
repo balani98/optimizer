@@ -73,6 +73,7 @@ def predictor_home_page(request):
         )
         is_weekly_selected = request.session.get("is_weekly_selected")
         convert_to_weekly_data = request.session.get("convert_to_weekly_data")
+        target_type = request.session.get("target_type")
         is_predict_page_submit_success = request.session.get(
             "is_predict_page_submit_success"
         )
@@ -105,6 +106,7 @@ def predictor_home_page(request):
         if cpm_checked == "True":
             print("returning cpm get request")
             context["cpm_message"] = "cpm selected"
+        context["target_type"] = target_type
         return render(request, "predictor/predictor.html", context)
 
     except Exception as exp:
@@ -212,11 +214,15 @@ def get_multi_line_chart_data2(multi_line_chart_json, cpm_checked):
 
 def predictor_ajax_y_axis_onchange(request):
     try:
+        global global_scatter_plot_df
+        global global_unique_dim
         context = {}
         body = json.loads(request.body)
         y_axis_selector_value = body['y_axis_selector_value']
         multi_line_chart_df = global_scatter_plot_df
+        multi_line_chart_df = multi_line_chart_df[multi_line_chart_df["dimension"].isin(global_unique_dim)]
         cpm_checked = request.session.get('cpm_checked')
+        target_type = request.session.get('target_type')
         if cpm_checked == "True":
             context["cpm_message"] = "cpm selected"
             sort_multi = ['dimension', 'impression']
@@ -232,6 +238,7 @@ def predictor_ajax_y_axis_onchange(request):
         context["max_spend"] = max_spend
         context["max_predictions"] = max_predictions
         context["multi_line_chart_data2"] = multi_line_chart_data2
+        context["target_type"] = target_type
         return JsonResponse(context, status=200)
     except Exception as exp:
         return JsonResponse({"error": str(exp)}, status=403)
@@ -438,6 +445,7 @@ def predictor_ajax_left_panel_submit(request):
         context["multi_line_chart_data2"] = multi_line_chart_data2
         context["max_spend"] = max_spend
         context["max_predictions"] = max_predictions
+        context["target_type"] = target_type
         request.session["is_predict_page_submit_success"] = 1
         request.session["drop_dimension"] = drop_dimension
         return JsonResponse(context)
@@ -806,6 +814,7 @@ def predictor_window_on_load(request):
         seasonality = int(request.session.get("seasonality"))
         default_dim = request.session.get("predictor_default_dim")
         cpm_checked = request.session.get("cpm_checked")
+        target_type = request.session.get("target_type")
         if seasonality == 0:
             predictor_unique_dimensions_json = request.session["predictor_unique_dimensions_json"]
         print("seasonality", seasonality)
@@ -919,6 +928,7 @@ def predictor_window_on_load(request):
         context["multi_line_chart_data2"] = multi_line_chart_data2
         context["max_spend"] = max_spend
         context["max_predictions"] = max_predictions
+        context["target_type"] = target_type
         return JsonResponse(context, status=200)
 
     except Exception as exp:

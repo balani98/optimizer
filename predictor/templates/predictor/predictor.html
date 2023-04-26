@@ -401,7 +401,11 @@
               {%if cpm_message == "cpm selected" %}
                 <option value="impression_predictions_rate">Impression Predictions Rate</option>
               {% else %}
-                <option value="spend_predictions_rate">Spend Predictions Rate</option>
+                {% if target_type == "revenue" %}
+                  <option value="spend_predictions_rate">ROI</option>
+                {% else %}
+                  <option value="spend_predictions_rate">CPA</option>
+                {% endif %}
               {% endif %}
               </select>
              
@@ -665,6 +669,7 @@
   let expanded = false; 
   let global_unique_dimensions_json = {} 
   let mean_median_selection =  'median'
+  let global_unchecked_dimensions = []
   // Initiaze the datarange picker
   $('input[name="predictordaterange"]').daterangepicker()
   getPredictorStartAndEndDates()
@@ -842,7 +847,9 @@
       success:function(data){
         hideSpinner()
         plotting_data = data.multi_line_chart_data2;
-        plot_multi_line_chart_checkboxes(plotting_data, data.cpm_message, data.max_spend, data.max_predictions, y_axis_selector_value)
+        target_type = data.target_type;
+        subsetted_data = remove_data_unchecked_dimensions(plotting_data, global_unchecked_dimensions)
+        plot_multi_line_chart_checkboxes(subsetted_data.last_plotting_data, data.cpm_message, data.max_spend, data.max_predictions, y_axis_selector_value, target_type, subsetted_data.unchecked_dimensions, false)
       },error:function(error){
 
       }
@@ -1026,6 +1033,7 @@
         document.getElementById("right_div").style.display = "block";
         predictor_table_data = data.predictor_table_data[0];
         enter_cpm = data.enter_cpm;
+        target_type = data.target_type
         drop_dimension = data.drop_dimension;
         default_dimension = data.default_dimension;
         dimension_value_selector = data.dimension_value_selector;
@@ -1219,8 +1227,8 @@
 {% comment %} scatter plot and multi line hart {% endcomment %}
 <script>
 // plot multiple line charts with checkboxes
-function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,max_predictions, y_label = 'predictions', dimension_to_uncheck=[],to_be_checked=true){
-    // set the dimensions and margins of the graph
+function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,max_predictions, y_label = 'predictions', target_type = 'revenue', dimension_to_uncheck=[],to_be_checked=true){
+  // set the dimensions and margins of the graph
     if (cpm_message == "cpm selected"){
       x_label = 'Impression'
     }else 
@@ -1277,7 +1285,14 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
       .style("fill", "black")
       .text(x_label);
 
-  // text label for the y axis
+  // just for text label for the y axis
+  y_axis_label = ""
+  if(y_label == 'predictions')
+    y_axis_label = 'Predictions';
+  else if(y_label != 'predictions' && target_type == 'revenue')
+    y_axis_label = 'ROI';
+  else if(y_label != 'predictions' && target_type == 'volume')
+    y_axis_label = 'CPA';
   svg.append("text")
       .attr("transform", "rotate(-90)")
       .attr("y", 0 - margin.left)
@@ -1285,7 +1300,7 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
       .attr("dy", "1em")
       .style("text-anchor", "middle")
       .style("fill", "black")
-      .text(y_label);      
+      .text(y_axis_label);      
 
     var y = d3.scaleLinear()
               .domain( [0,max_predictions + 0.1 * max_predictions])
@@ -1404,21 +1419,15 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
 			document.getElementById("menu").appendChild(divcheckSelectAll);
       selectAllCheckbox.addEventListener("click",function(){
           var last_plotting_data = []
-              if(this.checked == true){
-                last_plotting_data = [...multi_line_chart_data2]
-                unchecked_dimensions = []
-                }else{
-                last_plotting_data = [];
-                unchecked_dimensions = [...dimension_groups];
-               }
-               arr = changexydomain(last_plotting_data, cpm_message, y_label)
+               subsetted_data_select_unselect_all = subset_data_select_unselect_all(multi_line_chart_data2 ,this.checked);
+               arr = changexydomain(subsetted_data_select_unselect_all.last_plotting_data, cpm_message, y_label)
                d3.select("#multi_line_chart_with_checkboxes").select("svg").remove();
                const element = document.getElementById('menu');
                while (element.firstChild) {
                 element.removeChild(element.firstChild);
               }
               y_label = document.getElementById("YAxisSelector").value;
-              plot_multi_line_chart_checkboxes(last_plotting_data, cpm_message, arr[0],arr[1], y_label, unchecked_dimensions,this.checked)
+              plot_multi_line_chart_checkboxes(subsetted_data_select_unselect_all.last_plotting_data, cpm_message, arr[0],arr[1], y_label, target_type, subsetted_data_select_unselect_all.unchecked_dimensions,this.checked)
       })
       for(let i = 0 ; i < dimension_groups.length ; i++){
           var tick = document.createElement('input');
@@ -1445,23 +1454,15 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
               var svgline = d3.select('#line-' + lineSelected.replace(/\s/g, '').replace(/[^\w\s]/gi, '').replace("/",""));
 					    var textline = d3.select('#text-' + lineSelected.replace(/\s/g, '').replace(/[^\w\s]/gi, '').replace("/",""));
               var last_plotting_data = []
-              if(this.checked==true){
-                last_plotting_data = [...plotting_data]
-                filtered_array = multi_line_chart_data2.filter(a => a.name == this.value)
-                last_plotting_data.push(...filtered_array)
-                unchecked_dimensions.splice(unchecked_dimensions.indexOf(this.value),1)
-                }else{
-                last_plotting_data = plotting_data.filter(a => a.name != this.value);
-                unchecked_dimensions.push(this.value)
-               }
-               arr = changexydomain(last_plotting_data, cpm_message, y_label)
+               subsetted_data = subset_data(plotting_data , dimension_to_uncheck, this.checked, this.value);
+               arr = changexydomain(subsetted_data.last_plotting_data, cpm_message, y_label)
                d3.select("#multi_line_chart_with_checkboxes").select("svg").remove();
                const element = document.getElementById('menu');
                while (element.firstChild) {
                 element.removeChild(element.firstChild);
               }
               y_label = document.getElementById("YAxisSelector").value;
-              plot_multi_line_chart_checkboxes(last_plotting_data,cpm_message, arr[0], arr[1], y_label, unchecked_dimensions,false)
+              plot_multi_line_chart_checkboxes(subsetted_data.last_plotting_data ,cpm_message, arr[0], arr[1], y_label, target_type, subsetted_data.unchecked_dimensions,false)
           })
     var x_range = d3.scaleLinear().range([0, width]);
     var y_range = d3.scaleLinear().range([height, 0]);
@@ -1482,10 +1483,57 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
       )
     }
 }
-
+// subset the data for selection / unselection all dimensions 
+function remove_data_unchecked_dimensions(plotting_data, dimensions_to_uncheck = []){
+  plotting_data = plotting_data.filter( a => dimensions_to_uncheck.indexOf(a.name) == -1);
+  var subsetted_data = {
+    last_plotting_data:plotting_data,
+    unchecked_dimensions:dimensions_to_uncheck
+  }
+  return subsetted_data
+}
+// subset the data for selection / unselection all dimensions 
+function subset_data_select_unselect_all(plotting_data, select_all_checked){
+  const dimension_groups = plotting_data.map((obj)=>{
+    return obj.name
+  })
+  if(select_all_checked == true){
+    last_plotting_data = [...multi_line_chart_data2]
+    unchecked_dimensions = []
+    global_unchecked_dimensions = []
+    }else{
+    last_plotting_data = [];
+    unchecked_dimensions = [...dimension_groups];
+    global_unchecked_dimensions = [...dimension_groups];
+  }
+  var subsetted_data = {
+    last_plotting_data:last_plotting_data,
+    unchecked_dimensions:unchecked_dimensions
+  }
+  return subsetted_data
+}
+// subset the data for selection / unselection 
+function subset_data(plotting_data, unchecked_dimensions, is_dimension_checked, dimension_name){
+  if(is_dimension_checked==true){
+    last_plotting_data = [...plotting_data]
+    filtered_array = multi_line_chart_data2.filter(a => a.name == dimension_name)
+    last_plotting_data.push(...filtered_array)
+    unchecked_dimensions.splice(unchecked_dimensions.indexOf(dimension_name),1)
+    global_unchecked_dimensions = [...unchecked_dimensions]
+    }else{
+    last_plotting_data = plotting_data.filter(a => a.name != dimension_name);
+    unchecked_dimensions.push(dimension_name)
+    global_unchecked_dimensions = [...unchecked_dimensions]
+   }
+   var subsetted_data = {
+     last_plotting_data:last_plotting_data,
+     unchecked_dimensions:unchecked_dimensions
+   }
+   return subsetted_data;
+}
 
 // change xy domain
-function changexydomain(plotting_data,cpm_message,  y_label){
+function changexydomain(plotting_data, cpm_message,  y_label){
     let max_spend = 0;
     let max_predictions = 0;
     x_label = cpm_message == "cpm selected" ? 'impression' : 'spend';
@@ -1974,6 +2022,7 @@ function scatter_plot_chart(data) {
         multi_line_chart_data2 = data.multi_line_chart_data2
         weekly_predictions_json = data.weekly_predictions_json
         monthly_predictions_json = data.monthly_predictions_json
+        target_type = data.target_type
         console.log(
           `\n scatterplot_data, ${scatterplot_data} 
           \n predictor_table_data, ${predictor_table_data} 
@@ -2041,7 +2090,7 @@ function scatter_plot_chart(data) {
           plot_weekly_seasonality(weekly_predictions_json)
           plot_monthly_seasonality(monthly_predictions_json);
         }
-        plot_multi_line_chart_checkboxes(multi_line_chart_data2, data.cpm_message ,data.max_spend, data.max_predictions);
+        plot_multi_line_chart_checkboxes(multi_line_chart_data2, data.cpm_message ,data.max_spend, data.max_predictions,y_label = 'predictions', target_type);
         scatter_plot_chart(data);
         addDataToTable(predictor_table_data);
         enter_cpm ? addDataToCPMSelector(enter_cpm) : null;

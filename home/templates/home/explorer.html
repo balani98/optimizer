@@ -199,9 +199,8 @@
             <select name="targetTypeSelector" class="btn dropdown-toggle explorer-sidebar-dropdown"
               onchange="targetTypeCheck(this.value)" id="target_type_value">
               <option value="0">Target Type Selector</option>
-              <option value="leads">Leads</option>
-              <option value="acquisition">Acquisition</option>
-              <option value="revenue">Revenue</option>
+              <option value="volume">Volume</option>
+              <option value="revenue">Dollars</option>
             </select>
           </div>
           <p class="target_type_error" style="color: #fff; display: none;"></p>
@@ -376,6 +375,11 @@
     if(target_selector != '' && target_selector !='undefined' && target_selector != null){
     $('#target_value').val(target_selector)
     targetCheck(target_selector)
+    }
+    target_type = window.localStorage.getItem('target_type')
+    if(target_type != '' && target_type !='undefined' && target_type != null){
+    $('#target_type_value').val(target_type)
+    targetTypeCheck(target_type)
     }
     dimension_selector = window.localStorage.getItem('dimension_selector')
     dimension_grouping_selector = window.localStorage.getItem('dimension_grouping_selector')
@@ -1155,7 +1159,6 @@
   }
   function targetTypeCheck(value) {
     displaySpinner()
-    window.localStorage.setItem('target_type_selector',value)
     $.ajax({
       url: 'ajax/target_type_check/',
       data: {
@@ -1163,7 +1166,7 @@
       },
       success: function (data) {
         hideSpinner()
-        console.log(data.message);
+        window.localStorage.setItem("target_type",value)
         $('.target_type_error').css("display", "none");
       },
       error: function (data) {
