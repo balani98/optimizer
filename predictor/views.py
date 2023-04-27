@@ -462,6 +462,7 @@ def predictor_ajax_date_dimension_onchange(request):
         seasonality = int(request.session.get("seasonality"))
         default_dim = request.GET.get("dimension_value_selector")
         discard_dimension = request.GET.get('discard_dimension')
+        target_type = request.session.get('target_type')
         request.session["predictor_default_dim"] = default_dim
         print("default dim on chnage", seasonality)
         print("default dim on chnage", default_dim)
@@ -573,6 +574,7 @@ def predictor_ajax_date_dimension_onchange(request):
         context["monthly_predictions_json"] = monthly_predictions_json
         context["dimension_value_selector"] = dimension_value_selector
         context["default_dimension"] = default_dim
+        context["target_type"] = target_type
         return JsonResponse(context, status=200)
 
     except Exception as exp:
