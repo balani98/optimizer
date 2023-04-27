@@ -791,7 +791,10 @@
         enter_cpm = data.enter_cpm;
         if(discard_dimension == true){
           multi_line_chart_data2 = data.multi_line_chart_data2;
-          plot_multi_line_chart_checkboxes(multi_line_chart_data2,data.cpm_message, data.max_spend, data.max_predictions)    
+          y_label = document.getElementById("YAxisSelector").value;
+          target_type = data.target_type;
+          arr = changexydomain(multi_line_chart_data2, cpm_message, y_label)
+          plot_multi_line_chart_checkboxes(multi_line_chart_data2,data.cpm_message, arr[0], arr[1], y_label, target_type)    
         }
         console.log(
           `\n scatterplot_data, ${scatterplot_data} 
@@ -848,8 +851,10 @@
         hideSpinner()
         plotting_data = data.multi_line_chart_data2;
         target_type = data.target_type;
+        cpm_message = data.cpm_message
         subsetted_data = remove_data_unchecked_dimensions(plotting_data, global_unchecked_dimensions)
-        plot_multi_line_chart_checkboxes(subsetted_data.last_plotting_data, data.cpm_message, data.max_spend, data.max_predictions, y_axis_selector_value, target_type, subsetted_data.unchecked_dimensions, false)
+        arr = changexydomain(subsetted_data.last_plotting_data, cpm_message, y_axis_selector_value)
+        plot_multi_line_chart_checkboxes(subsetted_data.last_plotting_data, data.cpm_message, arr[0], arr[1], y_axis_selector_value, target_type, subsetted_data.unchecked_dimensions, false)
       },error:function(error){
 
       }
