@@ -195,15 +195,6 @@
             </select>
           </div>
           <p class="target_error" style="color: #fff; display: none;"></p>
-          <div class="dropdown" style="margin-bottom: 10px; width: 100%;">
-            <select name="targetTypeSelector" class="btn dropdown-toggle explorer-sidebar-dropdown"
-              onchange="targetTypeCheck(this.value)" id="target_type_value">
-              <option value="0">Target Type Selector</option>
-              <option value="volume">Volume</option>
-              <option value="revenue">Dollars</option>
-            </select>
-          </div>
-          <p class="target_type_error" style="color: #fff; display: none;"></p>
           <div>
             <div class="form-check" style="margin-bottom:10px;">
               <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault"
@@ -213,7 +204,6 @@
               </label>
             </div>
           </div>
-
           <div class="dropdown" style="margin-bottom: 10px; width: 100%;  display: none;" id="cpm-Selector">
             <select name="cpmSelector" class="btn dropdown-toggle explorer-sidebar-dropdown "
               onchange="cpmCheck(this.value)" id="cpm_value">
@@ -224,6 +214,15 @@
             </select>
           </div>
           <p class="cpm_error" style="color: #fff; display: none;"></p>
+          <div class="dropdown" style="margin-bottom: 10px; width: 100%;">
+            <select name="targetTypeSelector" class="btn dropdown-toggle explorer-sidebar-dropdown"
+              onchange="targetTypeCheck(this.value)" id="target_type_value">
+              <option value="0">Target Type Selector</option>
+              <option value="volume">Volume</option>
+              <option value="revenue">Dollars</option>
+            </select>
+          </div>
+          <p class="target_type_error" style="color: #fff; display: none;"></p>
           <div>
             <div class="form-check" style="margin-bottom:10px;display:none" id="dimension_grouping_checkbox">
               <input class="form-check-input" type="checkbox" value="" id="flexCheckDefaultDimensionGrouping"
@@ -773,11 +772,16 @@
     console.log("entered script")
     var checkBox = document.getElementById("flexCheckDefault")
     var selector = document.getElementById("cpm-Selector")
+    var target_type_selector = document.getElementById("target_type_value")
     window.localStorage.setItem('cpm_checkbox',checkBox.checked)
     if (checkBox.checked == true) {
       selector.style.display = "block";
+      target_type_selector.value = 'volume';
+      $('#target_type_value').prop('disabled',true);
+      window.localStorage.setItem("target_type",target_type_selector.value)
     } else {
       selector.style.display = "none";
+      $('#target_type_value').prop('disabled', false);
     }
   }
   function selectorDimensionroupingDisplay() {
