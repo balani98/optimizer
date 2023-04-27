@@ -399,7 +399,7 @@
               <option value="0">Y axis Selector</option>
               <option value="predictions" selected>Predictions</option>
               {%if cpm_message == "cpm selected" %}
-                <option value="impression_predictions_rate">CPA</option>
+                <option value="impression_predictions_rate">Convbersion Rate</option>
               {% else %}
                 {% if target_type == "revenue" %}
                   <option value="spend_predictions_rate">ROI</option>
@@ -1294,10 +1294,12 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
   y_axis_label = ""
   if(y_label == 'predictions')
     y_axis_label = 'Predictions';
-  else if(y_label != 'predictions' && target_type == 'revenue')
+  else if(y_label != 'predictions' && target_type == 'revenue' && cpm_message != "cpm selected")
     y_axis_label = 'ROI';
-  else if(y_label != 'predictions' && target_type == 'volume')
+  else if(y_label != 'predictions' && target_type == 'volume' && cpm_message != "cpm selected")
     y_axis_label = 'CPA';
+  else if(y_label != 'predictions' && target_type == 'volume'  &&  cpm_message == "cpm selected")
+    y_axis_label = 'Conversion Rate';
   svg.append("text")
       .attr("transform", "rotate(-90)")
       .attr("y", 0 - margin.left)
