@@ -1109,7 +1109,8 @@
           plot_weekly_seasonality(weekly_predictions_json);
           plot_monthly_seasonality(monthly_predictions_json);
         }
-        plot_multi_line_chart_checkboxes(multi_line_chart_data2, data.cpm_message ,data.max_spend, data.max_predictions)
+        document.getElementById("YAxisSelector").value = 'predictions'
+        plot_multi_line_chart_checkboxes(multi_line_chart_data2, data.cpm_message ,data.max_spend, data.max_predictions,y_label = 'predictions')
         if (data.cpm_message == "cpm selected") {
           document.getElementById("predictor_cpm_budget").style.display =
             "block";
