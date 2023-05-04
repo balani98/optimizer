@@ -216,6 +216,7 @@ def dimension_min_max(request):
         total_budget = int(body["total_budget"])
         discarded_dimensions = json.loads(body["discarded_dimensions"])
         constraint_type = request.session.get("mean_median_selection")
+        target_type = request.session.get('target_type')
         selected_dimensions = body['selected_dimensions'].split(",")
         is_group_dimension_selected = request.session.get("dimension_grouping_check")
         if is_group_dimension_selected == True:
@@ -237,11 +238,11 @@ def dimension_min_max(request):
             print(start_date, end_date)
             date_range = [start_date, end_date]
             optimizer_object = optimizer_iterative_seasonality(
-                df_predictor_page_latest_data, constraint_type
+                df_predictor_page_latest_data, constraint_type, target_type
             )
             try:
                 (
-                    df_optimizer_results_post_min_max
+                    df_optimizer_results_post_min_max, summary_metric_dic
                 ) = optimizer_object.execute(scatter_plot_df,
                                              total_budget,
                                              date_range,
@@ -251,6 +252,7 @@ def dimension_min_max(request):
                                              grouped_dimension_constraints,
                                              isolated_dimensions,
                                              selected_dimensions)
+                print('deeps', summary_metric_dic)
             except Exception as error:
                 return JsonResponse({"error": str(error)}, status=501)
         else:
@@ -259,10 +261,10 @@ def dimension_min_max(request):
             )
             number_of_days = int(body["number_of_days"])
             df_spend_dis = pd.DataFrame(request.session.get('df_spend_dis'))
-            optimizer_object = optimizer_iterative(df_predictor_page_latest_data, constraint_type)
+            optimizer_object = optimizer_iterative(df_predictor_page_latest_data, constraint_type, target_type)
             try:
                 (
-                    df_optimizer_results_post_min_max
+                    df_optimizer_results_post_min_max, summary_metric_dic
                 ) = optimizer_object.execute(
                     scatter_plot_df,
                     total_budget,
@@ -403,6 +405,7 @@ def dimension_min_max(request):
         # context["json_donut_chart_data"] = json_donut_chart_data
         context["dict_donut_chart_data"] = dict_donut_chart_data
         context["dict_line_chart_data"] = dict_line_chart_data
+        context["summary_metric_dic"] = summary_metric_dic
         return JsonResponse(context)
     except Exception as e:
         return JsonResponse({"error": ERROR_DICT[str(e)]}, status=500)

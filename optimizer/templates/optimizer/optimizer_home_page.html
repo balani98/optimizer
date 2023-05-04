@@ -784,6 +784,46 @@
       style="display: block; align-items: center; left: 9%; width: 100vw"
     >
       <div id="right_div" style="display: none; align-items: center">
+        <div class="card"  
+             style="
+                  background-color: #fff;
+                  padding: 20px;
+                  margin-bottom: 10px;
+                  margin-top: 20px;
+                  box-shadow: rgb(0 0 0 / 24%) 0px 10px 20px;
+          ">
+          <h4>Summary Metrics</h4>
+          <div style="
+          margin-top: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          ">
+            <table class="table table-bordered">
+              <thead style="text-align: center">
+                <tr>
+                  <th scope="col">Total Budget</th>
+                  <th scope="col">Total Target</th>
+                  <th scope="col">Current Projections Total Budget</th>
+                  <th scope="col">Current Projection Total Target</th>
+                  <th scope="col">Optimized CPA / ROI</th>
+                  <th scope="col">Current Projection CPA/ROI</th>
+                </tr>
+              </thead>
+              <tbody style="text-align: center"class="table_body_optimizer_summary_metric">
+                <tr>
+                  {% comment %} <td>$ 10000</td>
+                  <td>100</td>
+                  <td>$ 500</td>
+                  <td>1000</td>
+                  <td>$ 1000</td>
+                  <td>200</td> {% endcomment %}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
         <div
           style="
             background-color: #fff;
@@ -804,8 +844,7 @@
             "
           >
             <table
-              class="table table-bordered"
-              class="table_1_optimizer"
+              class="table table-bordered table_1_optimizer"
               id="table_1_optimizer"
             >
               <thead style="text-align: center">
@@ -1449,7 +1488,7 @@
       id_stringified_grouped_optimizer_left_pannel_data = document.getElementById('id_stringified_grouped_optimizer_left_pannel_data')
       get_all_the_key_value = document.querySelectorAll('.get_all_the_key_value')
       let table_body_1_optimizer = document.querySelector(".table_body_1_optimizer");
-      let table_body_2_optimizer = document.querySelector(".table_body_2_optimizer");
+      let table_body_optimizer_summary_metric = document.querySelector(".table_body_optimizer_summary_metric");
 
 
 
@@ -2110,12 +2149,15 @@
             //json_donut_chart_data = data.json_donut_chart_data
             dict_donut_chart_data = data.dict_donut_chart_data
             dict_line_chart_data = data.dict_line_chart_data
+            summary_metric_json = data.summary_metric_dic
+            console.log('deeps', summary_metric_json)
             console.log("Success")
             console.log("submit_predictor_left_pannel_chart_inputs", global_optimizer_download_csv_json)
             console.log("json_table_1_data", json_table_1_data)
             //console.log("json_donut_chart_data", json_donut_chart_data)
             console.log("dict_donut_chart_data", dict_donut_chart_data)
             populate_table_1(json_table_1_data, constraint_type)
+            populate_table_summary_metric(summary_metric_json)
             if(global_my_optimizer_bar_chart != 0){
               console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
               global_my_optimizer_bar_chart.destroy();
@@ -2167,7 +2209,45 @@
       }
 
     }
+    // function to populate the summary metrics table 
+    function populate_table_summary_metric(summary_metric_json){
+      table_body_optimizer_summary_metric .innerHTML = ""
+      tableRow = document.createElement("tr");
+      // appending the 
+      td1 = document.createElement("td");
+      textNode1 = document.createTextNode(`$ ${summary_metric_json["Optimized Total Budget"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+      td1.appendChild(textNode1);
 
+      td2 = document.createElement("td");
+      textNode2 = document.createTextNode(summary_metric_json["Optimized Total Target"]);
+      td2.appendChild(textNode2);
+
+      td3 = document.createElement("td");
+      textNode3 =  document.createTextNode(`$ ${summary_metric_json["Current Projection Total Budget"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+      td3.appendChild(textNode3);
+
+      td4 = document.createElement("td");
+      textNode4 = document.createTextNode(summary_metric_json["Current Projection Total Target"]);
+      td4.appendChild(textNode4);
+
+      td5 = document.createElement("td");
+      textNode5 = document.createTextNode(summary_metric_json["Optimized CPA/ROI"]);
+      td5.appendChild(textNode5);
+
+      td6 = document.createElement("td");
+      textNode6 = document.createTextNode(summary_metric_json["Current Projection CPA/ROI"]);
+      td6.appendChild(textNode6);
+      
+      // appending the table row 
+      tableRow.appendChild(td1);
+      tableRow.appendChild(td2);
+      tableRow.appendChild(td3);
+      tableRow.appendChild(td4);
+      tableRow.appendChild(td5);
+      tableRow.appendChild(td6)
+      table_body_optimizer_summary_metric.appendChild(tableRow);
+
+    }
     {% comment %} Start : Populate Table  1 {% endcomment %}
     function populate_table_1(json_table_1_data, constraint_type){
       console.log("json_table_1_data")

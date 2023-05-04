@@ -301,6 +301,9 @@ def cpm_check(request):
         CpmSelector = request.GET.get("cpm_check")
         if CpmSelector != "0":
             request.session["cpm_checked"] = "True"
+            # setting the target type as volume for impressions
+            request.session["target_type"] = "volume"
+            eo.target_type = "volume"
             eo.use_impression = True
             eo.cpm = CpmSelector
             request.session["CpmSelector"] = CpmSelector
@@ -345,6 +348,7 @@ def chart_filter(request):
             data = pd.read_pickle(UPLOAD_FOLDER+"{}.pkl".format(request.session.get("_uuid")))
             print("DimensionSelector", request.session.get("DimensionSelector"))
             print("CpmSelector :", request.session.get("CpmSelector"))
+            print('deeps', request.session.get("target_type"))
             convert_to_weekly_data = request.session.get("convert_to_weekly_data")
             is_weekly_selected = request.session.get("is_weekly_selected")
             eo = explorer(data)

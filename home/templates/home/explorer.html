@@ -195,6 +195,15 @@
             </select>
           </div>
           <p class="target_error" style="color: #fff; display: none;"></p>
+          <div class="dropdown" style="margin-bottom: 10px; width: 100%;">
+            <select name="targetTypeSelector" class="btn dropdown-toggle explorer-sidebar-dropdown"
+              onchange="targetTypeCheck(this.value)" id="target_type_value">
+              <option value="0">Target Type Selector</option>
+              <option value="volume">Volume</option>
+              <option value="revenue">Dollars</option>
+            </select>
+          </div>
+          <p class="target_type_error" style="color: #fff; display: none;"></p>
           <div>
             <div class="form-check" style="margin-bottom:10px;">
               <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault"
@@ -214,15 +223,6 @@
             </select>
           </div>
           <p class="cpm_error" style="color: #fff; display: none;"></p>
-          <div class="dropdown" style="margin-bottom: 10px; width: 100%;">
-            <select name="targetTypeSelector" class="btn dropdown-toggle explorer-sidebar-dropdown"
-              onchange="targetTypeCheck(this.value)" id="target_type_value">
-              <option value="0">Target Type Selector</option>
-              <option value="volume">Volume</option>
-              <option value="revenue">Dollars</option>
-            </select>
-          </div>
-          <p class="target_type_error" style="color: #fff; display: none;"></p>
           <div>
             <div class="form-check" style="margin-bottom:10px;display:none" id="dimension_grouping_checkbox">
               <input class="form-check-input" type="checkbox" value="" id="flexCheckDefaultDimensionGrouping"
@@ -358,6 +358,9 @@
       cpm_selector = window.localStorage.getItem('cpm_selector')
       if(cpm_selector != '' && cpm_selector != 'undefined' && cpm_selector != null){
         $('#cpm_value').val(cpm_selector);
+        $('#target_type_value').css('display', 'none')
+      }else{
+        $('#target_type_value').css('display', 'block')
       }
     }
     date_selector = window.localStorage.getItem('date_selector');
@@ -377,7 +380,7 @@
     }
     target_type = window.localStorage.getItem('target_type')
     if(target_type != '' && target_type !='undefined' && target_type != null){
-    $('#target_type_value').val(target_type)
+      $('#target_type_value').val(target_type)
     targetTypeCheck(target_type)
     }
     dimension_selector = window.localStorage.getItem('dimension_selector')
@@ -777,11 +780,11 @@
     if (checkBox.checked == true) {
       selector.style.display = "block";
       target_type_selector.value = 'volume';
-      $('#target_type_value').prop('disabled',true);
+      $('#target_type_value').css('display', 'none');
       window.localStorage.setItem("target_type",target_type_selector.value)
     } else {
       selector.style.display = "none";
-      $('#target_type_value').prop('disabled', false);
+      $('#target_type_value').css('display', 'block');
     }
   }
   function selectorDimensionroupingDisplay() {
