@@ -805,10 +805,7 @@
                 <tr>
                   <th scope="col">Total Budget</th>
                   <th scope="col">Total Target</th>
-                  <th scope="col">Current Projections Total Budget</th>
-                  <th scope="col">Current Projection Total Target</th>
-                  <th scope="col">Optimized CPA / ROI</th>
-                  <th scope="col">Current Projection CPA/ROI</th>
+                  <th scope="col">Total cost per Target / ROI</th>
                 </tr>
               </thead>
               <tbody style="text-align: center"class="table_body_optimizer_summary_metric">
@@ -2150,7 +2147,6 @@
             dict_donut_chart_data = data.dict_donut_chart_data
             dict_line_chart_data = data.dict_line_chart_data
             summary_metric_json = data.summary_metric_dic
-            console.log('deeps', summary_metric_json)
             console.log("Success")
             console.log("submit_predictor_left_pannel_chart_inputs", global_optimizer_download_csv_json)
             console.log("json_table_1_data", json_table_1_data)
@@ -2213,7 +2209,7 @@
     function populate_table_summary_metric(summary_metric_json){
       table_body_optimizer_summary_metric .innerHTML = ""
       tableRow = document.createElement("tr");
-      // appending the 
+      // appending the columns of table
       td1 = document.createElement("td");
       textNode1 = document.createTextNode(`$ ${summary_metric_json["Optimized Total Budget"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
       td1.appendChild(textNode1);
@@ -2223,30 +2219,15 @@
       td2.appendChild(textNode2);
 
       td3 = document.createElement("td");
-      textNode3 =  document.createTextNode(`$ ${summary_metric_json["Current Projection Total Budget"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+      textNode3 = document.createTextNode(summary_metric_json["Optimized CPA/ROI"]);
       td3.appendChild(textNode3);
-
-      td4 = document.createElement("td");
-      textNode4 = document.createTextNode(summary_metric_json["Current Projection Total Target"]);
-      td4.appendChild(textNode4);
-
-      td5 = document.createElement("td");
-      textNode5 = document.createTextNode(summary_metric_json["Optimized CPA/ROI"]);
-      td5.appendChild(textNode5);
-
-      td6 = document.createElement("td");
-      textNode6 = document.createTextNode(summary_metric_json["Current Projection CPA/ROI"]);
-      td6.appendChild(textNode6);
       
       // appending the table row 
       tableRow.appendChild(td1);
       tableRow.appendChild(td2);
       tableRow.appendChild(td3);
-      tableRow.appendChild(td4);
-      tableRow.appendChild(td5);
-      tableRow.appendChild(td6)
-      table_body_optimizer_summary_metric.appendChild(tableRow);
 
+      table_body_optimizer_summary_metric.appendChild(tableRow);
     }
     {% comment %} Start : Populate Table  1 {% endcomment %}
     function populate_table_1(json_table_1_data, constraint_type){
