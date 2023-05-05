@@ -26,8 +26,7 @@ class predictor:
             self.use_impression = True
         else:
             self.use_impression = False
-
-        self.target_type = target_type.lower()
+            self.target_type = target_type.lower()
 
         self.df_param = None
 
@@ -340,21 +339,21 @@ class predictor:
             ~scatter_plot_df["dimension"].isin(drop_dimension)
         ].reset_index(drop=True)
 
-        if self.target_type == "revenue":
-            scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["spend"]).round(decimals=2)
-        else:
-            scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["spend"]/scatter_plot_df["predictions"]).round(decimals=2)
-        scatter_plot_df["spend_predictions_rate"] = scatter_plot_df["spend_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
+        if self.use_impression == False:
+            if self.target_type == "revenue":
+                scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["spend"]).round(decimals=2)
+            else:
+                scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["spend"]/scatter_plot_df["predictions"]).round(decimals=2)
+            scatter_plot_df["spend_predictions_rate"] = scatter_plot_df["spend_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
+        
         self.df_param = df_param
         # df_score_final.drop(columns=["MAPE"], inplace=True)
 
         if self.use_impression:
 
-            if self.target_type == "revenue":
-                scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["impression"]).round(decimals=2)
-            else:
-                scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["impression"]/scatter_plot_df["predictions"]).round(decimals=2)
+            scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["predictions"]/(scatter_plot_df["impression"]/1000)).round(decimals=2)
             scatter_plot_df["impression_predictions_rate"] = scatter_plot_df["impression_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
+            
             self.df_param = df_param
             df_cpm = (
                 self.df.groupby("dimension").agg(
@@ -393,8 +392,7 @@ class predictor_with_seasonality:
             self.use_impression = True
         else:
             self.use_impression = False
-
-        self.target_type = target_type.lower()
+            self.target_type = target_type.lower()
 
         self.df_param = None
 
@@ -1015,11 +1013,12 @@ class predictor_with_seasonality:
             ~scatter_plot_df["dimension"].isin(drop_dimension)
         ].reset_index(drop=True)
 
-        if self.target_type == "revenue":
-            scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["spend"]).round(decimals=2)
-        else:
-            scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["spend"]/scatter_plot_df["predictions"]).round(decimals=2)
-        scatter_plot_df["spend_predictions_rate"] = scatter_plot_df["spend_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
+        if self.use_impression == False:
+            if self.target_type == "revenue":
+                scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["spend"]).round(decimals=2)
+            else:
+                scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["spend"]/scatter_plot_df["predictions"]).round(decimals=2)
+            scatter_plot_df["spend_predictions_rate"] = scatter_plot_df["spend_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
 
         self.df_param = df_param
 
@@ -1027,14 +1026,12 @@ class predictor_with_seasonality:
 
         if self.use_impression:
 
-            if self.target_type == "revenue":
-                scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["impression"]).round(decimals=2)
-            else:
-                scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["impression"]/scatter_plot_df["predictions"]).round(decimals=2)
+            scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["predictions"]/(scatter_plot_df["impression"]/1000)).round(decimals=2)
             scatter_plot_df["impression_predictions_rate"] = scatter_plot_df["impression_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
+            
             scatter_plot_df = scatter_plot_df[['date', 'spend', 'impression', 'target', 'dimension', 'weekday_',
                             'month_', 'spend_prediction', 'weekly_prediction', 'monthly_prediction',
-                            'predictions', 'spend_predictions_rate', 'impression_predictions_rate']]
+                            'predictions', 'impression_predictions_rate']]
 
             df_cpm = (
                 self.df.groupby("dimension").agg(
