@@ -546,11 +546,7 @@
   // function to convert daily data to weekly data
   function fn_exp_convert_to_weekly_data(this_value){
        // displaying the spinner
-       $('#container').css('opacity',0.5);
-       $('#container').css('pointer-events','none');
-       $('#container').css('z-index',1);
-       $("body").css("background-color", "#cecece");
-       $('#spinner-optimizer').css('display','block');
+      displaySpinner()
     convert_to_weekly_data = this_value.checked ? 1 : 0;
     // disabling or enabling functionality weekly selection data on basis of aggregation selected by user 
     if(convert_to_weekly_data == 1)
@@ -565,13 +561,11 @@
         'convert_to_weekly_data': convert_to_weekly_data,
       },
       success: function (data) {
-        $('#container').css('opacity',1);
-        $("body").css("background-color", "#fff");
-        $('#container').css('pointer-events','auto');
-        $('#spinner-optimizer').css('display','none');
+        hideSpinner()
         console.log(`Success in 'ajax/is_convert_to_weekly_data/' : ${data.message}`);
       },
       error: function (data) {
+        hideSpinner()
         console.log(`Success in 'ajax/is_convert_to_weekly_data/' : ${data.responseJSON.error}`);
       }
     });
@@ -1152,16 +1146,15 @@
  {% comment %} validation check {% endcomment %}
 <script>
   function displaySpinner(){
-    $('#container').css('opacity',0.5);
-    $('#container').css('pointer-events','none');
-    $('#container').css('z-index',1);
+    $('body').css('opacity',0.5);
+    $('body').css('pointer-events','none');
     $("body").css("background-color", "#cecece");
     $('#spinner-optimizer').css('display','block');
   }
   function hideSpinner(){
-    $('#container').css('opacity',1);
+    $('body').css('opacity',1);
     $("body").css("background-color", "#fff");
-    $('#container').css('pointer-events','auto');
+    $('body').css('pointer-events','auto');
     $('#spinner-optimizer').css('display','none');
   }
   function targetTypeCheck(value) {
@@ -1184,11 +1177,7 @@
   }
   function targetCheck(value) {
     console.log(value)
-    $('#container').css('opacity',0.5);
-    $('#container').css('pointer-events','none');
-    $('#container').css('z-index',1);
-    $("body").css("background-color", "#cecece");
-    $('#spinner-optimizer').css('display','block');
+    displaySpinner()
     window.localStorage.setItem('target_selector',value)
     $.ajax({
       url: 'ajax/target_check/',
@@ -1196,18 +1185,12 @@
         'target_check': value,
       },
       success: function (data) {
-        $('#container').css('opacity',1);
-        $("body").css("background-color", "#fff");
-        $('#container').css('pointer-events','auto');
-        $('#spinner-optimizer').css('display','none');
+        hideSpinner()
         console.log(data.message);
         $('.target_error').css("display", "none");
       },
       error: function (data) {
-        $('#container').css('opacity',1);
-        $("body").css("background-color", "#fff");
-        $('#container').css('pointer-events','auto');
-        $('#spinner-optimizer').css('display','none');
+        hideSpinner()
         console.log(data.responseJSON.error);
 
         $('.target_error').css("display", "block");
