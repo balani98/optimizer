@@ -1147,14 +1147,14 @@
 <script>
   function displaySpinner(){
     $('body').css('opacity',0.5);
-    $('body').css('pointer-events','none');
+    $('#container').css('pointer-events','none');
     $("body").css("background-color", "#cecece");
     $('#spinner-optimizer').css('display','block');
   }
   function hideSpinner(){
     $('body').css('opacity',1);
     $("body").css("background-color", "#fff");
-    $('body').css('pointer-events','auto');
+    $('#container').css('pointer-events','auto');
     $('#spinner-optimizer').css('display','none');
   }
   function targetTypeCheck(value) {
