@@ -75,7 +75,7 @@ def dimension_bound(df_param, dimension_data, constraint_type, is_group_dimensio
             sub_dim_bound_max = sum([dim_bound[dim][1] for dim in sub_dim_list])
             grp_dim_bound[grp_dim] = {'sub_dimension' : sub_dim_list,
                                     'constraints':[sub_dim_bound_min, sub_dim_bound_max],
-                                    'fixed_ranges':[sub_dim_bound_min, sub_dim_bound_max]}
+                                    'fixed_ranges' : [sub_dim_bound_min, sub_dim_bound_max]}
         
     return dim_bound, grp_dim_bound
 
@@ -299,7 +299,7 @@ class optimizer_iterative:
                 agg_iniSpend=sum(oldSpendVec[dim_ini] for dim_ini in sub_dim_list)
                 if(agg_iniSpend>=groupSpendConstraint):
                     for sub_dim in sub_dim_list:
-                        oldSpendVec[sub_dim] = 0
+                        oldSpendVec[sub_dim] = dimension_bound[sub_dim][0]
                 checked_dim_list = checked_dim_list + sub_dim_list
                 
         if self.use_impression:
@@ -626,19 +626,31 @@ class optimizer_iterative:
         # adjust budget due to rounding error
         for dim in self.d_param:
             dim_spend=newSpendVec[dim]
+            dim_return = 0
             conv=totalReturn[dim]
             if (round(conv)>conv):
-                totalReturn[dim]=np.trunc(conv*10)/10
+                dim_return=np.trunc(conv*10)/10
             elif (round(conv)<conv):
-                totalReturn[dim]==int(conv)
+                dim_return=int(conv)
             else:
                 continue
             dim_metric = self.s_curve_hill_inv(totalReturn[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
+            
             if self.use_impression:
-                newImpVec[dim] = dim_metric
-                newSpendVec[dim] = (newImpVec[dim] * dimension_bound_actual[dim][2])/1000
+                dim_metric_spend=(newImpVec[dim] * dimension_bound_actual[dim][2])/1000
+                if(dim_metric_spend>=dimension_bound_actual[dim][0]):
+                    newImpVec[dim] = dim_metric
+                    newSpendVec[dim] = dim_metric_spend
+                    totalReturn[dim] = dim_return
+                else:
+                    continue   
             else:
-                newSpendVec[dim] = dim_metric
+                if(dim_metric>=dimension_bound_actual[dim][0]):
+                    newSpendVec[dim] = dim_metric
+                    totalReturn[dim] = dim_return
+                else:
+                    continue
+            
             budgetDecrement = budgetDecrement + (newSpendVec[dim] - dim_spend)
 
         # decrement unused budget from dimensions having almost zero conversion as part of budget allocation during initialization of initial budget value
@@ -826,7 +838,7 @@ class optimizer_iterative:
                 metric_projections = spend_projections
             df_res.loc[df_res['dimension']==dim, 'current_projections_per_day'] = self.s_curve_hill(metric_projections, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]).round(2)
         df_res['current_projections_for_n_days'] = df_res['current_projections_per_day']*days
-        df_res['current_projections_%'] = ((df_res['current_projections_per_day']/df_res['current_projections_per_day'].sum())*100)
+        df_res['current_projections_%'] = ((df_res['current_projections_per_day']/df_res['current_projections_per_day'].sum())*100).round(2)
         df_res['buget_allocation_old_%']=df_res['buget_allocation_old_%'].round(2)
         df_res["spend_projection_constraint_for_n_day"]=df_res["spend_projection_constraint_for_n_day"].round()
         df_res['current_projections_for_n_days']=df_res['current_projections_for_n_days'].round()
@@ -854,11 +866,11 @@ class optimizer_iterative:
         if self.constraint_type == 'median':
             df_res = df_res.rename(columns={"original_constraint_budget_per_day": "original_median_budget_per_day"})
             df_res = df_res.rename(columns={"buget_allocation_old_%": "median_buget_allocation_old_%"})
-            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'median_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'optimized_CPA_ROI', 'current_projections_CPA_ROI']]
+            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'median_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'current_projections_%', 'optimized_CPA_ROI', 'current_projections_CPA_ROI']]
         else:
             df_res = df_res.rename(columns={"original_constraint_budget_per_day": "original_mean_budget_per_day"})
             df_res = df_res.rename(columns={"buget_allocation_old_%": "mean_buget_allocation_old_%"})
-            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'optimized_CPA_ROI', 'current_projections_CPA_ROI']]
+            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'current_projections_%', 'optimized_CPA_ROI', 'current_projections_CPA_ROI']]
      
         df_res = df_res.replace({np.nan: None})
 
@@ -1263,7 +1275,7 @@ class optimizer_iterative_seasonality:
                 agg_iniSpend=sum(oldSpendVec[dim_ini] for dim_ini in sub_dim_list)
                 if(agg_iniSpend>=groupSpendConstraint):
                     for sub_dim in sub_dim_list:
-                        oldSpendVec[sub_dim] = 0
+                        oldSpendVec[sub_dim] = dimension_bound[sub_dim][0]
                 checked_dim_list = checked_dim_list + sub_dim_list
 
                 
@@ -1663,15 +1675,15 @@ class optimizer_iterative_seasonality:
             Zero conversion dimension: Budget will be reduced to 0 or lower bound where no conversion is generated
         """
         budgetDecrement = 0
-
         # adjust budget due to rounding error
         for dim in self.d_param:
             dim_spend=newSpendVec[dim]
+            dim_return = 0
             conv=totalReturn[dim]
             if (round(conv)>conv):
-                totalReturn[dim]=(np.trunc(conv*10)/10)
+                dim_return=(np.trunc(conv*10)/10)
             elif (round(conv)<conv):
-                totalReturn[dim]==int(conv)
+                dim_return=int(conv)
             else:
                 continue
             dim_metric = self.s_curve_hill_inv_seas(totalReturn[dim],
@@ -1683,10 +1695,20 @@ class optimizer_iterative_seasonality:
                                                     init_weekday,
                                                     init_month)
             if self.use_impression:
-                newImpVec[dim] = dim_metric
-                newSpendVec[dim] = (newImpVec[dim] * dimension_bound_actual[dim][2])/1000
+                dim_metric_spend=(newImpVec[dim] * dimension_bound_actual[dim][2])/1000
+                if(dim_metric_spend>=dimension_bound_actual[dim][0]):
+                    newImpVec[dim] = dim_metric
+                    newSpendVec[dim] = dim_metric_spend
+                    totalReturn[dim] = dim_return
+                else:
+                    continue   
             else:
-                newSpendVec[dim] = dim_metric
+                if(dim_metric>=dimension_bound_actual[dim][0]):
+                    newSpendVec[dim] = dim_metric
+                    totalReturn[dim] = dim_return
+                else:
+                    continue
+
             budgetDecrement = budgetDecrement + (newSpendVec[dim] - dim_spend)
 
         # decrement unused budget from dimensions having almost zero conversion as part of budget allocation during initialization of initial budget value
@@ -1695,7 +1717,7 @@ class optimizer_iterative_seasonality:
                 budgetDecrement = budgetDecrement + (newSpendVec[dim] - dimension_bound_actual[dim][0])
                 newSpendVec[dim] = dimension_bound_actual[dim][0]
                 totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, init_weekday, init_month, newImpVec)
-
+        
         # add seasonlaity related target when spend is 0
         for dim in self.d_param:
             if (newSpendVec[dim]==0):
@@ -1893,7 +1915,7 @@ class optimizer_iterative_seasonality:
             df_res.loc[df_res['dimension']==dim, 'current_projections_for_n_days'] = target_projection
         df_res['current_projections_for_n_days'] = df_res['current_projections_for_n_days'].round()
         df_res['current_projections_per_day'] = (df_res['current_projections_for_n_days']/days).round()
-        df_res['current_projections_%'] = ((df_res['current_projections_for_n_days']/df_res['current_projections_for_n_days'].sum())*100)
+        df_res['current_projections_%'] = ((df_res['current_projections_for_n_days']/df_res['current_projections_for_n_days'].sum())*100).round(2)
         df_res['buget_allocation_old_%']=df_res['buget_allocation_old_%'].round(2)
         df_res["spend_projection_constraint_for_n_day"]=df_res["spend_projection_constraint_for_n_day"].round()
         df_res['current_projections_for_n_days']=df_res['current_projections_for_n_days'].round()
@@ -1921,11 +1943,11 @@ class optimizer_iterative_seasonality:
         if self.constraint_type == 'median':
             df_res = df_res.rename(columns={"original_constraint_budget_per_day": "original_median_budget_per_day"})
             df_res = df_res.rename(columns={"buget_allocation_old_%": "median_buget_allocation_old_%"})
-            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'median_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'optimized_CPA_ROI', 'current_projections_CPA_ROI']]
+            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'median_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'current_projections_%', 'optimized_CPA_ROI', 'current_projections_CPA_ROI']]
         else:
             df_res = df_res.rename(columns={"original_constraint_budget_per_day": "original_mean_budget_per_day"})
             df_res = df_res.rename(columns={"buget_allocation_old_%": "mean_buget_allocation_old_%"})
-            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'optimized_CPA_ROI', 'current_projections_CPA_ROI']]
+            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'current_projections_%', 'optimized_CPA_ROI', 'current_projections_CPA_ROI']]
         
         df_res = df_res.replace({np.nan: None})
 

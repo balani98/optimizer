@@ -194,6 +194,7 @@ def dimension_min_max(request):
 
         context = {}
         dict_donut_chart_data = {}
+        dict_target_chart_data = {}
         dict_line_chart_data = {}
         start_date = None
         end_date = None
@@ -309,8 +310,9 @@ def dimension_min_max(request):
                 dynamic_column_for_budget_allocation_perc,
                 "buget_allocation_new_%",
                 "recommended_budget_for_n_days",
-                'estimated_return_per_day', 
-                'estimated_return_%', 
+                'estimated_return_per_day',
+                'current_projections_%', 
+                'estimated_return_%',
                 'estimated_return_for_n_days',
                 'current_projections_for_n_days'
             ]
@@ -389,7 +391,17 @@ def dimension_min_max(request):
         dict_donut_chart_data[
             "buget_allocation_new_%"
         ] = df_optimizer_results_post_min_max["buget_allocation_new_%"].tolist()
-
+        # framing the dataset for target % 
+        dict_target_chart_data["dimension"] = df_optimizer_results_post_min_max[
+            "dimension"
+        ].tolist()
+        dict_target_chart_data[
+             'current_projections_%'
+        ] = df_optimizer_results_post_min_max['current_projections_%'].tolist()
+        dict_target_chart_data[
+            "estimated_return_%"
+        ] = df_optimizer_results_post_min_max["estimated_return_%"].tolist()
+        
         json_table_1_data = df_table_1_data.to_dict("records")
         # json_donut_chart_data = df_donut_chart_data.to_dict()
 
@@ -405,6 +417,7 @@ def dimension_min_max(request):
         # context["json_donut_chart_data"] = json_donut_chart_data
         context["dict_donut_chart_data"] = dict_donut_chart_data
         context["dict_line_chart_data"] = dict_line_chart_data
+        context["dict_target_chart_data"] = dict_target_chart_data
         context["summary_metric_dic"] = summary_metric_dic
         return JsonResponse(context)
     except Exception as e:

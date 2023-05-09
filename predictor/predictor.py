@@ -233,6 +233,30 @@ class predictor:
                 x_var, param["param a"][0], param["param b"][0], param["param c"][0]
             )
         )
+    
+    def roi_cpa_outlier_treatment(self, df):
+
+        if self.use_impression:
+            col = 'impression_predictions_rate'
+            metric = 'impression'
+        else:
+            col = 'spend_predictions_rate'
+            metric = 'spend'
+
+        df_ = pd.DataFrame()
+        
+        for dim in df['dimension'].unique():
+            df_temp = df[df["dimension"] == dim].reset_index(drop=True)
+            df_temp_filter=df_temp[df_temp[col]!=-1]
+            mean = np.mean(df_temp_filter[col])
+            std = np.std(df_temp_filter[col])
+            df_temp_filter[col] = np.where((abs((df_temp_filter[col] - mean) / std) > 3), -1, df_temp_filter[col])
+            df_temp.drop(columns=[col], inplace=True)
+            df_temp = df_temp.merge(df_temp_filter[['date', col]], on='date', how='left').sort_values(by='date').reset_index(drop=True)
+            df_ = df_.append(df_temp, ignore_index=True).reset_index(drop=True)
+            df_=df_.fillna(-1)
+
+        return df_
 
     def execute(self):
 
@@ -339,20 +363,14 @@ class predictor:
             ~scatter_plot_df["dimension"].isin(drop_dimension)
         ].reset_index(drop=True)
 
-        if self.use_impression == False:
-            if self.target_type == "revenue":
-                scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["spend"]).round(decimals=2)
-            else:
-                scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["spend"]/scatter_plot_df["predictions"]).round(decimals=2)
-            scatter_plot_df["spend_predictions_rate"] = scatter_plot_df["spend_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
-        
         self.df_param = df_param
-        # df_score_final.drop(columns=["MAPE"], inplace=True)
+        # df_score_final.drop(columns=["MAPE"], inplace=True)        
 
         if self.use_impression:
 
             scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["predictions"]/(scatter_plot_df["impression"]/1000)).round(decimals=2)
-            scatter_plot_df["impression_predictions_rate"] = scatter_plot_df["impression_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
+            scatter_plot_df["impression_predictions_rate"] = scatter_plot_df["impression_predictions_rate"].replace([np.inf, -np.inf, np.nan], -1)
+            scatter_plot_df = self.roi_cpa_outlier_treatment(scatter_plot_df)
             
             self.df_param = df_param
             df_cpm = (
@@ -374,7 +392,15 @@ class predictor:
             )
 
             return df_param, df_score_final, scatter_plot_df, drop_dimension, d_cpm, df_spend_dis
+        
         else:
+            if self.target_type == "revenue":
+                scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["spend"]).round(decimals=2)
+            else:
+                scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["spend"]/scatter_plot_df["predictions"]).round(decimals=2)
+            scatter_plot_df["spend_predictions_rate"] = scatter_plot_df["spend_predictions_rate"].replace([np.inf, -np.inf, np.nan], -1)
+            scatter_plot_df = self.roi_cpa_outlier_treatment(scatter_plot_df)
+
             return df_param, df_score_final, scatter_plot_df, drop_dimension, df_spend_dis
 
 
@@ -863,6 +889,30 @@ class predictor_with_seasonality:
                     df_param.loc[dim, month] = 0
 
         return df_param.reset_index()
+    
+    def roi_cpa_outlier_treatment(self, df):
+
+        if self.use_impression:
+            col = 'impression_predictions_rate'
+            metric = 'impression'
+        else:
+            col = 'spend_predictions_rate'
+            metric = 'spend'
+
+        df_ = pd.DataFrame()
+        
+        for dim in df['dimension'].unique():
+            df_temp = df[df["dimension"] == dim].reset_index(drop=True)
+            df_temp_filter=df_temp[df_temp[col]!=-1]
+            mean = np.mean(df_temp_filter[col])
+            std = np.std(df_temp_filter[col])
+            df_temp_filter[col] = np.where((abs((df_temp_filter[col] - mean) / std) > 3), -1, df_temp_filter[col])
+            df_temp.drop(columns=[col], inplace=True)
+            df_temp = df_temp.merge(df_temp_filter[['date', col]], on='date', how='left').sort_values(by='date').reset_index(drop=True)
+            df_ = df_.append(df_temp, ignore_index=True).reset_index(drop=True)
+            df_=df_.fillna(-1)
+
+        return df_
 
     def execute(self):
 
@@ -1027,7 +1077,8 @@ class predictor_with_seasonality:
         if self.use_impression:
 
             scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["predictions"]/(scatter_plot_df["impression"]/1000)).round(decimals=2)
-            scatter_plot_df["impression_predictions_rate"] = scatter_plot_df["impression_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
+            scatter_plot_df["impression_predictions_rate"] = scatter_plot_df["impression_predictions_rate"].replace([np.inf, -np.inf, np.nan], -1)
+            scatter_plot_df = self.roi_cpa_outlier_treatment(scatter_plot_df)
             
             scatter_plot_df = scatter_plot_df[['date', 'spend', 'impression', 'target', 'dimension', 'weekday_',
                             'month_', 'spend_prediction', 'weekly_prediction', 'monthly_prediction',
@@ -1062,11 +1113,19 @@ class predictor_with_seasonality:
             )
         else:
 
+            if self.target_type == "revenue":
+                scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["spend"]).round(decimals=2)
+            else:
+                scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["spend"]/scatter_plot_df["predictions"]).round(decimals=2)
+            scatter_plot_df["spend_predictions_rate"] = scatter_plot_df["spend_predictions_rate"].replace([np.inf, -np.inf, np.nan], -1)
+            scatter_plot_df = self.roi_cpa_outlier_treatment(scatter_plot_df)
+
             scatter_plot_df = scatter_plot_df[['date', 'spend', 'target', 'dimension', 'weekday_',
                             'month_', 'spend_prediction', 'weekly_prediction', 'monthly_prediction',
                             'predictions', 'spend_predictions_rate']]
 
             df_param = self.param_adjust(df_param)
+            
             return df_param, df_score_final, scatter_plot_df, drop_dimension, df_spend_dis
 
 # Isolated Functions
