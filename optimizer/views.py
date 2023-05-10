@@ -15,7 +15,6 @@ from django.views.decorators.csrf import csrf_exempt
 # import os
 # from django.conf import settings
 # import uuid
-
 # custom imports
 from .optimizer_helper_functions import (
     dimension_bound,
@@ -57,6 +56,7 @@ def optimizer_home_page(request):
     drop_dimension_from_session = request.session.get("drop_dimension")
     constraint_type = request.session.get("mean_median_selection")
     dimension_grouping_check = request.session.get("dimension_grouping_check")
+    target_type = request.session.get("target_type")
     if seasonality_from_session:
         seasonality = seasonality_from_session
     else:
@@ -117,6 +117,7 @@ def optimizer_home_page(request):
             "stringified_optimizer_left_pannel_data"
         ] = stringified_optimizer_left_pannel_data
         context['constraint_type'] = constraint_type
+        context["target_type"] = target_type
         return render(request, "optimizer/optimizer_home_page.html", context)
 
 def validate_dimension_budget_with_caps(request):
@@ -253,7 +254,6 @@ def dimension_min_max(request):
                                              grouped_dimension_constraints,
                                              isolated_dimensions,
                                              selected_dimensions)
-                print('deeps', summary_metric_dic)
             except Exception as error:
                 return JsonResponse({"error": str(error)}, status=501)
         else:
@@ -419,6 +419,7 @@ def dimension_min_max(request):
         context["dict_line_chart_data"] = dict_line_chart_data
         context["dict_target_chart_data"] = dict_target_chart_data
         context["summary_metric_dic"] = summary_metric_dic
+        context["target_type"] = target_type
         return JsonResponse(context)
     except Exception as e:
         return JsonResponse({"error": ERROR_DICT[str(e)]}, status=500)

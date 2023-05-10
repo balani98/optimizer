@@ -348,7 +348,6 @@ def chart_filter(request):
             data = pd.read_pickle(UPLOAD_FOLDER+"{}.pkl".format(request.session.get("_uuid")))
             print("DimensionSelector", request.session.get("DimensionSelector"))
             print("CpmSelector :", request.session.get("CpmSelector"))
-            print('deeps', request.session.get("target_type"))
             convert_to_weekly_data = request.session.get("convert_to_weekly_data")
             is_weekly_selected = request.session.get("is_weekly_selected")
             eo = explorer(data)

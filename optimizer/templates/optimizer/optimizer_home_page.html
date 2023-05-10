@@ -5,7 +5,7 @@
       background-image: url("{% static '/assets/solid-grey.jpg' %}");
       /* Full height */
       height: 100%;
-      left: 0;
+      left: 0;g
       right: 0;
       top: 0;
       bottom: 0;
@@ -799,7 +799,7 @@
               <h4>Summary Metrics</h4>
               <div
                 style="
-                  margin-top: 70px;
+                  margin-top: 120px;
                   display: flex;
                   align-items: center;
                   justify-content: center;
@@ -811,7 +811,11 @@
                     <tr>
                       <th scope="col">Total Budget</th>
                       <th scope="col">Total Target</th>
-                      <th scope="col">Total cost per Target / ROI</th>
+                      {% if target_type == 'volume'%}
+                        <th scope="col">Total cost per Target</th>
+                      {% elif target_type == 'revenue'%}
+                        <th scope="col">Return on Investment</th>
+                      {% endif %}
                     </tr>
                   </thead>
                   <tbody
@@ -844,7 +848,7 @@
                   margin: auto;
                 "
               >
-                <canvas id="optimizer_CPA_chart"></canvas>
+                <canvas id="optimizer_CPA_chart"style="position: relative; height:30vh; width:20vw"></canvas>
               </div>
             </div>
           </div>
@@ -978,7 +982,7 @@
                   <br />
                   <div class="row">
                     <div class="col-lg-6 col-sm-12">
-                      <h4>% Distribution Between Dimensions</h4>
+                      <h4>% Distribution Between Target Allocation</h4>
                       <br />
                       <div
                         style="
@@ -994,7 +998,7 @@
                       </div>
                     </div>
                     <div class="col-lg-6 col-sm-12">
-                      <h4>% Distribution Between Dimensions</h4>
+                      <h4>% Distribution Between Budget Allocation</h4>
                       <br />
                       <div
                         style="
@@ -2198,6 +2202,7 @@
               dict_target_chart_data = data.dict_target_chart_data
               dict_line_chart_data = data.dict_line_chart_data
               summary_metric_json = data.summary_metric_dic
+              target_type = data.target_type
               console.log("submit_predictor_left_pannel_chart_inputs", global_optimizer_download_csv_json)
               console.log("json_table_1_data", json_table_1_data)
               //console.log("json_donut_chart_data", json_donut_chart_data)
@@ -2215,7 +2220,7 @@
                 global_my_optimizer_target_bar_chart.destroy();
               }
               populate_grouped_bar_chart(dict_donut_chart_data,constraint_type)
-              populate_cpa_graph(summary_metric_json)
+              populate_cpa_graph(summary_metric_json, target_type)
               populate_grouped_target_bar_chart(dict_target_chart_data)
               //$("#optimizer__total_1_value").val(5)
               //$("#optimizer__total_2_value").val(888)
@@ -2264,8 +2269,12 @@
       }
 
       // function to draw the CPA bars graph
-      function populate_cpa_graph(summary_metric_json){
-        let xValues = ["CPA plans"]
+      function populate_cpa_graph(summary_metric_json, target_type){
+        let xValues = []
+        if(target_type == 'volume')
+          xValues = ["CPA plans"]
+        else if(target_type == 'revenue')
+          xValues - ["ROI plans"]
         let barColors = global_chart_colors
         ctx = "optimizer_CPA_chart"
         config = {
@@ -2295,7 +2304,7 @@
             plugins: {
               title: {
                 display: true,
-                text: 'Cost per Conversion',
+                text: '',
                 position: 'bottom'
               },
               tooltip : {
@@ -2306,7 +2315,7 @@
                       if (label) {
                           label += ': ';
                       }
-                      label += '$' + context.parsed.y ;
+                      label += '$ ' + context.parsed.y ;
                       return label;
                   }
                 }
@@ -2351,7 +2360,7 @@
         td2.appendChild(textNode2);
 
         td3 = document.createElement("td");
-        textNode3 = document.createTextNode(summary_metric_json["Optimized CPA/ROI"]);
+        textNode3 = document.createTextNode("$ " + summary_metric_json["Optimized CPA/ROI"]);
         td3.appendChild(textNode3);
 
         // appending the table row
@@ -2495,7 +2504,7 @@
           plugins: {
             title: {
               display: true,
-              text: 'Distribution Between Dimensions',
+              text: '',
               position: 'bottom'
             },
             tooltip : {
@@ -2587,7 +2596,7 @@
               plugins: {
                 title: {
                   display: true,
-                  text: 'Distribution Between Dimensions',
+                  text: '',
                   position: 'bottom'
                 },
                 tooltip : {
