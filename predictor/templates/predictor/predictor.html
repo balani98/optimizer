@@ -696,15 +696,14 @@
   }
   // display the spinner 
   function displaySpinner(){
-    $('#container').css('opacity',0.5);
+    $('body').css('opacity',0.5);
     $('#container').css('pointer-events','none');
-    $('#container').css('z-index',1);
     $("body").css("background-color", "#cecece");
     $('#spinner-optimizer').css('display','block');
   }
   // hide the spinner
   function hideSpinner(){
-    $('#container').css('opacity',1);
+    $('body').css('opacity',1);
     $("body").css("background-color", "#fff");
     $('#container').css('pointer-events','auto');
     $('#spinner-optimizer').css('display','none');
@@ -791,9 +790,12 @@
         enter_cpm = data.enter_cpm;
         if(discard_dimension == true){
           multi_line_chart_data2 = data.multi_line_chart_data2;
+          last_plotting_data = multi_line_chart_data2;
           y_label = document.getElementById("YAxisSelector").value;
           target_type = data.target_type;
-          arr = changexydomain(multi_line_chart_data2, data.cpm_message, y_label)
+          if(y_label != 'predictions')
+            last_plotting_data = filter_plotting_data(last_plotting_data)
+          arr = changexydomain(last_plotting_data, data.cpm_message, y_label)
           plot_multi_line_chart_checkboxes(multi_line_chart_data2,data.cpm_message, arr[0], arr[1], y_label, target_type)    
         }
         console.log(
@@ -833,6 +835,23 @@
       },
     });
   }
+  function filter_plotting_data(last_plotting_data){
+    last_plotting_data = last_plotting_data.map((obj)=>{
+      updated_values = obj.values;
+      if(cpm_message == "cpm selected"){
+        updated_values = updated_values.filter((element)=>{
+          return element.impression_predictions_rate != -1;
+        })
+      }else{
+        updated_values = updated_values.filter((element)=>{
+          return element.spend_predictions_rate != -1;
+        })
+      }
+    obj.values = updated_values;
+    return obj;
+    })
+    return last_plotting_data
+  }
   function fn_y_axis_selector(value){
     displaySpinner()
     y_axis_selector_value = value;
@@ -853,8 +872,11 @@
         target_type = data.target_type;
         cpm_message = data.cpm_message
         subsetted_data = remove_data_unchecked_dimensions(plotting_data, global_unchecked_dimensions)
-        arr = changexydomain(subsetted_data.last_plotting_data, cpm_message, y_axis_selector_value)
-        plot_multi_line_chart_checkboxes(subsetted_data.last_plotting_data, data.cpm_message, arr[0], arr[1], y_axis_selector_value, target_type, subsetted_data.unchecked_dimensions, false)
+        last_plotting_data = subsetted_data.last_plotting_data;
+        if(y_axis_selector_value != 'predictions')
+          last_plotting_data = filter_plotting_data(last_plotting_data)
+        arr = changexydomain(last_plotting_data, cpm_message, y_axis_selector_value)
+        plot_multi_line_chart_checkboxes(last_plotting_data, data.cpm_message, arr[0], arr[1], y_axis_selector_value, target_type, subsetted_data.unchecked_dimensions, false)
       },error:function(error){
 
       }
@@ -975,7 +997,7 @@
     discarded_items = [];
     // If user presses submit then freeze the screen
     $("#container").css("pointer-events", "none");
-    $("#container").css("opacity", 0.5);
+    $("body").css("opacity", 0.5);
     $("body").css("background-color", "#cecece");
     $("#outer-progressbarDiv").css("display", "flex");
     console.log("inputs submitted"); 
@@ -1032,7 +1054,7 @@
         clearOldData();
         // set all the properties of screen back and hide the progress bar
         $("#container").css("pointer-events", "auto");
-        $("#container").css("opacity", 1);
+        $("body").css("opacity", 1);
         $("body").css("background-color", "#fff");
         $("#outer-progressbarDiv").css("display", "none");
         document.getElementById("right_div").style.display = "block";
@@ -1300,7 +1322,7 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
   else if(y_label != 'predictions' && target_type == 'volume' && cpm_message != "cpm selected")
     y_axis_label = 'CPA';
   else if(y_label != 'predictions' && target_type == 'volume'  &&  cpm_message == "cpm selected")
-    y_axis_label = 'Conversion Rate';
+    y_axis_label = 'Conversion Rate per 1000 impressions';
   svg.append("text")
       .attr("transform", "rotate(-90)")
       .attr("y", 0 - margin.left)
@@ -1428,14 +1450,17 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
       selectAllCheckbox.addEventListener("click",function(){
           var last_plotting_data = []
                subsetted_data_select_unselect_all = subset_data_select_unselect_all(multi_line_chart_data2 ,this.checked);
-               arr = changexydomain(subsetted_data_select_unselect_all.last_plotting_data, cpm_message, y_label)
+               last_plotting_data = subsetted_data_select_unselect_all.last_plotting_data
+               y_label = document.getElementById("YAxisSelector").value;
+               if(y_label != 'predictions')
+                last_plotting_data = filter_plotting_data(last_plotting_data)
+               arr = changexydomain(last_plotting_data, cpm_message, y_label)
                d3.select("#multi_line_chart_with_checkboxes").select("svg").remove();
                const element = document.getElementById('menu');
                while (element.firstChild) {
                 element.removeChild(element.firstChild);
               }
-              y_label = document.getElementById("YAxisSelector").value;
-              plot_multi_line_chart_checkboxes(subsetted_data_select_unselect_all.last_plotting_data, cpm_message, arr[0],arr[1], y_label, target_type, subsetted_data_select_unselect_all.unchecked_dimensions,this.checked)
+              plot_multi_line_chart_checkboxes(last_plotting_data, cpm_message, arr[0],arr[1], y_label, target_type, subsetted_data_select_unselect_all.unchecked_dimensions,this.checked)
       })
       for(let i = 0 ; i < dimension_groups.length ; i++){
           var tick = document.createElement('input');
@@ -1462,15 +1487,18 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
               var svgline = d3.select('#line-' + lineSelected.replace(/\s/g, '').replace(/[^\w\s]/gi, '').replace("/",""));
 					    var textline = d3.select('#text-' + lineSelected.replace(/\s/g, '').replace(/[^\w\s]/gi, '').replace("/",""));
               var last_plotting_data = []
-               subsetted_data = subset_data(plotting_data , dimension_to_uncheck, this.checked, this.value);
-               arr = changexydomain(subsetted_data.last_plotting_data, cpm_message, y_label)
-               d3.select("#multi_line_chart_with_checkboxes").select("svg").remove();
-               const element = document.getElementById('menu');
-               while (element.firstChild) {
+              y_label = document.getElementById("YAxisSelector").value;
+              subsetted_data = subset_data(plotting_data , dimension_to_uncheck, this.checked, this.value);
+              last_plotting_data = subsetted_data.last_plotting_data;
+              if(y_label != 'predictions')
+                last_plotting_data = filter_plotting_data(last_plotting_data)
+              arr = changexydomain(last_plotting_data, cpm_message, y_label)
+              d3.select("#multi_line_chart_with_checkboxes").select("svg").remove();
+              const element = document.getElementById('menu');
+              while (element.firstChild) {
                 element.removeChild(element.firstChild);
               }
-              y_label = document.getElementById("YAxisSelector").value;
-              plot_multi_line_chart_checkboxes(subsetted_data.last_plotting_data ,cpm_message, arr[0], arr[1], y_label, target_type, subsetted_data.unchecked_dimensions,false)
+              plot_multi_line_chart_checkboxes(last_plotting_data ,cpm_message, arr[0], arr[1], y_label, target_type, subsetted_data.unchecked_dimensions,false)
           })
     var x_range = d3.scaleLinear().range([0, width]);
     var y_range = d3.scaleLinear().range([height, 0]);

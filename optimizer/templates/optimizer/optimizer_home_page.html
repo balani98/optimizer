@@ -785,6 +785,75 @@
     >
       <div id="right_div" style="display: none; align-items: center">
         <div
+          class="card"
+          style="
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 10px;
+            margin-top: 20px;
+            box-shadow: rgb(0 0 0 / 24%) 0px 10px 20px;
+          "
+        >
+          <div class="row">
+            <div class="col-lg-7 col-sm-12">
+              <h4>Summary Metrics</h4>
+              <div
+                style="
+                  margin-top: 120px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  width: 100%;
+                "
+              >
+                <table class="table table-bordered">
+                  <thead style="text-align: center">
+                    <tr>
+                      <th scope="col">Total Budget</th>
+                      <th scope="col">Total Target</th>
+                      {% if target_type == 'volume'%}
+                        <th scope="col">Total cost per Target</th>
+                      {% elif target_type == 'revenue'%}
+                        <th scope="col">Return on Investment</th>
+                      {% endif %}
+                    </tr>
+                  </thead>
+                  <tbody
+                    style="text-align: center"
+                    class="table_body_optimizer_summary_metric"
+                  >
+                    <tr>
+                      {% comment %}
+                      <td>$ 10000</td>
+                      <td>100</td>
+                      <td>$ 500</td>
+                      <td>1000</td>
+                      <td>$ 1000</td>
+                      <td>200</td>
+                      {% endcomment %}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="col-lg-5 col-sm-12">
+              <h4>Cost per Conversion</h4>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-direction: column;
+                  width: 100%;
+                  margin: auto;
+                "
+              >
+                <canvas id="optimizer_CPA_chart"style="position: relative; height:30vh; width:20vw"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
           style="
             background-color: #fff;
             padding: 20px;
@@ -804,8 +873,7 @@
             "
           >
             <table
-              class="table table-bordered"
-              class="table_1_optimizer"
+              class="table table-bordered table_1_optimizer"
               id="table_1_optimizer"
             >
               <thead style="text-align: center">
@@ -912,19 +980,39 @@
                   <br />
                   <br />
                   <br />
-                  <h4>% Distribution Between Dimensions</h4>
-                  <br />
-                  <div
-                    style="
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                      flex-direction: column;
-                      width: 100%;
-                      margin: auto;
-                    "
-                  >
-                    <canvas id="optimizer_bar_chart"></canvas>
+                  <div class="row">
+                    <div class="col-lg-6 col-sm-12">
+                      <h4>% Distribution Between Target Allocation</h4>
+                      <br />
+                      <div
+                        style="
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          flex-direction: column;
+                          width: 100%;
+                          margin: auto;
+                        "
+                      >
+                        <canvas id="optimizer_bar_chart"style="position: relative; height:200vh; width:80vw"></canvas>
+                      </div>
+                    </div>
+                    <div class="col-lg-6 col-sm-12">
+                      <h4>% Distribution Between Budget Allocation</h4>
+                      <br />
+                      <div
+                        style="
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          flex-direction: column;
+                          width: 100%;
+                          margin: auto;
+                        "
+                      >
+                        <canvas id="optimizer_target_bar_chart" style="position: relative; height:200vh; width:80vw"></canvas>
+                      </div>
+                    </div>
                   </div>
                   <br />
                   <br />
@@ -1449,7 +1537,7 @@
       id_stringified_grouped_optimizer_left_pannel_data = document.getElementById('id_stringified_grouped_optimizer_left_pannel_data')
       get_all_the_key_value = document.querySelectorAll('.get_all_the_key_value')
       let table_body_1_optimizer = document.querySelector(".table_body_1_optimizer");
-      let table_body_2_optimizer = document.querySelector(".table_body_2_optimizer");
+      let table_body_optimizer_summary_metric = document.querySelector(".table_body_optimizer_summary_metric");
 
 
 
@@ -1486,6 +1574,8 @@
       let fixed_budget_div_open = false;
       {% comment %} Graphs and Charts variables  {% endcomment %}
       global_my_optimizer_bar_chart = 0
+      global_optimizer_cpa_bar_chart = 0
+      global_my_optimizer_target_bar_chart = 0
       global_my_optimizer_line_chart = 0
       validation_of_inputs = false
       console.log("global_seasonality", global_seasonality)
@@ -2003,298 +2093,204 @@
 
 {% comment %} on submit {% endcomment %}
 <script>
-    function getIsolatedDimensionsFromGroup(){
-      isolated_dimensions = []
-      $('.input_checkbox_group_constraint').each(function(){
-        if(this.checked == false && this.disabled == false)
-          isolated_dimensions.push(this.name)
-      })
-      return isolated_dimensions
-    }
-    function submit_predictor_left_pannel_chart_inputs() {
-      console.log("inputs submitted")
-      // Final validation before the submit
-      if(!global_seasonality)
-        optimizer_left_panel_total_budget = parseInt(optimizer_left_panel_total_budget) -
-        global_sum_fixed_budget_values*optimizer_left_panel_number_of_days;
-      else {
-        date_format_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate._d;
-        date_format_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate._d;
-        let diff_time = Math.abs( date_format_end_date - date_format_start_date)
-        let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
-        optimizer_left_panel_total_budget = parseInt(optimizer_left_panel_total_budget) -
-        global_sum_fixed_budget_values*diff_days;
+      function getIsolatedDimensionsFromGroup(){
+        isolated_dimensions = []
+        $('.input_checkbox_group_constraint').each(function(){
+          if(this.checked == false && this.disabled == false)
+            isolated_dimensions.push(this.name)
+        })
+        return isolated_dimensions
       }
-      if(optimizer_left_panel_total_budget == 0 || isNaN(optimizer_left_panel_total_budget)){
-        alert("Please add valid Total Budget before submitting")
-        return
-      }
+      function submit_predictor_left_pannel_chart_inputs() {
+        console.log("inputs submitted")
+        // Final validation before the submit
+        if(!global_seasonality)
+          optimizer_left_panel_total_budget = parseInt(optimizer_left_panel_total_budget) -
+          global_sum_fixed_budget_values*optimizer_left_panel_number_of_days;
+        else {
+          date_format_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate._d;
+          date_format_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate._d;
+          let diff_time = Math.abs( date_format_end_date - date_format_start_date)
+          let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
+          optimizer_left_panel_total_budget = parseInt(optimizer_left_panel_total_budget) -
+          global_sum_fixed_budget_values*diff_days;
+        }
+        if(optimizer_left_panel_total_budget == 0 || isNaN(optimizer_left_panel_total_budget)){
+          alert("Please add valid Total Budget before submitting")
+          return
+        }
 
-      checkedDimensions = getSelectedDimensions()
-      if(checkedDimensions.length == 0){
-        alert("Atleast one dimension must be selected")
-       return
-      }
-      $('#spinner-optimizer').css('display','block');
-      $('#container').css('opacity',0.5);
-      $("body").css("background-color", "#cecece");
-      $('#container').css('pointer-events','none');
-      if(optimizer_left_panel_number_of_days < 0 || optimizer_left_panel_number_of_days > 365){
-        alert("Please add valid Days / Date range before submitting")
-        return
-      }
-      // re-initializing the variables
-      if(global_seasonality){
-        global_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
-        global_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
-      }
-      stringified_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data).replaceAll('&amp;', '&'));
-      if(flag_to_show_grouped_dimensions == 1){
-        stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(global_grouped_optimizer_left_panel_data)
-        isolatedDimensions = getIsolatedDimensionsFromGroup()
-      }
-        var dimension_keys = Object.keys(stringified_global_optimizer_left_pannel_data)
-      // splicing the elements at 2 , 3 , 4
-      const removeValFromIndex = [2 , 3, 4];
-      const indexSet = new Set(removeValFromIndex);
-      dimension_keys.forEach((key)=>{
-        stringified_global_optimizer_left_pannel_data[key] =
-        stringified_global_optimizer_left_pannel_data[key].filter((value, i) => !indexSet.has(i));
-      })
-      // re stringifiying the json
-      stringified_global_optimizer_left_pannel_data = JSON.stringify(stringified_global_optimizer_left_pannel_data)
-      stringified_discarded_dimensions_json = JSON.stringify(discarded_dimensions_json)
-      document.getElementById('right_div').style.display = "block";
-      data_to_submit = 0
-      if(global_seasonality){
-        data_to_submit = {
-          seasonality : global_seasonality,
-          dimension_min_max: stringified_global_optimizer_left_pannel_data,
-          total_budget : optimizer_left_panel_total_budget,
-          start_date: global_start_date,
-          end_date:global_end_date,
-          discarded_dimensions:stringified_discarded_dimensions_json,
-          selected_dimensions:checkedDimensions.toString(),
+        checkedDimensions = getSelectedDimensions()
+        if(checkedDimensions.length == 0){
+          alert("Atleast one dimension must be selected")
+         return
         }
-      }else{
-        data_to_submit = {
-          seasonality : global_seasonality,
-          dimension_min_max: stringified_global_optimizer_left_pannel_data,
-          total_budget : optimizer_left_panel_total_budget,
-          number_of_days : optimizer_left_panel_number_of_days,
-          discarded_dimensions:stringified_discarded_dimensions_json,
-          selected_dimensions:checkedDimensions.toString(),
+        $('#spinner-optimizer').css('display','block');
+        $('#container').css('opacity',0.5);
+        $("body").css("background-color", "#cecece");
+        $('#container').css('pointer-events','none');
+        if(optimizer_left_panel_number_of_days < 0 || optimizer_left_panel_number_of_days > 365){
+          alert("Please add valid Days / Date range before submitting")
+          return
         }
-      }
-      if(flag_to_show_grouped_dimensions == 1){
-        data_to_submit["dimension_capping_constraints"] = stringified_global_grouped_optimizer_left_pannel_data
-        data_to_submit["isolated_dimensions"] = isolatedDimensions.toString()
-      }
-      console.log("sending data data_to_submit",data_to_submit )
-      $.ajax({
-        url: '/optimizer/ajax/left_pannel_dimension_min_max/',
-        data: JSON.stringify(data_to_submit),
-        type : 'POST',
-        headers: {
-          'X-CSRFToken': getCookie('csrftoken')
-        },
-        success: function (data) {
-            console.log("From success", data)
+        // re-initializing the variables
+        if(global_seasonality){
+          global_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
+          global_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
+        }
+        stringified_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data).replaceAll('&amp;', '&'));
+        if(flag_to_show_grouped_dimensions == 1){
+          stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(global_grouped_optimizer_left_panel_data)
+          isolatedDimensions = getIsolatedDimensionsFromGroup()
+        }
+          var dimension_keys = Object.keys(stringified_global_optimizer_left_pannel_data)
+        // splicing the elements at 2 , 3 , 4
+        const removeValFromIndex = [2 , 3, 4];
+        const indexSet = new Set(removeValFromIndex);
+        dimension_keys.forEach((key)=>{
+          stringified_global_optimizer_left_pannel_data[key] =
+          stringified_global_optimizer_left_pannel_data[key].filter((value, i) => !indexSet.has(i));
+        })
+        // re stringifiying the json
+        stringified_global_optimizer_left_pannel_data = JSON.stringify(stringified_global_optimizer_left_pannel_data)
+        stringified_discarded_dimensions_json = JSON.stringify(discarded_dimensions_json)
+        document.getElementById('right_div').style.display = "block";
+        data_to_submit = 0
+        if(global_seasonality){
+          data_to_submit = {
+            seasonality : global_seasonality,
+            dimension_min_max: stringified_global_optimizer_left_pannel_data,
+            total_budget : optimizer_left_panel_total_budget,
+            start_date: global_start_date,
+            end_date:global_end_date,
+            discarded_dimensions:stringified_discarded_dimensions_json,
+            selected_dimensions:checkedDimensions.toString(),
+          }
+        }else{
+          data_to_submit = {
+            seasonality : global_seasonality,
+            dimension_min_max: stringified_global_optimizer_left_pannel_data,
+            total_budget : optimizer_left_panel_total_budget,
+            number_of_days : optimizer_left_panel_number_of_days,
+            discarded_dimensions:stringified_discarded_dimensions_json,
+            selected_dimensions:checkedDimensions.toString(),
+          }
+        }
+        if(flag_to_show_grouped_dimensions == 1){
+          data_to_submit["dimension_capping_constraints"] = stringified_global_grouped_optimizer_left_pannel_data
+          data_to_submit["isolated_dimensions"] = isolatedDimensions.toString()
+        }
+        console.log("sending data data_to_submit",data_to_submit )
+        $.ajax({
+          url: '/optimizer/ajax/left_pannel_dimension_min_max/',
+          data: JSON.stringify(data_to_submit),
+          type : 'POST',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          success: function (data) {
+              console.log("From success", data)
+              $('#container').css('opacity',1);
+              $("body").css("background-color", "#fff");
+              $('#container').css('pointer-events','auto');
+              $('#spinner-optimizer').css('display','none');
+              global_optimizer_download_csv_json = data.optimizer_download_csv_json
+              constraint_type = data.constraint_type
+              json_table_1_data = data.json_table_1_data
+              //json_donut_chart_data = data.json_donut_chart_data
+              dict_donut_chart_data = data.dict_donut_chart_data
+              dict_target_chart_data = data.dict_target_chart_data
+              dict_line_chart_data = data.dict_line_chart_data
+              summary_metric_json = data.summary_metric_dic
+              target_type = data.target_type
+              console.log("submit_predictor_left_pannel_chart_inputs", global_optimizer_download_csv_json)
+              console.log("json_table_1_data", json_table_1_data)
+              //console.log("json_donut_chart_data", json_donut_chart_data)
+              console.log("dict_donut_chart_data", dict_donut_chart_data)
+              populate_table_1(json_table_1_data, constraint_type)
+              populate_table_summary_metric(summary_metric_json)
+              if(global_my_optimizer_bar_chart != 0){
+                console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
+                global_my_optimizer_bar_chart.destroy();
+              }
+              if(global_optimizer_cpa_bar_chart != 0){
+                global_optimizer_cpa_bar_chart.destroy();
+              }
+              if(global_my_optimizer_target_bar_chart != 0){
+                global_my_optimizer_target_bar_chart.destroy();
+              }
+              populate_grouped_bar_chart(dict_donut_chart_data,constraint_type)
+              populate_cpa_graph(summary_metric_json, target_type)
+              populate_grouped_target_bar_chart(dict_target_chart_data)
+              //$("#optimizer__total_1_value").val(5)
+              //$("#optimizer__total_2_value").val(888)
+          },
+          error: function (error_object) {
+            console.log("From errors", error_object.responseJSON.error);
             $('#container').css('opacity',1);
             $("body").css("background-color", "#fff");
             $('#container').css('pointer-events','auto');
             $('#spinner-optimizer').css('display','none');
-            global_optimizer_download_csv_json = data.optimizer_download_csv_json
-            constraint_type = data.constraint_type
-            json_table_1_data = data.json_table_1_data
-            //json_donut_chart_data = data.json_donut_chart_data
-            dict_donut_chart_data = data.dict_donut_chart_data
-            dict_line_chart_data = data.dict_line_chart_data
-            console.log("Success")
-            console.log("submit_predictor_left_pannel_chart_inputs", global_optimizer_download_csv_json)
-            console.log("json_table_1_data", json_table_1_data)
-            //console.log("json_donut_chart_data", json_donut_chart_data)
-            console.log("dict_donut_chart_data", dict_donut_chart_data)
-            populate_table_1(json_table_1_data, constraint_type)
-            if(global_my_optimizer_bar_chart != 0){
-              console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
-              global_my_optimizer_bar_chart.destroy();
-            }
+            alert(error_object.responseJSON.error)
 
-            populate_grouped_bar_chart(dict_donut_chart_data,constraint_type)
-            //$("#optimizer__total_1_value").val(5)
-            //$("#optimizer__total_2_value").val(888)
-        },
-        error: function (error_object) {
-          console.log("From errors", error_object.responseJSON.error);
-          $('#container').css('opacity',1);
-          $("body").css("background-color", "#fff");
-          $('#container').css('pointer-events','auto');
-          $('#spinner-optimizer').css('display','none');
-          alert(error_object.responseJSON.error)
+            // $('.dimension_error').css("display", "block");
+            // $('.dimension_error').html(data.responseJSON.error); // add error to the dom
 
-          // $('.dimension_error').css("display", "block");
-          // $('.dimension_error').html(data.responseJSON.error); // add error to the dom
-
-        }
-    });
-
-    }
-
-    {% comment %} Download CSV  {% endcomment %}
-    function optimizer_download_csv_fn(){
-      console.log("optimizer_download_csv_fn");
-      // console.log(global_optimizer_download_csv_json);
-
-      //optimizer_download_csv_data = "test, fgsdg ,sdfgsd,fgsdf,gsgdfg"
-      //optimizer_download_csv_json = $("#or__csv-data").val()
-      optimizer_download_csv_json = global_optimizer_download_csv_json
-      optimizer_download_csv_data = JSON.parse(optimizer_download_csv_json)
-      //console.log("optimizer_download_csv_data", optimizer_download_csv_data)
-
-      let element = document.createElement('a');
-      element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(optimizer_download_csv_data));
-      element.setAttribute('download', 'Optimized plan.csv');
-      element.style.display = 'none';
-      if (typeof element.download != "undefined") {
-          document.body.appendChild(element);
-          element.click();
-          document.body.removeChild(element);
-      }
-      else {
-          //browser does not support - alert the user
-          alert('This functionality is not supported by the current browser, recommend trying with Google Chrome instead.');
-      }
-
-    }
-
-    {% comment %} Start : Populate Table  1 {% endcomment %}
-    function populate_table_1(json_table_1_data, constraint_type){
-      console.log("json_table_1_data")
-
-      table_body_1_optimizer.innerHTML = ""
-      for (const key in json_table_1_data) {
-        value = json_table_1_data[key]
-        // console.log(`${key} : ${value}`);
-        tableRow = document.createElement("tr");
-
-        td1 = document.createElement("td");
-        textNode1 = document.createTextNode(value["dimension"]);
-        td1.appendChild(textNode1);
-
-        td2 = document.createElement("td");
-        if(constraint_type == 'median')
-          textNode2 = document.createTextNode(`$ ${value["original_median_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-        else
-          textNode2 = document.createTextNode(`$ ${value["original_mean_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-        td2.appendChild(textNode2);
-
-        td3 = document.createElement("td");
-        textNode3 = document.createTextNode(`$ ${value["recommended_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-        td3.appendChild(textNode3);
-
-        td4 = document.createElement("td");
-        if(value["dimension"] == "Total"){
-        textNode4 = document.createTextNode(Math.round(value["total_buget_allocation_old_%"],2)+" %");
-        td4.appendChild(textNode4);
-        }
-        else{
-          textNode4 = document.createTextNode(value["total_buget_allocation_old_%"]+" %");
-          td4.appendChild(textNode4);
-        }
-        td5 = document.createElement("td");
-        if(constraint_type == 'median')
-          textNode5 = document.createTextNode(value["median_buget_allocation_old_%"]+" %");
-        else
-          textNode5 = document.createTextNode(value["mean_buget_allocation_old_%"]+" %");
-        td5.appendChild(textNode5);
-
-        td6 = document.createElement("td");
-        textNode6 = document.createTextNode(value["buget_allocation_new_%"]+" %");
-        td6.appendChild(textNode6);
-
-        td7 = document.createElement("td");
-        textNode7 = document.createTextNode(`$ ${value["recommended_budget_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-        td7.appendChild(textNode7);
-
-        td8 = document.createElement("td");
-        if(value["estimated_return_per_day"]){
-          textNode8 = document.createTextNode(`${value["estimated_return_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-          td8.appendChild(textNode8);
-        }else{
-          textNode8 = document.createTextNode(`${value["estimated_return_per_day"]}`);
-          td8.appendChild(textNode8);
-        }
-        td9 = document.createElement("td");
-        if(value["estimated_return_for_n_days"]){
-          textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-          td9.appendChild(textNode9);
-        }else{
-          textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"]}`);
-          td9.appendChild(textNode9);
-        }
-
-        td10 = document.createElement("td");
-        if(value["dimension"] == "Total"){
-          textNode10 = document.createTextNode(Math.round(value["estimated_return_%"],2)+" %");
-          td10.appendChild(textNode10);
-        }
-        else{
-          textNode10 = document.createTextNode(value["estimated_return_%"] +" %");
-          td10.appendChild(textNode10);
-        }
-        td11 = document.createElement("td");
-        if(value["current_projections_for_n_days"]){
-          textNode11 = document.createTextNode(`${value["current_projections_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-          td11.appendChild(textNode11);
-        }else{
-          textNode11 = document.createTextNode(`${value["current_projections_for_n_days"]}`);
-          td11.appendChild(textNode11);
-        }
-        tableRow.appendChild(td1)
-        tableRow.appendChild(td2)
-        tableRow.appendChild(td3)
-        tableRow.appendChild(td4)
-        tableRow.appendChild(td5)
-        tableRow.appendChild(td6)
-        tableRow.appendChild(td7)
-        tableRow.appendChild(td8)
-        tableRow.appendChild(td9)
-        tableRow.appendChild(td10)
-        tableRow.appendChild(td11)
-        table_body_1_optimizer.appendChild(tableRow)
-
+          }
+      });
 
       }
-    }
-    {% comment %} End : Populate Table  1 {% endcomment %}
 
-    {% comment %} Start : Populate Donut Chart{% endcomment %}
-    function populate_grouped_bar_chart(dict_donut_chart_data, constraint_type){
-        console.log("populate_grouped_bar_chart")
-        let xValues = dict_donut_chart_data['dimension']
-        let buget_allocation_old = "";
-        if(constraint_type == 'median')
-          buget_allocation_old = dict_donut_chart_data['median_buget_allocation_old_%']
-        else
-          buget_allocation_old = dict_donut_chart_data['mean_buget_allocation_old_%']
-          let buget_allocation_new = dict_donut_chart_data['buget_allocation_new_%']
+      {% comment %} Download CSV  {% endcomment %}
+      function optimizer_download_csv_fn(){
+        console.log("optimizer_download_csv_fn");
+        // console.log(global_optimizer_download_csv_json);
+
+        //optimizer_download_csv_data = "test, fgsdg ,sdfgsd,fgsdf,gsgdfg"
+        //optimizer_download_csv_json = $("#or__csv-data").val()
+        optimizer_download_csv_json = global_optimizer_download_csv_json
+        optimizer_download_csv_data = JSON.parse(optimizer_download_csv_json)
+        //console.log("optimizer_download_csv_data", optimizer_download_csv_data)
+
+        let element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(optimizer_download_csv_data));
+        element.setAttribute('download', 'Optimized plan.csv');
+        element.style.display = 'none';
+        if (typeof element.download != "undefined") {
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+        else {
+            //browser does not support - alert the user
+            alert('This functionality is not supported by the current browser, recommend trying with Google Chrome instead.');
+        }
+
+      }
+
+      // function to draw the CPA bars graph
+      function populate_cpa_graph(summary_metric_json, target_type){
+        let xValues = []
+        if(target_type == 'volume')
+          xValues = ["CPA plans"]
+        else if(target_type == 'revenue')
+          xValues - ["ROI plans"]
         let barColors = global_chart_colors
-        ctx = "optimizer_bar_chart"
+        ctx = "optimizer_CPA_chart"
         config = {
           type: "bar",
           data: {
             labels: xValues,
             datasets: [
               {
-                label: 'Buget Allocation Original',
-                data: buget_allocation_old,
+                label: 'Initial Plan',
+                data: [summary_metric_json["Current Projection CPA/ROI"]],
                 backgroundColor: '#a7a7a6'
 
               },
               {
-                label: 'Buget Allocation New',
-                data: buget_allocation_new,
+                label: 'Optimized Plan',
+                data: [summary_metric_json["Optimized CPA/ROI"]],
                 backgroundColor: '#9A3334',
               }],
           },
@@ -2308,7 +2304,7 @@
             plugins: {
               title: {
                 display: true,
-                text: 'Distribution Between Dimensions',
+                text: '',
                 position: 'bottom'
               },
               tooltip : {
@@ -2319,7 +2315,7 @@
                       if (label) {
                           label += ': ';
                       }
-                      label += context.parsed.y + '%';
+                      label += '$ ' + context.parsed.y ;
                       return label;
                   }
                 }
@@ -2330,152 +2326,444 @@
                 display: true,
                 title: {
                   display: true,
-                  text: 'Dimension',
+                  text: '',
                 },
-                ticks: {
-                  // Shorten the label If it has more than 10 characters
-                  callback: function(value, index) {
-                    return this.getLabelForValue(value).length > 10 ?
-                            this.getLabelForValue(value).substr(0,10) : this.getLabelForValue(value) ;
-                  }
-                }
               },
               y: {
                 display: true ,
                 title: {
                   display: true,
-                  text: '',
+                  text: 'CPA',
                 },
                 ticks:{
                   callback: function(value, index) {
-                    return value + '%'
+                    return '$' + value
                   }
                 }
               }
             },
           },
         }
-        global_my_optimizer_bar_chart = new Chart(ctx, config);
-        console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
+        global_optimizer_cpa_bar_chart = new Chart(ctx, config);
+      }
+      // function to populate the summary metrics table
+      function populate_table_summary_metric(summary_metric_json){
+        table_body_optimizer_summary_metric .innerHTML = ""
+        tableRow = document.createElement("tr");
+        // appending the columns of table
+        td1 = document.createElement("td");
+        textNode1 = document.createTextNode(`$ ${summary_metric_json["Optimized Total Budget"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        td1.appendChild(textNode1);
+
+        td2 = document.createElement("td");
+        textNode2 = document.createTextNode(summary_metric_json["Optimized Total Target"]);
+        td2.appendChild(textNode2);
+
+        td3 = document.createElement("td");
+        textNode3 = document.createTextNode("$ " + summary_metric_json["Optimized CPA/ROI"]);
+        td3.appendChild(textNode3);
+
+        // appending the table row
+        tableRow.appendChild(td1);
+        tableRow.appendChild(td2);
+        tableRow.appendChild(td3);
+
+        table_body_optimizer_summary_metric.appendChild(tableRow);
+      }
+      {% comment %} Start : Populate Table  1 {% endcomment %}
+      function populate_table_1(json_table_1_data, constraint_type){
+        console.log("json_table_1_data")
+
+        table_body_1_optimizer.innerHTML = ""
+        for (const key in json_table_1_data) {
+          value = json_table_1_data[key]
+          // console.log(`${key} : ${value}`);
+          tableRow = document.createElement("tr");
+
+          td1 = document.createElement("td");
+          textNode1 = document.createTextNode(value["dimension"]);
+          td1.appendChild(textNode1);
+
+          td2 = document.createElement("td");
+          if(constraint_type == 'median')
+            textNode2 = document.createTextNode(`$ ${value["original_median_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+          else
+            textNode2 = document.createTextNode(`$ ${value["original_mean_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+          td2.appendChild(textNode2);
+
+          td3 = document.createElement("td");
+          textNode3 = document.createTextNode(`$ ${value["recommended_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+          td3.appendChild(textNode3);
+
+          td4 = document.createElement("td");
+          if(value["dimension"] == "Total"){
+          textNode4 = document.createTextNode(Math.round(value["total_buget_allocation_old_%"],2)+" %");
+          td4.appendChild(textNode4);
+          }
+          else{
+            textNode4 = document.createTextNode(value["total_buget_allocation_old_%"]+" %");
+            td4.appendChild(textNode4);
+          }
+          td5 = document.createElement("td");
+          if(constraint_type == 'median')
+            textNode5 = document.createTextNode(value["median_buget_allocation_old_%"]+" %");
+          else
+            textNode5 = document.createTextNode(value["mean_buget_allocation_old_%"]+" %");
+          td5.appendChild(textNode5);
+
+          td6 = document.createElement("td");
+          textNode6 = document.createTextNode(value["buget_allocation_new_%"]+" %");
+          td6.appendChild(textNode6);
+
+          td7 = document.createElement("td");
+          textNode7 = document.createTextNode(`$ ${value["recommended_budget_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+          td7.appendChild(textNode7);
+
+          td8 = document.createElement("td");
+          if(value["estimated_return_per_day"]){
+            textNode8 = document.createTextNode(`${value["estimated_return_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+            td8.appendChild(textNode8);
+          }else{
+            textNode8 = document.createTextNode(`${value["estimated_return_per_day"]}`);
+            td8.appendChild(textNode8);
+          }
+          td9 = document.createElement("td");
+          if(value["estimated_return_for_n_days"]){
+            textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+            td9.appendChild(textNode9);
+          }else{
+            textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"]}`);
+            td9.appendChild(textNode9);
+          }
+
+          td10 = document.createElement("td");
+          if(value["dimension"] == "Total"){
+            textNode10 = document.createTextNode(Math.round(value["estimated_return_%"],2)+" %");
+            td10.appendChild(textNode10);
+          }
+          else{
+            textNode10 = document.createTextNode(value["estimated_return_%"] +" %");
+            td10.appendChild(textNode10);
+          }
+          td11 = document.createElement("td");
+          if(value["current_projections_for_n_days"]){
+            textNode11 = document.createTextNode(`${value["current_projections_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+            td11.appendChild(textNode11);
+          }else{
+            textNode11 = document.createTextNode(`${value["current_projections_for_n_days"]}`);
+            td11.appendChild(textNode11);
+          }
+          tableRow.appendChild(td1)
+          tableRow.appendChild(td2)
+          tableRow.appendChild(td3)
+          tableRow.appendChild(td4)
+          tableRow.appendChild(td5)
+          tableRow.appendChild(td6)
+          tableRow.appendChild(td7)
+          tableRow.appendChild(td8)
+          tableRow.appendChild(td9)
+          tableRow.appendChild(td10)
+          tableRow.appendChild(td11)
+          table_body_1_optimizer.appendChild(tableRow)
 
 
-    }
-    {% comment %} End : Populate Donut Chart {% endcomment %}
-
-   {% comment %} optimizer_save_the_plan  {% endcomment %}
-    function optimizer_save_the_plan(){
-      plan_name = $('#plan_name').val();
-      $.ajax({
-        url: '/optimizer/ajax/optimizer_save_the_plan/',
+        }
+      }
+    // populate the target bar chart
+    function populate_grouped_target_bar_chart(dict_target_chart_data){
+      console.log("populate_grouped_bar_chart")
+      let xValues = dict_target_chart_data['dimension']
+      let target_allocation_old = dict_target_chart_data["current_projections_%"]
+      let target_allocation_new = dict_target_chart_data["estimated_return_%"]
+      let barColors = global_chart_colors
+      ctx = "optimizer_target_bar_chart"
+      config = {
+        type: "bar",
         data: {
-          //testing data change late
-          plan_name : plan_name,
-          json_table_data : JSON.stringify(json_table_1_data),
-          donut_chart_data : JSON.stringify(dict_donut_chart_data),
-          left_hand_panel_data : JSON.stringify(global_optimizer_left_pannel_data),
-          discarded_dimensions_json : JSON.stringify(discarded_dimensions_json)
-          //testing data change late
+          labels: xValues,
+          datasets: [
+            {
+              label: 'Target Allocation Original',
+              data: target_allocation_old,
+              backgroundColor: '#a7a7a6',
+            },
+            {
+              label: 'Target Allocation New',
+              data: target_allocation_new,
+              backgroundColor: '#9A3334',
+            }],
         },
-        success: function (data) {
-            console.log("Success optimizer_save_the_plan", data)
-            alert(data.message)
+        options: {
+          responsive: true,
+          indexAxis: 'y',
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          stacked: false,
+          plugins: {
+            title: {
+              display: true,
+              text: '',
+              position: 'bottom'
+            },
+            tooltip : {
+              callbacks: {
+                label: function(context) {
+                    let label = context.dataset.label || '';
+
+                    if (label) {
+                        label += ': ';
+                    }
+                    label += context.parsed.y + '%';
+                    return label;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Dimension',
+              },
+              ticks: {
+                // Shorten the label If it has more than 10 characters
+                callback: function(value, index) {
+                  return this.getLabelForValue(value).length > 10 ?
+                          this.getLabelForValue(value).substr(0,10) : this.getLabelForValue(value) ;
+                }
+              }
+            },
+            x: {
+              display: true ,
+              title: {
+                display: true,
+                text: '',
+              },
+              ticks:{
+                callback: function(value, index) {
+                  return value + '%'
+                }
+              }
+            }
+          },
         },
-        error : function(error){
-            alert(error.responseJSON.message)
-        }
-    });
+      }
+      global_my_optimizer_target_bar_chart = new Chart(ctx, config);
+      console.log("global_my_optimizer_bar_chart", global_my_optimizer_target_bar_chart)
+  }
+      {% comment %} End : Populate Table  1 {% endcomment %}
+
+      {% comment %} Start : Populate Donut Chart{% endcomment %}
+      function populate_grouped_bar_chart(dict_donut_chart_data, constraint_type){
+          console.log("populate_grouped_bar_chart")
+          let xValues = dict_donut_chart_data['dimension']
+          let buget_allocation_old = "";
+          if(constraint_type == 'median')
+            buget_allocation_old = dict_donut_chart_data['median_buget_allocation_old_%']
+          else
+            buget_allocation_old = dict_donut_chart_data['mean_buget_allocation_old_%']
+            let buget_allocation_new = dict_donut_chart_data['buget_allocation_new_%']
+          let barColors = global_chart_colors
+          ctx = "optimizer_bar_chart"
+          config = {
+            type: "bar",
+            data: {
+              labels: xValues,
+              datasets: [
+                {
+                  label: 'Buget Allocation Original',
+                  data: buget_allocation_old,
+                  backgroundColor: '#a7a7a6'
+
+                },
+                {
+                  label: 'Buget Allocation New',
+                  data: buget_allocation_new,
+                  backgroundColor: '#9A3334',
+                }],
+            },
+            options: {
+              responsive: true,
+              indexAxis:'y',
+              interaction: {
+                mode: 'index',
+                intersect: false,
+              },
+              stacked: false,
+              plugins: {
+                title: {
+                  display: true,
+                  text: '',
+                  position: 'bottom'
+                },
+                tooltip : {
+                  callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+
+                        if (label) {
+                            label += ': ';
+                        }
+                        label += context.parsed.y + '%';
+                        return label;
+                    }
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  display: true,
+                  title: {
+                    display: true,
+                    text: 'Dimension',
+                  },
+                  ticks: {
+                    // Shorten the label If it has more than 10 characters
+                    callback: function(value, index) {
+                      return this.getLabelForValue(value).length > 10 ?
+                              this.getLabelForValue(value).substr(0,10) : this.getLabelForValue(value) ;
+                    }
+                  }
+                },
+                x: {
+                  display: true ,
+                  title: {
+                    display: true,
+                    text: '',
+                  },
+                  ticks:{
+                    callback: function(value, index) {
+                      return value + '%'
+                    }
+                  }
+                }
+              },
+            },
+          }
+          global_my_optimizer_bar_chart = new Chart(ctx, config);
+          console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
+
+
+      }
+      {% comment %} End : Populate Donut Chart {% endcomment %}
+
+     {% comment %} optimizer_save_the_plan  {% endcomment %}
+      function optimizer_save_the_plan(){
+        plan_name = $('#plan_name').val();
+        $.ajax({
+          url: '/optimizer/ajax/optimizer_save_the_plan/',
+          data: {
+            //testing data change late
+            plan_name : plan_name,
+            json_table_data : JSON.stringify(json_table_1_data),
+            donut_chart_data : JSON.stringify(dict_donut_chart_data),
+            left_hand_panel_data : JSON.stringify(global_optimizer_left_pannel_data),
+            discarded_dimensions_json : JSON.stringify(discarded_dimensions_json)
+            //testing data change late
+          },
+          success: function (data) {
+              console.log("Success optimizer_save_the_plan", data)
+              alert(data.message)
+          },
+          error : function(error){
+              alert(error.responseJSON.message)
+          }
+      });
+      }
+      // get is_weekly_selected variable
+      function get_is_weekly_selected(){
+        let is_weekly_selected
+        console.log("get_is_weekly_selected")
+        $.ajax({
+          async: false,
+          url: '/predictor/ajax/is_weekly_selected/',
+          success: function (data) {
+             is_weekly_selected = data.is_weekly_selected;
+            },
+          error: function (error_data) {
+            console.log(
+              "error in '/predictor/ajax/is_weekly_selected/'",
+              error_data
+            );
+            return 0;
+          },
+      })
+      return is_weekly_selected;
     }
-    // get is_weekly_selected variable
-    function get_is_weekly_selected(){
-      let is_weekly_selected
-      console.log("get_is_weekly_selected")
-      $.ajax({
-        async: false,
-        url: '/predictor/ajax/is_weekly_selected/',
-        success: function (data) {
-           is_weekly_selected = data.is_weekly_selected;
+      // get convert_to_weekly_data
+      function get_convert_to_weekly_data(){
+        let convert_to_weekly_data
+        console.log("get_convert_to_weekly_data")
+        $.ajax({
+          async: false,
+          url: '/predictor/ajax/convert_to_weekly_data/',
+          success: function (data) {
+             convert_to_weekly_data = data.convert_to_weekly_data;
+            },
+          error: function (error_data) {
+            console.log(
+              "error in '/predictor/ajax/convert_to_weekly_data/'",
+              error_data
+            );
+            return 0;
           },
-        error: function (error_data) {
-          console.log(
-            "error in '/predictor/ajax/is_weekly_selected/'",
-            error_data
-          );
-          return 0;
-        },
-    })
-    return is_weekly_selected;
-  }
-    // get convert_to_weekly_data
-    function get_convert_to_weekly_data(){
-      let convert_to_weekly_data
-      console.log("get_convert_to_weekly_data")
-      $.ajax({
-        async: false,
-        url: '/predictor/ajax/convert_to_weekly_data/',
-        success: function (data) {
-           convert_to_weekly_data = data.convert_to_weekly_data;
-          },
-        error: function (error_data) {
-          console.log(
-            "error in '/predictor/ajax/convert_to_weekly_data/'",
-            error_data
-          );
-          return 0;
-        },
-    })
-    return convert_to_weekly_data;
-  }
-    // download json data
-    function download(content, fileName, contentType) {
-  		  const a = document.createElement("a");
-  		  const file = new Blob([content], { type: contentType });
-  		  a.href = URL.createObjectURL(file);
-  		  a.download = fileName;
-  		  a.click();
-  		}
-      function onDownload(){
-        params = {}
-        explorer_inputs = {};
-        predictor_inputs = {};
-        optimizer_inputs = {};
-        let is_weekly_selected  = get_is_weekly_selected()
-        let convert_to_weekly_data = get_convert_to_weekly_data()
-        explorer_inputs['date_selector'] = window.localStorage.getItem('date_selector');
-        explorer_inputs['use_impressions'] = window.localStorage.getItem('cpm_checkbox');
-        explorer_inputs['is_weekly_selected'] = is_weekly_selected;
-        explorer_inputs['convert_to_weekly_data'] = convert_to_weekly_data;
-        explorer_inputs['investment_selector'] = window.localStorage.getItem('investment_selector');
-        explorer_inputs['dimension_selector'] = window.localStorage.getItem('dimension_selector');
-        explorer_inputs['target_selector'] = window.localStorage.getItem('target_selector');
-        explorer_inputs['is_group_dimension_selected'] = flag_to_show_grouped_dimensions;
-        explorer_inputs['dimension_grouping_selector'] = window.localStorage.getItem('dimension_grouping_selector')
-        params['explorer_inputs'] = explorer_inputs;
-        predictor_inputs['seasonality'] = global_seasonality;
-        predictor_inputs['constraint_type'] = constraint_type;
-        if(global_seasonality !=1){
-          predictor_inputs['predictor_left_hand_dimensions_start_and_end_dates'] =  JSON.parse(
-            window.localStorage.getItem('predictor_left_hand_dimensions_start_and_end_dates')
-            )
-        }
-        params['predictor_inputs'] = predictor_inputs;
-        optimizer_inputs['left_panel_data'] = global_optimizer_left_pannel_data;
-        optimizer_inputs['discarded_dimensions'] = discarded_dimensions_json;
-        optimizer_inputs['total_budget'] = optimizer_left_panel_total_budget - global_sum_fixed_budget_values;
-        if(flag_to_show_grouped_dimensions == 1)
-          optimizer_inputs['dimension_capping_constraints'] = global_grouped_optimizer_left_panel_data
-        if(global_seasonality == 1){
-          optimizer_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
-          optimizer_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
-          optimizer_inputs['start_date_optimizer'] = optimizer_start_date;
-          optimizer_inputs['end_date_predictor'] = optimizer_end_date;
-        }
-        else
-         optimizer_inputs['total_no_of_days'] = optimizer_left_panel_number_of_days;
-        params['optimizer_inputs'] = optimizer_inputs
-        download(JSON.stringify(params,null,"\t") ,"params.json", "application/json");
-  		}
-    {% comment %} {% if run_wondow_onload %}
-    window.onload = submit_predictor_chart_inputs;
-    {% endif %} {% endcomment %}
+      })
+      return convert_to_weekly_data;
+    }
+      // download json data
+      function download(content, fileName, contentType) {
+    		  const a = document.createElement("a");
+    		  const file = new Blob([content], { type: contentType });
+    		  a.href = URL.createObjectURL(file);
+    		  a.download = fileName;
+    		  a.click();
+    		}
+        function onDownload(){
+          params = {}
+          explorer_inputs = {};
+          predictor_inputs = {};
+          optimizer_inputs = {};
+          let is_weekly_selected  = get_is_weekly_selected()
+          let convert_to_weekly_data = get_convert_to_weekly_data()
+          explorer_inputs['date_selector'] = window.localStorage.getItem('date_selector');
+          explorer_inputs['use_impressions'] = window.localStorage.getItem('cpm_checkbox');
+          explorer_inputs['is_weekly_selected'] = is_weekly_selected;
+          explorer_inputs['convert_to_weekly_data'] = convert_to_weekly_data;
+          explorer_inputs['investment_selector'] = window.localStorage.getItem('investment_selector');
+          explorer_inputs['dimension_selector'] = window.localStorage.getItem('dimension_selector');
+          explorer_inputs['target_selector'] = window.localStorage.getItem('target_selector');
+          explorer_inputs['is_group_dimension_selected'] = flag_to_show_grouped_dimensions;
+          explorer_inputs['dimension_grouping_selector'] = window.localStorage.getItem('dimension_grouping_selector')
+          params['explorer_inputs'] = explorer_inputs;
+          predictor_inputs['seasonality'] = global_seasonality;
+          predictor_inputs['constraint_type'] = constraint_type;
+          if(global_seasonality !=1){
+            predictor_inputs['predictor_left_hand_dimensions_start_and_end_dates'] =  JSON.parse(
+              window.localStorage.getItem('predictor_left_hand_dimensions_start_and_end_dates')
+              )
+          }
+          params['predictor_inputs'] = predictor_inputs;
+          optimizer_inputs['left_panel_data'] = global_optimizer_left_pannel_data;
+          optimizer_inputs['discarded_dimensions'] = discarded_dimensions_json;
+          optimizer_inputs['total_budget'] = optimizer_left_panel_total_budget - global_sum_fixed_budget_values;
+          if(flag_to_show_grouped_dimensions == 1)
+            optimizer_inputs['dimension_capping_constraints'] = global_grouped_optimizer_left_panel_data
+          if(global_seasonality == 1){
+            optimizer_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
+            optimizer_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
+            optimizer_inputs['start_date_optimizer'] = optimizer_start_date;
+            optimizer_inputs['end_date_predictor'] = optimizer_end_date;
+          }
+          else
+           optimizer_inputs['total_no_of_days'] = optimizer_left_panel_number_of_days;
+          params['optimizer_inputs'] = optimizer_inputs
+          download(JSON.stringify(params,null,"\t") ,"params.json", "application/json");
+    		}
+      {% comment %} {% if run_wondow_onload %}
+      window.onload = submit_predictor_chart_inputs;
+      {% endif %} {% endcomment %}
 </script>
 {%endblock%}

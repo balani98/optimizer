@@ -74,7 +74,7 @@ def dimension_bound(df_param, dimension_data, constraint_type, is_group_dimensio
             sub_dim_bound_min = sum([dim_bound[dim][0] for dim in sub_dim_list])
             sub_dim_bound_max = sum([dim_bound[dim][1] for dim in sub_dim_list])
             grp_dim_bound[grp_dim] = {'sub_dimension' : sub_dim_list,
-                                    'constraints': [sub_dim_bound_min, sub_dim_bound_max],
+                                    'constraints':[sub_dim_bound_min, sub_dim_bound_max],
                                     'fixed_ranges' : [sub_dim_bound_min, sub_dim_bound_max]}
         
     return dim_bound, grp_dim_bound
@@ -110,7 +110,7 @@ def investment_range(dim_bound, group_constraint, isolate_dim_list, selected_lst
 
 
 class optimizer_iterative:
-    def __init__(self, df_param, constraint_type):
+    def __init__(self, df_param, constraint_type, target_type):
         """initialization
 
         Args:
@@ -122,6 +122,7 @@ class optimizer_iterative:
         self.d_param = df_param_opt.iloc[1:, :].to_dict()
 
         self.constraint_type = constraint_type.lower()
+        self.target_type = target_type.lower()
 
         if "cpm" in df_param.columns:
             self.use_impression = True
@@ -821,14 +822,15 @@ class optimizer_iterative:
         if self.constraint_type == 'median':
             df_res['buget_allocation_old_%'] = ((df_res['median spend']/df_res['median spend'].sum())*100)
             df_res['median spend'] = df_res['median spend'].round().astype(int)
-            df_res = df_res.rename(columns={"median spend": "original_median_budget_per_day"})
+            df_res = df_res.rename(columns={"median spend": "original_constraint_budget_per_day"})
         else:
             df_res['buget_allocation_old_%'] = ((df_res['mean spend']/df_res['mean spend'].sum())*100)
             df_res['mean spend'] = df_res['mean spend'].round().astype(int)
-            df_res = df_res.rename(columns={"mean spend": "original_mean_budget_per_day"})
+            df_res = df_res.rename(columns={"mean spend": "original_constraint_budget_per_day"})
 
         for dim in self.d_param:
             spend_projections = budget_per_day*(df_res.loc[df_res['dimension']==dim, 'buget_allocation_old_%']/100)
+            df_res.loc[df_res['dimension']==dim, 'spend_projection_constraint_for_n_day'] = spend_projections * days
             if self.use_impression:
                 imp_projections = (spend_projections * 1000)/dimension_bound[dim][2]
                 metric_projections = imp_projections
@@ -836,22 +838,51 @@ class optimizer_iterative:
                 metric_projections = spend_projections
             df_res.loc[df_res['dimension']==dim, 'current_projections_per_day'] = self.s_curve_hill(metric_projections, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]).round(2)
         df_res['current_projections_for_n_days'] = df_res['current_projections_per_day']*days
-        df_res['current_projections_%'] = ((df_res['current_projections_per_day']/df_res['current_projections_per_day'].sum())*100)
+        df_res['current_projections_%'] = ((df_res['current_projections_per_day']/df_res['current_projections_per_day'].sum())*100).round(2)
         df_res['buget_allocation_old_%']=df_res['buget_allocation_old_%'].round(2)
-        df_res = df_res.replace({np.nan: None})
+        df_res["spend_projection_constraint_for_n_day"]=df_res["spend_projection_constraint_for_n_day"].round()
+        df_res['current_projections_for_n_days']=df_res['current_projections_for_n_days'].round()
+
+        summary_metrics_dic = {"Optimized Total Budget" : sum(df_res['recommended_budget_for_n_days'].replace({np.nan: 0.0}).astype(float).round().astype(int)),
+                               "Optimized Total Target" : sum(df_res['estimated_return_for_n_days'].replace({np.nan: 0.0}).astype(float).round().astype(int)),
+                               "Current Projection Total Budget" : sum(df_res["spend_projection_constraint_for_n_day"].replace({np.nan: 0.0}).astype(float).round().astype(int)),
+                               "Current Projection Total Target" : sum(df_res['current_projections_for_n_days'].astype(float).replace({np.nan: 0.0}).round().astype(int)) 
+                               }
+
+        if self.target_type == "revenue":
+            summary_metrics_dic["Optimized CPA/ROI"] = round(summary_metrics_dic["Optimized Total Target"]/summary_metrics_dic["Optimized Total Budget"], 2)
+            summary_metrics_dic["Current Projection CPA/ROI"] = round(summary_metrics_dic["Current Projection Total Target"]/summary_metrics_dic["Current Projection Total Budget"], 2)
+            df_res["current_projections_CPA_ROI"] = ((df_res["current_projections_for_n_days"].replace({np.nan: 0, None: 0})).div(df_res.loc[df_res["spend_projection_constraint_for_n_day"].replace({np.nan: 0, None: 0})!=0, "spend_projection_constraint_for_n_day"])).replace({np.inf: 0}).round(2)
+            df_res["optimized_CPA_ROI"] = ((df_res["estimated_return_per_day"].replace({np.nan: 0, None: 0})).div(df_res.loc[df_res["recommended_budget_per_day"].replace({np.nan: 0, None: 0})!=0, "recommended_budget_per_day"])).replace({np.inf: 0}).round(2)
+        else:
+            summary_metrics_dic["Optimized CPA/ROI"] = round(summary_metrics_dic["Optimized Total Budget"]/summary_metrics_dic["Optimized Total Target"], 2)
+            summary_metrics_dic["Current Projection CPA/ROI"] = round(summary_metrics_dic["Current Projection Total Budget"]/summary_metrics_dic["Current Projection Total Target"], 2)
+            df_res["current_projections_CPA_ROI"] = ((df_res["spend_projection_constraint_for_n_day"].replace({np.nan: 0, None: 0})).div(df_res.loc[df_res["current_projections_for_n_days"].replace({np.nan: 0, None: 0})!=0, "current_projections_for_n_days"])).replace({np.inf: 0}).round(2)
+            df_res["optimized_CPA_ROI"] = ((df_res["recommended_budget_per_day"].replace({np.nan: 0, None: 0})).div(df_res.loc[df_res["estimated_return_per_day"].replace({np.nan: 0, None: 0})!=0, "estimated_return_per_day"])).replace({np.inf: 0}).round(2)
+
+        df_res["current_projections_CPA_ROI"] = np.where((df_res["spend_projection_constraint_for_n_day"]==0) | (df_res["current_projections_for_n_days"]==0), 0, df_res["current_projections_CPA_ROI"])
+        df_res["optimized_CPA_ROI"] = np.where((df_res["recommended_budget_per_day"]==0) | (df_res["estimated_return_per_day"]==0), 0, df_res["optimized_CPA_ROI"])
 
         if self.constraint_type == 'median':
+            df_res = df_res.rename(columns={"original_constraint_budget_per_day": "original_median_budget_per_day"})
             df_res = df_res.rename(columns={"buget_allocation_old_%": "median_buget_allocation_old_%"})
-            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'median_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days']]
+            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'median_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'current_projections_%', 'optimized_CPA_ROI', 'current_projections_CPA_ROI']]
         else:
+            df_res = df_res.rename(columns={"original_constraint_budget_per_day": "original_mean_budget_per_day"})
             df_res = df_res.rename(columns={"buget_allocation_old_%": "mean_buget_allocation_old_%"})
-            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days']]
+            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'current_projections_%', 'optimized_CPA_ROI', 'current_projections_CPA_ROI']]
      
-        int_cols = [i for i in df_res.columns if ((i != "dimension") & ('%' not in i))]
+        df_res = df_res.replace({np.nan: None})
+
+        for dim in discard_json:
+            df_res.loc[df_res['dimension']==dim, 'current_projections_CPA_ROI'] = None
+            df_res.loc[df_res['dimension']==dim, 'optimized_CPA_ROI'] = None
+
+        int_cols = [i for i in df_res.columns if ((i != "dimension") & ('%' not in i) & ('CPA_ROI' not in i))]
         for i in int_cols:
             df_res.loc[df_res[i].values != None, i]=df_res.loc[df_res[i].values != None, i].astype(float).round().astype(int)
 
-        return df_res
+        return df_res, summary_metrics_dic
         
     
     def check_initialization_required(self, increment, df_grp, dimension_bound, dimension_bound_actual, grouped_dimension_bound, budget_per_day):
@@ -973,16 +1004,16 @@ class optimizer_iterative:
 
         # Calculating other variables for optimization plan for front end
         result_df=self.lift_cal(result_df, budget_per_day, df_spend_dis, days, dimension_bound)
-        result_df=self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound_actual, budget_per_day, days)
+        result_df, summary_metrics_dic=self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound_actual, budget_per_day, days)
         
         # Df for iterative steps, not displayed in front end
         result_itr_df=result_itr_df.round(2)
 
-        return result_df
+        return result_df, summary_metrics_dic
 
 
 class optimizer_iterative_seasonality:
-    def __init__(self, df_param, constraint_type):
+    def __init__(self, df_param, constraint_type, target_type):
         """initialization
 
         Args:
@@ -994,6 +1025,7 @@ class optimizer_iterative_seasonality:
         self.d_param = df_param_opt.iloc[1:, :].to_dict()
 
         self.constraint_type = constraint_type.lower()
+        self.target_type = target_type.lower()
 
         if "cpm" in df_param.columns:
             self.use_impression = True
@@ -1853,14 +1885,15 @@ class optimizer_iterative_seasonality:
         if self.constraint_type == 'median':
             df_res['buget_allocation_old_%'] = ((df_res['median spend']/df_res['median spend'].sum())*100)
             df_res['median spend'] = df_res['median spend'].round().astype(int)
-            df_res = df_res.rename(columns={"median spend": "original_median_budget_per_day"})
+            df_res = df_res.rename(columns={"median spend": "original_constraint_budget_per_day"})
         else:
             df_res['buget_allocation_old_%'] = ((df_res['mean spend']/df_res['mean spend'].sum())*100)
             df_res['mean spend'] = df_res['mean spend'].round().astype(int)
-            df_res = df_res.rename(columns={"mean spend": "original_mean_budget_per_day"})
+            df_res = df_res.rename(columns={"mean spend": "original_constraint_budget_per_day"})
 
         for dim in self.d_param:
             spend_projections = budget_per_day*(df_res.loc[df_res['dimension']==dim, 'buget_allocation_old_%']/100)
+            df_res.loc[df_res['dimension']==dim, 'spend_projection_constraint_for_n_day'] = spend_projections * days
             if self.use_impression:
                 imp_projections = (spend_projections * 1000)/dimension_bound[dim][2]
                 metric_projections = imp_projections
@@ -1882,22 +1915,51 @@ class optimizer_iterative_seasonality:
             df_res.loc[df_res['dimension']==dim, 'current_projections_for_n_days'] = target_projection
         df_res['current_projections_for_n_days'] = df_res['current_projections_for_n_days'].round()
         df_res['current_projections_per_day'] = (df_res['current_projections_for_n_days']/days).round()
-        df_res['current_projections_%'] = ((df_res['current_projections_for_n_days']/df_res['current_projections_for_n_days'].sum())*100)
+        df_res['current_projections_%'] = ((df_res['current_projections_for_n_days']/df_res['current_projections_for_n_days'].sum())*100).round(2)
         df_res['buget_allocation_old_%']=df_res['buget_allocation_old_%'].round(2)
-        df_res = df_res.replace({np.nan: None})
-            
-        if self.constraint_type == 'median':
-            df_res = df_res.rename(columns={"buget_allocation_old_%": "median_buget_allocation_old_%"})
-            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'median_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days']]
+        df_res["spend_projection_constraint_for_n_day"]=df_res["spend_projection_constraint_for_n_day"].round()
+        df_res['current_projections_for_n_days']=df_res['current_projections_for_n_days'].round()
+
+        summary_metrics_dic = {"Optimized Total Budget" : sum(df_res['recommended_budget_for_n_days'].replace({np.nan: 0}).astype(float).round().astype(int)),
+                               "Optimized Total Target" : sum(df_res['estimated_return_for_n_days'].replace({np.nan: 0}).astype(float).round().astype(int)),
+                               "Current Projection Total Budget" : sum(df_res["spend_projection_constraint_for_n_day"].replace({np.nan: 0}).astype(float).round().astype(int)),
+                               "Current Projection Total Target" : sum(df_res['current_projections_for_n_days'].replace({np.nan: 0}).round().astype(int))
+                               }
+        
+        if self.target_type == "revenue":
+            summary_metrics_dic["Optimized CPA/ROI"] = round(summary_metrics_dic["Optimized Total Target"]/summary_metrics_dic["Optimized Total Budget"], 2)
+            summary_metrics_dic["Current Projection CPA/ROI"] = round(summary_metrics_dic["Current Projection Total Target"]/summary_metrics_dic["Current Projection Total Budget"], 2)
+            df_res["current_projections_CPA_ROI"] = ((df_res["current_projections_for_n_days"].replace({np.nan: 0, None: 0})).div(df_res.loc[df_res["spend_projection_constraint_for_n_day"].replace({np.nan: 0, None: 0})!=0, "spend_projection_constraint_for_n_day"])).replace({np.inf: 0}).round(2)
+            df_res["optimized_CPA_ROI"] = ((df_res["estimated_return_for_n_days"].replace({np.nan: 0, None: 0})).div(df_res.loc[df_res["recommended_budget_for_n_days"].replace({np.nan: 0, None: 0})!=0, "recommended_budget_for_n_days"])).replace({np.inf: 0}).round(2)
         else:
+            summary_metrics_dic["Optimized CPA/ROI"] = round(summary_metrics_dic["Optimized Total Budget"]/summary_metrics_dic["Optimized Total Target"], 2)
+            summary_metrics_dic["Current Projection CPA/ROI"] = round(summary_metrics_dic["Current Projection Total Budget"]/summary_metrics_dic["Current Projection Total Target"], 2)
+            df_res["current_projections_CPA_ROI"] = ((df_res["spend_projection_constraint_for_n_day"].replace({np.nan: 0, None: 0})).div(df_res.loc[df_res["current_projections_for_n_days"].replace({np.nan: 0, None: 0})!=0, "current_projections_for_n_days"])).replace({np.inf: 0}).round(2)
+            df_res["optimized_CPA_ROI"] = ((df_res["recommended_budget_for_n_days"].replace({np.nan: 0, None: 0})).div(df_res.loc[df_res["estimated_return_for_n_days"].replace({np.nan: 0, None: 0})!=0, "estimated_return_for_n_days"])).replace({np.inf: 0}).round(2)
+  
+        df_res["current_projections_CPA_ROI"] = np.where((df_res["spend_projection_constraint_for_n_day"]==0) | (df_res["current_projections_for_n_days"]==0), 0, df_res["current_projections_CPA_ROI"])
+        df_res["optimized_CPA_ROI"] = np.where((df_res["recommended_budget_for_n_days"]==0) | (df_res["estimated_return_for_n_days"]==0), 0, df_res["optimized_CPA_ROI"])
+
+        if self.constraint_type == 'median':
+            df_res = df_res.rename(columns={"original_constraint_budget_per_day": "original_median_budget_per_day"})
+            df_res = df_res.rename(columns={"buget_allocation_old_%": "median_buget_allocation_old_%"})
+            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'median_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'current_projections_%', 'optimized_CPA_ROI', 'current_projections_CPA_ROI']]
+        else:
+            df_res = df_res.rename(columns={"original_constraint_budget_per_day": "original_mean_budget_per_day"})
             df_res = df_res.rename(columns={"buget_allocation_old_%": "mean_buget_allocation_old_%"})
-            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days']]
-           
-        int_cols = [i for i in df_res.columns if ((i != "dimension") & ('%' not in i))]
+            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'current_projections_%', 'optimized_CPA_ROI', 'current_projections_CPA_ROI']]
+        
+        df_res = df_res.replace({np.nan: None})
+
+        for dim in discard_json:
+            df_res.loc[df_res['dimension']==dim, 'current_projections_CPA_ROI'] = None
+            df_res.loc[df_res['dimension']==dim, 'optimized_CPA_ROI'] = None
+
+        int_cols = [i for i in df_res.columns if ((i != "dimension") & ('%' not in i) & ('CPA_ROI' not in i))]
         for i in int_cols:
             df_res.loc[df_res[i].values != None, i]=df_res.loc[df_res[i].values != None, i].astype(float).round().astype(int)
 
-        return df_res
+        return df_res, summary_metrics_dic
     
     
     def check_initialization_required(self, increment, df_grp, dimension_bound, dimension_bound_actual, grouped_dimension_bound, budget_per_day, init_weekday, init_month):
@@ -2097,9 +2159,9 @@ class optimizer_iterative_seasonality:
         
         # Calculating other variables for optimization plan for front end
         result_df=self.lift_cal(result_df, budget_per_day, df_spend_dis, days, dimension_bound)
-        result_df=self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound_actual, budget_per_day, days, d_weekday, d_month, date_range)
+        result_df, summary_metrics_dic=self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound_actual, budget_per_day, days, d_weekday, d_month, date_range)
         
         # Df for iterative steps, not displayed in front end
         result_itr_df=result_itr_df.round(2)
 
-        return result_df
+        return result_df, summary_metrics_dic

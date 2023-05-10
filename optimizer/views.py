@@ -15,7 +15,6 @@ from django.views.decorators.csrf import csrf_exempt
 # import os
 # from django.conf import settings
 # import uuid
-
 # custom imports
 from .optimizer_helper_functions import (
     dimension_bound,
@@ -57,6 +56,7 @@ def optimizer_home_page(request):
     drop_dimension_from_session = request.session.get("drop_dimension")
     constraint_type = request.session.get("mean_median_selection")
     dimension_grouping_check = request.session.get("dimension_grouping_check")
+    target_type = request.session.get("target_type")
     if seasonality_from_session:
         seasonality = seasonality_from_session
     else:
@@ -117,6 +117,7 @@ def optimizer_home_page(request):
             "stringified_optimizer_left_pannel_data"
         ] = stringified_optimizer_left_pannel_data
         context['constraint_type'] = constraint_type
+        context["target_type"] = target_type
         return render(request, "optimizer/optimizer_home_page.html", context)
 
 def validate_dimension_budget_with_caps(request):
@@ -194,6 +195,7 @@ def dimension_min_max(request):
 
         context = {}
         dict_donut_chart_data = {}
+        dict_target_chart_data = {}
         dict_line_chart_data = {}
         start_date = None
         end_date = None
@@ -216,6 +218,7 @@ def dimension_min_max(request):
         total_budget = int(body["total_budget"])
         discarded_dimensions = json.loads(body["discarded_dimensions"])
         constraint_type = request.session.get("mean_median_selection")
+        target_type = request.session.get('target_type')
         selected_dimensions = body['selected_dimensions'].split(",")
         is_group_dimension_selected = request.session.get("dimension_grouping_check")
         if is_group_dimension_selected == True:
@@ -237,11 +240,11 @@ def dimension_min_max(request):
             print(start_date, end_date)
             date_range = [start_date, end_date]
             optimizer_object = optimizer_iterative_seasonality(
-                df_predictor_page_latest_data, constraint_type
+                df_predictor_page_latest_data, constraint_type, target_type
             )
             try:
                 (
-                    df_optimizer_results_post_min_max
+                    df_optimizer_results_post_min_max, summary_metric_dic
                 ) = optimizer_object.execute(scatter_plot_df,
                                              total_budget,
                                              date_range,
@@ -259,10 +262,10 @@ def dimension_min_max(request):
             )
             number_of_days = int(body["number_of_days"])
             df_spend_dis = pd.DataFrame(request.session.get('df_spend_dis'))
-            optimizer_object = optimizer_iterative(df_predictor_page_latest_data, constraint_type)
+            optimizer_object = optimizer_iterative(df_predictor_page_latest_data, constraint_type, target_type)
             try:
                 (
-                    df_optimizer_results_post_min_max
+                    df_optimizer_results_post_min_max, summary_metric_dic
                 ) = optimizer_object.execute(
                     scatter_plot_df,
                     total_budget,
@@ -307,8 +310,9 @@ def dimension_min_max(request):
                 dynamic_column_for_budget_allocation_perc,
                 "buget_allocation_new_%",
                 "recommended_budget_for_n_days",
-                'estimated_return_per_day', 
-                'estimated_return_%', 
+                'estimated_return_per_day',
+                'current_projections_%', 
+                'estimated_return_%',
                 'estimated_return_for_n_days',
                 'current_projections_for_n_days'
             ]
@@ -387,7 +391,17 @@ def dimension_min_max(request):
         dict_donut_chart_data[
             "buget_allocation_new_%"
         ] = df_optimizer_results_post_min_max["buget_allocation_new_%"].tolist()
-
+        # framing the dataset for target % 
+        dict_target_chart_data["dimension"] = df_optimizer_results_post_min_max[
+            "dimension"
+        ].tolist()
+        dict_target_chart_data[
+             'current_projections_%'
+        ] = df_optimizer_results_post_min_max['current_projections_%'].tolist()
+        dict_target_chart_data[
+            "estimated_return_%"
+        ] = df_optimizer_results_post_min_max["estimated_return_%"].tolist()
+        
         json_table_1_data = df_table_1_data.to_dict("records")
         # json_donut_chart_data = df_donut_chart_data.to_dict()
 
@@ -403,6 +417,9 @@ def dimension_min_max(request):
         # context["json_donut_chart_data"] = json_donut_chart_data
         context["dict_donut_chart_data"] = dict_donut_chart_data
         context["dict_line_chart_data"] = dict_line_chart_data
+        context["dict_target_chart_data"] = dict_target_chart_data
+        context["summary_metric_dic"] = summary_metric_dic
+        context["target_type"] = target_type
         return JsonResponse(context)
     except Exception as e:
         return JsonResponse({"error": ERROR_DICT[str(e)]}, status=500)
