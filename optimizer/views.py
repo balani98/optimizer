@@ -57,6 +57,7 @@ def optimizer_home_page(request):
     constraint_type = request.session.get("mean_median_selection")
     dimension_grouping_check = request.session.get("dimension_grouping_check")
     target_type = request.session.get("target_type")
+    targetSelector = request.session.get("TargetSelector")
     if seasonality_from_session:
         seasonality = seasonality_from_session
     else:
@@ -118,6 +119,7 @@ def optimizer_home_page(request):
         ] = stringified_optimizer_left_pannel_data
         context['constraint_type'] = constraint_type
         context["target_type"] = target_type
+        context["targetSelector"] = targetSelector
         return render(request, "optimizer/optimizer_home_page.html", context)
 
 def validate_dimension_budget_with_caps(request):
