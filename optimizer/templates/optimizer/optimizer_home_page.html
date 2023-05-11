@@ -796,7 +796,7 @@
         >
           <div class="row">
             <div class="col-lg-7 col-sm-12">
-              <h4>Summary Metrics</h4>
+              <h4 class="text-center">Summary Metrics</h4>
               <div
                 style="
                   margin-top: 120px;
@@ -837,7 +837,7 @@
               </div>
             </div>
             <div class="col-lg-5 col-sm-12">
-              <h4>Cost per Conversion</h4>
+              <h4 class="text-center">Cost per Conversion</h4>
               <div
                 style="
                   display: flex;
@@ -848,7 +848,7 @@
                   margin: auto;
                 "
               >
-                <canvas id="optimizer_CPA_chart"style="position: relative; height:30vh; width:20vw"></canvas>
+                <canvas id="optimizer_CPA_chart"style="height:30vh; width:20vw"></canvas>
               </div>
             </div>
           </div>
@@ -862,7 +862,7 @@
             box-shadow: rgb(0 0 0 / 24%) 0px 10px 20px;
           "
         >
-          <h4>Media Investment Plan</h4>
+          <h4 class="text-center">Media Investment Plan</h4>
           <div
             style="
               margin-top: 30px;
@@ -982,7 +982,7 @@
                   <br />
                   <div class="row">
                     <div class="col-lg-6 col-sm-12">
-                      <h4>% Distribution Between Target Allocation</h4>
+                      <h4 class="text-center">Budget Allocation</h4>
                       <br />
                       <div
                         style="
@@ -994,11 +994,11 @@
                           margin: auto;
                         "
                       >
-                        <canvas id="optimizer_bar_chart"style="position: relative; height:200vh; width:80vw"></canvas>
+                        <canvas id="optimizer_bar_chart"></canvas>
                       </div>
                     </div>
                     <div class="col-lg-6 col-sm-12">
-                      <h4>% Distribution Between Budget Allocation</h4>
+                      <h4 class="text-center">Target Allocation</h4>
                       <br />
                       <div
                         style="
@@ -1010,7 +1010,7 @@
                           margin: auto;
                         "
                       >
-                        <canvas id="optimizer_target_bar_chart" style="position: relative; height:200vh; width:80vw"></canvas>
+                        <canvas id="optimizer_target_bar_chart"></canvas>
                       </div>
                     </div>
                   </div>
@@ -2271,10 +2271,15 @@
       // function to draw the CPA bars graph
       function populate_cpa_graph(summary_metric_json, target_type){
         let xValues = []
-        if(target_type == 'volume')
+        let y_label = ""
+        if(target_type == 'volume'){
           xValues = ["CPA plans"]
-        else if(target_type == 'revenue')
-          xValues - ["ROI plans"]
+          y_label = "CPA"
+        }
+        else if(target_type == 'revenue'){
+          xValues = ["ROI plans"]
+          y_label = "ROI"
+        }
         let barColors = global_chart_colors
         ctx = "optimizer_CPA_chart"
         config = {
@@ -2333,7 +2338,7 @@
                 display: true ,
                 title: {
                   display: true,
-                  text: 'CPA',
+                  text: y_label,
                 },
                 ticks:{
                   callback: function(value, index) {
@@ -2472,11 +2477,15 @@
     // populate the target bar chart
     function populate_grouped_target_bar_chart(dict_target_chart_data){
       console.log("populate_grouped_bar_chart")
+      let canvasElement = document.getElementById("optimizer_target_bar_chart")
+      height = dict_donut_chart_data['dimension'].length*10;
+      width = "80";
+      ctx = resizeCanvas(canvasElement, width, height);
       let xValues = dict_target_chart_data['dimension']
       let target_allocation_old = dict_target_chart_data["current_projections_%"]
       let target_allocation_new = dict_target_chart_data["estimated_return_%"]
       let barColors = global_chart_colors
-      ctx = "optimizer_target_bar_chart"
+      //ctx = "optimizer_target_bar_chart"
       config = {
         type: "bar",
         data: {
@@ -2554,11 +2563,28 @@
       global_my_optimizer_target_bar_chart = new Chart(ctx, config);
       console.log("global_my_optimizer_bar_chart", global_my_optimizer_target_bar_chart)
   }
+  // function to resize canvas 
+  function resizeCanvas(canvas, width, height) {
+    // Get the canvas context.
+    var ctx = canvas.getContext("2d");
+  
+    // Set the canvas width and height.
+    canvas.width = width;
+    canvas.height = height;
+  
+    // Clear the canvas.
+    ctx.clearRect(0, 0, width, height);
+    return ctx;
+  }
       {% comment %} End : Populate Table  1 {% endcomment %}
 
       {% comment %} Start : Populate Donut Chart{% endcomment %}
       function populate_grouped_bar_chart(dict_donut_chart_data, constraint_type){
           console.log("populate_grouped_bar_chart")
+          let canvasElement = document.getElementById("optimizer_bar_chart")
+          height = dict_donut_chart_data['dimension'].length*10 
+          width = "80"
+          ctx = resizeCanvas(canvasElement, width, height)
           let xValues = dict_donut_chart_data['dimension']
           let buget_allocation_old = "";
           if(constraint_type == 'median')
@@ -2567,7 +2593,7 @@
             buget_allocation_old = dict_donut_chart_data['mean_buget_allocation_old_%']
             let buget_allocation_new = dict_donut_chart_data['buget_allocation_new_%']
           let barColors = global_chart_colors
-          ctx = "optimizer_bar_chart"
+          // ctx = "optimizer_bar_chart"
           config = {
             type: "bar",
             data: {
