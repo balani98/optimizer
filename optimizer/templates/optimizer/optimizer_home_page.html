@@ -812,9 +812,9 @@
                       <th scope="col">Total Budget</th>
                       <th scope="col">Total Target</th>
                       {% if target_type == 'volume'%}
-                        <th scope="col">Total cost per Target</th>
+                      <th scope="col">Total cost per Target</th>
                       {% elif target_type == 'revenue'%}
-                        <th scope="col">Return on Investment</th>
+                      <th scope="col">Return on Investment</th>
                       {% endif %}
                     </tr>
                   </thead>
@@ -837,7 +837,7 @@
               </div>
             </div>
             <div class="col-lg-5 col-sm-12">
-              <h4 class="text-center">Cost per Conversion</h4>
+              <h4 class="text-center">Cost per {{targetSelector}}</h4>
               <div
                 style="
                   display: flex;
@@ -848,11 +848,15 @@
                   margin: auto;
                 "
               >
-                <canvas id="optimizer_CPA_chart"style="height:30vh; width:20vw"></canvas>
+                <canvas
+                  id="optimizer_CPA_chart"
+                  style="height: 30vh; width: 20vw"
+                ></canvas>
               </div>
             </div>
           </div>
         </div>
+        
         <div
           style="
             background-color: #fff;
@@ -862,6 +866,47 @@
             box-shadow: rgb(0 0 0 / 24%) 0px 10px 20px;
           "
         >
+          {% comment %} pie chart {% endcomment %}
+          <br />
+          <br />
+          <br />
+          <div class="row">
+            <div class="col-lg-6 col-sm-12">
+              <h4 class="text-center">Budget Allocation</h4>
+              <br />
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-direction: column;
+                  width: 100%;
+                  margin: auto;
+                "
+              >
+                <canvas id="optimizer_bar_chart"></canvas>
+              </div>
+            </div>
+            <div class="col-lg-6 col-sm-12">
+              <h4 class="text-center">{{targetSelector}} Allocation</h4>
+              <br />
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-direction: column;
+                  width: 100%;
+                  margin: auto;
+                "
+              >
+                <canvas id="optimizer_target_bar_chart"></canvas>
+              </div>
+            </div>
+          </div>
+          <br />
+          <br />
+          <br />
           <h4 class="text-center">Media Investment Plan</h4>
           <div
             style="
@@ -919,9 +964,9 @@
                   {% endif %}
                   <th scope="col">Recommended Budget Allocation %</th>
                   <th scope="col">Recommended Total Budget Allocation</th>
-                  <th scope="col">Target per day</th>
-                  <th scope="col">Overall Target</th>
-                  <th scope="col">% of Target</th>
+                  <th scope="col">{{targetSelector}} per day</th>
+                  <th scope="col">Overall {{targetSelector}}</th>
+                  <th scope="col">% of {{targetSelector}}</th>
                   <th scope="col">Overall Current Projections</th>
                 </tr>
               </thead>
@@ -975,48 +1020,6 @@
                       </button>
                     </div>
                   </div>
-
-                  {% comment %} pie chart {% endcomment %}
-                  <br />
-                  <br />
-                  <br />
-                  <div class="row">
-                    <div class="col-lg-6 col-sm-12">
-                      <h4 class="text-center">Budget Allocation</h4>
-                      <br />
-                      <div
-                        style="
-                          display: flex;
-                          align-items: center;
-                          justify-content: center;
-                          flex-direction: column;
-                          width: 100%;
-                          margin: auto;
-                        "
-                      >
-                        <canvas id="optimizer_bar_chart"></canvas>
-                      </div>
-                    </div>
-                    <div class="col-lg-6 col-sm-12">
-                      <h4 class="text-center">Target Allocation</h4>
-                      <br />
-                      <div
-                        style="
-                          display: flex;
-                          align-items: center;
-                          justify-content: center;
-                          flex-direction: column;
-                          width: 100%;
-                          margin: auto;
-                        "
-                      >
-                        <canvas id="optimizer_target_bar_chart"></canvas>
-                      </div>
-                    </div>
-                  </div>
-                  <br />
-                  <br />
-                  <br />
                 </div>
                 <div
                   style="
@@ -2563,15 +2566,15 @@
       global_my_optimizer_target_bar_chart = new Chart(ctx, config);
       console.log("global_my_optimizer_bar_chart", global_my_optimizer_target_bar_chart)
   }
-  // function to resize canvas 
+  // function to resize canvas
   function resizeCanvas(canvas, width, height) {
     // Get the canvas context.
     var ctx = canvas.getContext("2d");
-  
+
     // Set the canvas width and height.
     canvas.width = width;
     canvas.height = height;
-  
+
     // Clear the canvas.
     ctx.clearRect(0, 0, width, height);
     return ctx;
@@ -2582,7 +2585,7 @@
       function populate_grouped_bar_chart(dict_donut_chart_data, constraint_type){
           console.log("populate_grouped_bar_chart")
           let canvasElement = document.getElementById("optimizer_bar_chart")
-          height = dict_donut_chart_data['dimension'].length*10 
+          height = dict_donut_chart_data['dimension'].length*10
           width = "80"
           ctx = resizeCanvas(canvasElement, width, height)
           let xValues = dict_donut_chart_data['dimension']
