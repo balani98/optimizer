@@ -806,16 +806,23 @@
                   width: 100%;
                 "
               >
-                <table class="table table-bordered">
+                <table class="table table-bordered summary_metric_table">
                   <thead style="text-align: center">
                     <tr>
-                      <th scope="col">Total Budget</th>
-                      <th scope="col">Total Target</th>
-                      {% if target_type == 'volume'%}
-                      <th scope="col">Total cost per Target</th>
-                      {% elif target_type == 'revenue'%}
-                      <th scope="col">Return on Investment</th>
+                      <th>Total Budget:</th>
+                      {% comment %} <td>$ 1000</td> {% endcomment %}
+                    </tr>
+                    <tr>
+                      <th>Total Target:</th>
+                      {% comment %} <td>299</td> {% endcomment %}
+                    </tr>
+                    <tr>
+                      {% if target_type == 'volume' %}
+                        <th>Total cost per target :</th>
+                      {% elif target_type == 'revenue' %}
+                        <th>Revenue :</th>
                       {% endif %}
+                      {% comment %} <td>$ 100</td> {% endcomment %}
                     </tr>
                   </thead>
                   <tbody
@@ -1540,7 +1547,7 @@
       id_stringified_grouped_optimizer_left_pannel_data = document.getElementById('id_stringified_grouped_optimizer_left_pannel_data')
       get_all_the_key_value = document.querySelectorAll('.get_all_the_key_value')
       let table_body_1_optimizer = document.querySelector(".table_body_1_optimizer");
-      let table_body_optimizer_summary_metric = document.querySelector(".table_body_optimizer_summary_metric");
+      let summary_metric_table = document.querySelector(".summary_metric_table");
 
 
 
@@ -2273,6 +2280,7 @@
 
       // function to draw the CPA bars graph
       function populate_cpa_graph(summary_metric_json, target_type){
+        Chart.register(ChartDataLabels);
         let xValues = []
         let y_label = ""
         if(target_type == 'volume'){
@@ -2292,13 +2300,13 @@
             datasets: [
               {
                 label: 'Initial Plan',
-                data: [summary_metric_json["Current Projection CPA/ROI"]],
+                data: [Math.round(summary_metric_json["Current Projection CPA/ROI"])],
                 backgroundColor: '#a7a7a6'
 
               },
               {
                 label: 'Optimized Plan',
-                data: [summary_metric_json["Optimized CPA/ROI"]],
+                data: [Math.round(summary_metric_json["Optimized CPA/ROI"])],
                 backgroundColor: '#9A3334',
               }],
           },
@@ -2327,7 +2335,7 @@
                       return label;
                   }
                 }
-              }
+              }, 
             },
             scales: {
               x: {
@@ -2356,27 +2364,45 @@
       }
       // function to populate the summary metrics table
       function populate_table_summary_metric(summary_metric_json){
-        table_body_optimizer_summary_metric .innerHTML = ""
-        tableRow = document.createElement("tr");
+       tableRow1 =  summary_metric_table.rows[0]
+       tableRow2 =  summary_metric_table.rows[1]
+       tableRow3 =  summary_metric_table.rows[2]
         // appending the columns of table
-        td1 = document.createElement("td");
+        if(!summary_metric_table.rows[0].cells[1]){
+          td1 = document.createElement("td");
+        }else{
+          td1 = summary_metric_table.rows[0].cells[1];
+          td1.innerHTML = ""
+        }
         textNode1 = document.createTextNode(`$ ${summary_metric_json["Optimized Total Budget"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
         td1.appendChild(textNode1);
-
-        td2 = document.createElement("td");
+        if(!summary_metric_table.rows[1].cells[1]){
+          td2 = document.createElement("td");
+        }else{
+          td2 = summary_metric_table.rows[1].cells[1];
+          td2.innerHTML = ""
+        }
         textNode2 = document.createTextNode(summary_metric_json["Optimized Total Target"]);
         td2.appendChild(textNode2);
 
-        td3 = document.createElement("td");
-        textNode3 = document.createTextNode("$ " + summary_metric_json["Optimized CPA/ROI"]);
+        if(!summary_metric_table.rows[2].cells[1]){
+          td3 = document.createElement("td");
+        }else{
+          td3 = summary_metric_table.rows[2].cells[1];
+          td3.innerHTML = ""
+        }
+        if(target_type=='volume')
+          textNode3 = document.createTextNode("$ " + Math.round(summary_metric_json["Optimized CPA/ROI"]));
+        else
+          textNode3 = document.createTextNode(Math.round(summary_metric_json["Optimized CPA/ROI"]));
         td3.appendChild(textNode3);
 
         // appending the table row
-        tableRow.appendChild(td1);
-        tableRow.appendChild(td2);
-        tableRow.appendChild(td3);
+        tableRow1.appendChild(td1);
+        tableRow2.appendChild(td2);
+        tableRow3.appendChild(td3);
 
-        table_body_optimizer_summary_metric.appendChild(tableRow);
+        //table_body_optimizer_summary_metric.appendChild(tableRow);
       }
       {% comment %} Start : Populate Table  1 {% endcomment %}
       function populate_table_1(json_table_1_data, constraint_type){
@@ -2481,7 +2507,7 @@
     function populate_grouped_target_bar_chart(dict_target_chart_data){
       console.log("populate_grouped_bar_chart")
       let canvasElement = document.getElementById("optimizer_target_bar_chart")
-      height = dict_donut_chart_data['dimension'].length*10;
+      height = "80";
       width = "80";
       ctx = resizeCanvas(canvasElement, width, height);
       let xValues = dict_target_chart_data['dimension']
@@ -2561,6 +2587,7 @@
               }
             }
           },
+          
         },
       }
       global_my_optimizer_target_bar_chart = new Chart(ctx, config);
@@ -2585,7 +2612,7 @@
       function populate_grouped_bar_chart(dict_donut_chart_data, constraint_type){
           console.log("populate_grouped_bar_chart")
           let canvasElement = document.getElementById("optimizer_bar_chart")
-          height = dict_donut_chart_data['dimension'].length*10
+          height = "80"
           width = "80"
           ctx = resizeCanvas(canvasElement, width, height)
           let xValues = dict_donut_chart_data['dimension']
