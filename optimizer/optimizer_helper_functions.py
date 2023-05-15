@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import math
 import copy
+from kneebow.rotor import Rotor
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -145,7 +146,7 @@ class optimizer_iterative:
         # Precision used for optimization
         self.precision = 1e-0
         # Max iterations used for optimization
-        self.max_iter = 50000
+        self.max_iter = 500000
         
 
     def s_curve_hill(self, X, a, b, c):
@@ -451,6 +452,299 @@ class optimizer_iterative:
             totalReturn[dim] = self.s_curve_hill(newSpendVec[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
         return totalReturn, newImpVec
     
+
+    def get_s_curves(self, dimension_bound, df_grp):
+    
+        dimList = list({dim for dim, value in self.d_param.items() if (value['param a']>1.2)})
+        
+        dimListFiltered_v1 = []
+        dimScurveWeights = {}
+
+        for dim in dimList:
+            dim_metric = 0
+            if self.use_impression:
+                dim_metric = (dimension_bound[dim][1]*1000)/dimension_bound[dim][2]
+                dimConv = self.s_curve_hill(dim_metric, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
+                dim_metric = dim_metric/1000
+            else:
+                dim_metric = dimension_bound[dim][1]
+                dimConv = self.s_curve_hill(dim_metric, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
+            
+            if (dimConv>=1):
+                dimListFiltered_v1 = dimListFiltered_v1 + [dim]
+                dimScurveWeights[dim] = [dim_metric, dimConv, (dimConv/dim_metric)]
+                
+        if self.use_impression:
+            dimListFiltered_v2 = list({dim for dim in dimListFiltered_v1 if (self.d_param[dim]['param b']>(dimension_bound[dim][0]*1000)/dimension_bound[dim][2])})
+        else:
+            dimListFiltered_v2 = list({dim for dim in dimListFiltered_v1 if (self.d_param[dim]['param b']>dimension_bound[dim][0])})
+        
+        dimListFiltered = sorted(dimListFiltered_v2, key=lambda dim: dimScurveWeights[dim][2], reverse=True)
+
+        ScurveElbowDim = {}
+        ScurveElbowDim_temp = {}
+        for dim in dimListFiltered:
+            if self.use_impression:
+                df_temp = df_grp[df_grp['dimension']==dim][['impression', 'predictions']].sort_values(by='impression').reset_index(drop=True)
+                data = df_temp[df_temp['impression']<self.d_param[dim]['param b']].reset_index(drop=True).values.tolist()
+            else:
+                df_temp = df_grp[df_grp['dimension']==dim][['spend', 'predictions']].sort_values(by='spend').reset_index(drop=True)
+                data = df_temp[df_temp['spend']<self.d_param[dim]['param b']].reset_index(drop=True).values.tolist()
+            rotor = Rotor()
+            rotor.fit_rotate(data)
+            elbow_index = rotor.get_elbow_index()
+            ScurveElbowDim[dim] = data[elbow_index]
+            min_bnd = int(ScurveElbowDim[dim][0]*0.75)
+            max_bnd = int(ScurveElbowDim[dim][0]*1.25)
+            ScurveElbowDim_temp[dim] = data[elbow_index]
+            counter = int((max_bnd-min_bnd)/25)
+            if counter < 1:
+                counter = 1
+            for i in range(min_bnd, max_bnd+1, counter):
+                target = self.s_curve_hill(i, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
+                if self.use_impression:
+                    df_temp = df_temp.append({'impression':i , 'predictions' : target}, ignore_index=True).reset_index(drop=True)
+                else:
+                    df_temp = df_temp.append({'spend':i , 'predictions' : target}, ignore_index=True).reset_index(drop=True)
+            if self.use_impression:
+                df_temp = df_temp.sort_values(by='impression').reset_index(drop=True)
+                data = df_temp[df_temp['impression']<self.d_param[dim]['param b']].reset_index(drop=True).values.tolist()
+            else:
+                df_temp = df_temp.sort_values(by='spend').reset_index(drop=True)
+                data = df_temp[df_temp['spend']<self.d_param[dim]['param b']].reset_index(drop=True).values.tolist()
+            rotor = Rotor()
+            rotor.fit_rotate(data)
+            elbow_index = rotor.get_elbow_index()
+            ScurveElbowDim[dim] = data[elbow_index]
+        # print('Scurve Elbow before: ',ScurveElbowDim_temp)
+        # print('Scurve Elbow after: ',ScurveElbowDim)
+        # print('Weights: ',dimScurveWeights)
+        
+        return dimListFiltered, dimScurveWeights, ScurveElbowDim
+     
+    
+    def adjust_conversions(self, newSpendVec, totalReturn, dimension_bound, budgetGoal, dimScurveList, ScurveElbowDim, dimAdjustConversionPrevious, grouped_dimension_bound, newImpVec):
+    
+        dimCounter = dimScurveList
+
+        dimScurveAllocationList = []
+        dimAdjustConversion = []
+        dimNormalSwapList = []
+        dimScurveSwapList =[]
+        i = 0
+        # print("#####Before reinitialization: ",newSpendVec,"#####",totalReturn)
+        while (i < len(dimCounter)):
+            dimCheck = dimCounter[i]
+            i = i + 1
+            # print("Mudit", dimCheck)
+
+            dimSpend = newSpendVec[dimCheck]
+            dimConversion = totalReturn[dimCheck]
+            
+            dimCheckSpend = {}
+            dimCheckConversion = {}
+
+            if self.is_group_dimension_selected == True:
+                subDimSpend, groupSpendConstraint = self.get_grouped_dimension_constraint(grouped_dimension_bound, dimCheck, newSpendVec)              
+
+            if self.use_impression:
+
+                dimImpression = newImpVec[dimCheck]
+                dimCheckImpression = {}
+
+                # dimCheckList = list({dim for dim, value in self.d_param.items() if ((newImpVec[dim]>dimImpression) and (newImpVec[dim]>((dimension_bound[dim][0]*1000)/dimension_bound[dimCheck][2])))})
+                # dimCheckList = sorted(dimCheckList, key=lambda dim: newImpVec[dim], reverse=True)
+                dimCheckList = list({dim for dim, value in self.d_param.items() if ((newSpendVec[dim]>dimSpend) and (newSpendVec[dim]>dimension_bound[dim][0]))})
+                dimCheckList = sorted(dimCheckList, key=lambda dim: newSpendVec[dim], reverse=True)
+
+                for dim_idx in dimCheckList:
+                    dimSpendItr = newSpendVec[dim_idx]
+                    dimImpressionItr = ((dimSpendItr*1000)/(dimension_bound[dimCheck][2]))
+                    if ((dimImpressionItr>=((dimension_bound[dimCheck][0]*1000)/dimension_bound[dimCheck][2])) and (dimImpressionItr<=((dimension_bound[dimCheck][1]*1000)/dimension_bound[dimCheck][2]))):
+                        tempImp = dimImpressionItr
+                    elif (dimImpressionItr>=((dimension_bound[dimCheck][1]*1000)/dimension_bound[dimCheck][2])):
+                        tempImp = (dimension_bound[dimCheck][1]*1000)/dimension_bound[dimCheck][2]
+                    else:
+                        continue
+
+                    tempSpend = (tempImp*dimension_bound[dimCheck][2])/1000
+
+                    if self.is_group_dimension_selected == True:
+                        groupSpendAdjust = subDimSpend - dimSpend + tempSpend
+                        if (groupSpendAdjust<=groupSpendConstraint):
+                            tempSpend = tempSpend
+                            tempImp = tempImp
+                        elif((subDimSpend<groupSpendConstraint) & (groupSpendAdjust>groupSpendConstraint)):
+                            if(dim_idx in grouped_dimension_bound[dimCheck]['dimension']):
+                                tempSpend = tempSpend
+                                tempImp = tempImp
+                            elif((groupSpendConstraint-subDimSpend)>dimSpend):
+                                tempSpend = groupSpendConstraint-subDimSpend
+                                tempImp = ((tempSpend*1000)/(dimension_bound[dimCheck][2]))
+                            else:
+                                continue
+                        else:
+                            continue
+
+                    tempConv = self.s_curve_hill(tempImp, self.d_param[dimCheck]["param a"], self.d_param[dimCheck]["param b"], self.d_param[dimCheck]["param c"])
+
+                    if (tempConv > dimConversion) and (round(tempConv) >= 1):
+                        if ((tempConv-dimConversion)/tempConv)>0.01:
+                            dimCheckSpend[dim_idx] = tempSpend
+                            dimCheckConversion[dim_idx] = tempConv
+                            dimCheckImpression[dim_idx] = tempImp
+                        else:
+                            continue
+                    else:
+                        continue
+                                            
+                    adjustSpendSwap = dimSpend + (newSpendVec[dim_idx] - dimCheckSpend[dim_idx])
+                    # print(dimSpend," ",newSpendVec[dim_idx]," ",dimCheckSpend[dim_idx])
+                    adjustImpressionSwap = (adjustSpendSwap*1000)/dimension_bound[dim_idx][2]
+                    adjustReturnSwap = self.s_curve_hill(adjustImpressionSwap, self.d_param[dim_idx]["param a"], self.d_param[dim_idx]["param b"], self.d_param[dim_idx]["param c"])
+                    
+                    if (adjustSpendSwap<dimension_bound[dim_idx][0]):
+                        if (budgetGoal>=(sum(newSpendVec.values())+dimension_bound[dim_idx][0]-adjustSpendSwap)):
+                            adjustSpendSwap = dimension_bound[dim_idx][0]
+                            adjustImpressionSwap = (adjustSpendSwap*1000)/dimension_bound[dim_idx][2]
+                            adjustReturnSwap = self.s_curve_hill(adjustImpressionSwap, self.d_param[dim_idx]["param a"], self.d_param[dim_idx]["param b"], self.d_param[dim_idx]["param c"])
+                        else:
+                            continue
+                    elif (adjustSpendSwap>dimension_bound[dim_idx][1]):
+                        adjustSpendSwap = dimension_bound[dim_idx][1]
+                        adjustImpressionSwap = (adjustSpendSwap*1000)/dimension_bound[dim_idx][2]
+                        adjustReturnSwap = self.s_curve_hill(adjustImpressionSwap, self.d_param[dim_idx]["param a"], self.d_param[dim_idx]["param b"], self.d_param[dim_idx]["param c"])
+
+                    if self.is_group_dimension_selected == True:
+                        subDimSpendSwap, groupSpendConstraintSwap = self.get_grouped_dimension_constraint(grouped_dimension_bound, dim_idx, newSpendVec)
+                        groupSpendAdjustSwap = subDimSpendSwap - newSpendVec[dim_idx] + adjustSpendSwap
+                        if (groupSpendAdjustSwap<=groupSpendConstraintSwap):
+                            adjustSpendSwap = adjustSpendSwap
+                            adjustImpressionSwap = adjustImpressionSwap
+                            adjustReturnSwap = adjustReturnSwap
+                        elif((subDimSpendSwap<groupSpendConstraintSwap) & (groupSpendAdjustSwap>groupSpendConstraintSwap)):
+                            if(dim_idx in grouped_dimension_bound[dimCheck]['dimension']):
+                                adjustSpendSwap = adjustSpendSwap
+                                adjustImpressionSwap = adjustImpressionSwap
+                                adjustReturnSwap = adjustReturnSwap
+                            else:
+                                adjustSpendSwap = groupSpendConstraintSwap-subDimSpendSwap
+                                adjustImpressionSwap = ((adjustSpendSwap*1000)/(dimension_bound[dim_idx][2]))
+                                adjustReturnSwap = self.s_curve_hill(adjustImpressionSwap, self.d_param[dim_idx]["param a"], self.d_param[dim_idx]["param b"], self.d_param[dim_idx]["param c"])
+                        else:
+                            continue
+
+                    if (dimConversion+totalReturn[dim_idx])<(adjustReturnSwap+dimCheckConversion[dim_idx]):
+                        newSpendVec[dim_idx] = adjustSpendSwap
+                        newImpVec[dim_idx] = adjustImpressionSwap
+                        totalReturn[dim_idx] = adjustReturnSwap
+                        newSpendVec[dimCheck] = dimCheckSpend[dim_idx]
+                        newImpVec[dimCheck] = dimCheckImpression[dim_idx]
+                        totalReturn[dimCheck] = dimCheckConversion[dim_idx]
+                        # print("Swapped ",dim_idx," ",dimCheck)
+                        dimNormalSwapList = dimNormalSwapList + [dim_idx]
+                        dimScurveSwapList = dimScurveSwapList + [dimCheck]
+                        if (dimCheck in dimScurveList) and (newImpVec[dimCheck]>=ScurveElbowDim[dimCheck][0]):
+                            dimScurveAllocationList = dimScurveAllocationList + [dimCheck]
+                        break
+
+            else:
+                dimCheckList = list({dim for dim, value in self.d_param.items() if ((newSpendVec[dim]>dimSpend) and (newSpendVec[dim]>dimension_bound[dim][0]))})
+                dimCheckList = sorted(dimCheckList, key=lambda dim: newSpendVec[dim], reverse=True)
+
+                for dim_idx in dimCheckList:
+                    dimSpendItr = newSpendVec[dim_idx]
+                    if ((dimSpendItr>=dimension_bound[dimCheck][0]) and (dimSpendItr<=dimension_bound[dimCheck][1])):
+                        tempSpend = dimSpendItr
+                    elif (dimSpendItr>=dimension_bound[dimCheck][1]):
+                        tempSpend = dimension_bound[dimCheck][1]
+                    else:
+                        continue
+
+                    if self.is_group_dimension_selected == True:
+                        groupSpendAdjust = subDimSpend - dimSpend + tempSpend
+                        if (groupSpendAdjust<=groupSpendConstraint):
+                            tempSpend = tempSpend
+                        elif((subDimSpend<groupSpendConstraint) & (groupSpendAdjust>groupSpendConstraint)):
+                            if(dim_idx in grouped_dimension_bound[dimCheck]['dimension']):
+                                tempSpend = tempSpend
+                            elif((groupSpendConstraint-subDimSpend)>dimSpend):
+                                tempSpend = groupSpendConstraint-subDimSpend
+                            else:
+                                continue
+                        else:
+                            continue
+
+                    tempConv = self.s_curve_hill(tempSpend, self.d_param[dimCheck]["param a"], self.d_param[dimCheck]["param b"], self.d_param[dimCheck]["param c"])
+                    if (tempConv > dimConversion) and (round(tempConv) >= 1):
+                        if ((tempConv-dimConversion)/tempConv)>0.01:
+                            dimCheckSpend[dim_idx] = tempSpend
+                            dimCheckConversion[dim_idx] = tempConv
+                        else:
+                            continue
+                    else:
+                        continue
+                    
+                    adjustSpendSwap = dimSpend + (newSpendVec[dim_idx] - dimCheckSpend[dim_idx])
+                    adjustReturnSwap = self.s_curve_hill(adjustSpendSwap, self.d_param[dim_idx]["param a"], self.d_param[dim_idx]["param b"], self.d_param[dim_idx]["param c"])                        
+                    
+                    if (adjustSpendSwap<dimension_bound[dim_idx][0]):
+                        if (budgetGoal>=(sum(newSpendVec.values())+dimension_bound[dim_idx][0]-dimSpend)):
+                            adjustSpendSwap = dimension_bound[dim_idx][0]
+                            adjustReturnSwap = self.s_curve_hill(adjustSpendSwap, self.d_param[dim_idx]["param a"], self.d_param[dim_idx]["param b"], self.d_param[dim_idx]["param c"])
+                        else:
+                            continue
+                    elif (adjustSpendSwap>dimension_bound[dim_idx][1]):
+                            adjustSpendSwap = dimension_bound[dim_idx][1]
+                            adjustReturnSwap = self.s_curve_hill(adjustSpendSwap, self.d_param[dim_idx]["param a"], self.d_param[dim_idx]["param b"], self.d_param[dim_idx]["param c"])
+
+                    if self.is_group_dimension_selected == True:
+                        subDimSpendSwap, groupSpendConstraintSwap = self.get_grouped_dimension_constraint(grouped_dimension_bound, dim_idx, newSpendVec)
+                        groupSpendAdjustSwap = subDimSpendSwap - newSpendVec[dim_idx] + adjustSpendSwap
+                        if (groupSpendAdjustSwap<=groupSpendConstraintSwap):
+                            adjustSpendSwap = adjustSpendSwap
+                            adjustReturnSwap = adjustReturnSwap
+                        elif((subDimSpendSwap<groupSpendConstraintSwap) & (groupSpendAdjustSwap>groupSpendConstraintSwap)):
+                            if(dim_idx in grouped_dimension_bound[dimCheck]['dimension']):
+                                adjustSpendSwap = adjustSpendSwap
+                                adjustReturnSwap = adjustReturnSwap
+                            else:
+                                adjustSpendSwap = groupSpendConstraintSwap-subDimSpendSwap
+                                adjustReturnSwap = self.s_curve_hill(adjustSpendSwap, self.d_param[dim_idx]["param a"], self.d_param[dim_idx]["param b"], self.d_param[dim_idx]["param c"])
+                        else:
+                            continue
+
+                    if (dimConversion+totalReturn[dim_idx])<(adjustReturnSwap+dimCheckConversion[dim_idx]):
+                        newSpendVec[dim_idx] = adjustSpendSwap
+                        totalReturn[dim_idx] = adjustReturnSwap
+                        newSpendVec[dimCheck] = dimCheckSpend[dim_idx]
+                        totalReturn[dimCheck] = dimCheckConversion[dim_idx]
+                        # print("Swapped ",dim_idx," ",dimCheck)
+                        dimNormalSwapList = dimNormalSwapList + [dim_idx]
+                        dimScurveSwapList = dimScurveSwapList + [dimCheck]
+                        if (dimCheck in dimScurveList) and (newSpendVec[dimCheck]>=ScurveElbowDim[dimCheck][0]):
+                            dimScurveAllocationList = dimScurveAllocationList + [dimCheck]
+                        break
+        
+        if dimScurveSwapList:
+            dimAdjustConversion = dimScurveSwapList + dimNormalSwapList
+            dimMaxAdjust = max(list({value for dim, value in newSpendVec.items() if (dim in dimScurveSwapList)}))
+            # print("Value: ",dimMaxAdjust)
+            
+            # print("Before reinitialization: ",newSpendVec)
+            for dim in newSpendVec:
+                if dim in dimAdjustConversion :
+                    continue
+                elif dim in dimAdjustConversionPrevious:
+                    continue
+                elif newSpendVec[dim]>dimMaxAdjust:
+                    continue
+                newSpendVec[dim] = dimension_bound[dim][0]
+                totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound, dim, newImpVec)
+            # print("After reinitialization: ",newSpendVec,"#####",totalReturn)
+                
+        return newSpendVec, totalReturn, newImpVec, set(dimScurveAllocationList)
+    
     
     def allocate_remaining_budget(self, budgetGoal, newSpendVec, dimension_bound_actual, totalReturn, grouped_dimension_bound, iteration, msg, newImpVec):
         """allocate remaining budget when total maximum possible conversion have been allocated
@@ -499,6 +793,7 @@ class optimizer_iterative:
             for dim in allocation_dim_list:
                 incrementProportion = 0
                 budgetRemainDim = 0
+
                 if (check_noSpendDim == True):
                     if self.use_impression:
                         allocationSpendVec[dim] = ((self.d_param[dim][self.const_var]*self.d_param[dim]['cpm'])/1000)/agg_constSpend
@@ -540,6 +835,7 @@ class optimizer_iterative:
             
             if (iteration>self.max_iter):
                 msg = 4002
+                # print("#####Iteration: ",iteration)
                 raise Exception("Optimal solution not found")
 
         return newSpendVec, totalReturn, msg, newImpVec
@@ -659,11 +955,11 @@ class optimizer_iterative:
                 budgetDecrement = budgetDecrement + (newSpendVec[dim] - dimension_bound_actual[dim][0])
                 newSpendVec[dim] = dimension_bound_actual[dim][0]
                 totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, newImpVec)
-    
+
         return newSpendVec, totalReturn, newImpVec
 
 
-    def budget_optimize(self, increment_factor, oldSpendVec, oldReturn, budgetGoal, dimension_bound, dimension_bound_actual, grouped_dimension_bound, oldImpVec):
+    def budget_optimize(self, increment_factor, oldSpendVec, oldReturn, budgetGoal, dimension_bound, dimension_bound_actual, grouped_dimension_bound, dimScurveList, dimScurveWeights, ScurveElbowDim, oldImpVec):
         """function for calculating budget when metric as spend is selected
         
         Returns:
@@ -691,6 +987,10 @@ class optimizer_iterative:
         iteration = 0
         msg = 4001
         check_noConversion = 0
+        check_budget_per = 0.05
+        dimScurveCheck = dimScurveList
+        dimAdjustConversionPrevious = []
+        # print(dimScurveCheck)
 
         while(budgetGoal > sum(newSpendVec.values())):
             # print(sum(newSpendVec.values()))
@@ -708,9 +1008,19 @@ class optimizer_iterative:
 
              # If incremental conversion is not present
             else:
-                newSpendVec, totalReturn, msg, newImpVec = self.allocate_remaining_budget(budgetGoal, newSpendVec, dimension_bound_actual, totalReturn, grouped_dimension_bound, iteration, msg, newImpVec)
-                resultIter_df = resultIter_df.append({'spend':sum(newSpendVec.values()) , 'impression': sum(newImpVec.values()), 'return' : sum(totalReturn.values())}, ignore_index=True).reset_index(drop=True)
-                break
+                budgetUntilized_temp = sum(newSpendVec.values())
+                if dimScurveCheck:
+                    newSpendVec, totalReturn, newImpVec, dimScurveReturn = self.adjust_conversions(newSpendVec, totalReturn, dimension_bound, budgetGoal, dimScurveCheck, ScurveElbowDim, dimAdjustConversionPrevious, grouped_dimension_bound, newImpVec)
+                    dimScurveCheck = list(set(dimScurveCheck).difference(dimScurveReturn))
+                    dimScurveCheck = sorted(dimScurveCheck, key=lambda dim: dimScurveWeights[dim][2], reverse=True)
+                    dimAdjustConversionPrevious = list(set(dimAdjustConversionPrevious + dimScurveReturn))
+                    # print(dimScurveReturn)
+                    # print("remaining ",dimScurveCheck)
+                    # print()
+                if((math.isclose(sum(newSpendVec.values()), budgetUntilized_temp, abs_tol=self.precision)) | (sum(newSpendVec.values()) > budgetUntilized_temp)):
+                    newSpendVec, totalReturn, msg, newImpVec = self.allocate_remaining_budget(budgetGoal, newSpendVec, dimension_bound_actual, totalReturn, grouped_dimension_bound, iteration, msg, newImpVec)
+                    resultIter_df = resultIter_df.append({'spend':sum(newSpendVec.values()) , 'impression': sum(newImpVec.values()), 'return' : sum(totalReturn.values())}, ignore_index=True).reset_index(drop=True)
+                    break
                 
             # If budget goal is reached, check for dimension with no conversion but some budget is allocated during inital spend allocation
             if(math.isclose(sum(newSpendVec.values()), budgetGoal, abs_tol=self.precision)):
@@ -730,6 +1040,21 @@ class optimizer_iterative:
                 increment = budgetGoal - sum(newSpendVec.values())
                 resultIter_df = resultIter_df.append({'spend':sum(newSpendVec.values()) , 'impression': sum(newImpVec.values()), 'return' : sum(totalReturn.values())}, ignore_index=True).reset_index(drop=True)
 
+            if(sum(newSpendVec.values())/budgetGoal>=check_budget_per) and (dimScurveCheck):
+                # print(sum(newSpendVec.values())/budgetGoal," ",check_budget_per)
+                newSpendVec, totalReturn, newImpVec, dimScurveReturn = self.adjust_conversions(newSpendVec, totalReturn, dimension_bound, budgetGoal, dimScurveCheck, ScurveElbowDim, dimAdjustConversionPrevious, grouped_dimension_bound, newImpVec)
+                dimScurveCheck = list(set(dimScurveCheck).difference(dimScurveReturn))
+                dimScurveCheck = sorted(dimScurveCheck, key=lambda dim: dimScurveWeights[dim][2], reverse=True)
+                dimAdjustConversionPrevious = list(set(dimAdjustConversionPrevious + list(dimScurveReturn)))
+                # print("#####Iteration: ",iteration)
+                # print(dimScurveReturn)
+                # print("remaining ",dimScurveCheck)
+                # print()
+                budget_per = (sum(newSpendVec.values())/budgetGoal)*100
+                check_budget_per = (math.ceil(budget_per/5)*5)/100
+                if check_budget_per>=0.95:
+                    check_budget_per=0.95
+            
             # If max iteration is reached
             if(iteration > self.max_iter):
                 msg = 4002
@@ -748,8 +1073,65 @@ class optimizer_iterative:
             result_df = pd.merge(result_df, imp_return_df, on='dimension', how='outer')
         else:
             resultIter_df=resultIter_df[['spend', 'return']]
+
+        # print("#####Iteration: ",iteration)
                 
         return result_df, resultIter_df, msg
+    
+
+    def check_initialization_required(self, increment, df_grp, dimension_bound, dimension_bound_actual, grouped_dimension_bound, budget_per_day):
+        """Initialization to avoid local minima problem-
+                Budget: Minimum non-zero spend based on historic data is intialized
+                Target, impression (if selected): Respective target, impression based on spend is initialized 
+                Note: If sum initailized spend exceeds budget per day then initialization is done based on user constarints
+            
+        Returns:
+            Dictionay - 
+                newSpendVec: Budget allocated to each dimension
+                totalReturn: Conversion for allocated budget for each dimension
+                newImpVec: Impression allocated to each dimension if applicable otherwise null value is allocated
+        """
+        
+        if self.use_impression:
+            oldSpendVec_initial, oldImpVec_initial = self.ini_start_value(df_grp, dimension_bound, increment, grouped_dimension_bound)
+            oldReturn_initial = self.initial_conversion(oldImpVec_initial)
+            initial_investment = sum(oldReturn_initial.values())
+            
+            oldSpendVec_input = {dim:value[0] for dim, value in dimension_bound.items()}
+            oldImpVec_input = {dim:((oldSpendVec_input[dim]*1000)/(dimension_bound[dim][2])) for dim in self.dimension_names}
+            oldReturn_input = {dim:(self.s_curve_hill(oldImpVec_input[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])) for dim in self.dimension_names}
+            
+            inflection_spend_dim = {dim:((self.d_param[dim]['param b']*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
+            const_spend_dim = {dim:((self.d_param[dim][self.const_var]*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
+            threshold = np.mean(list({const_spend_dim[dim] for dim in self.dimension_names if inflection_spend_dim[dim] > increment }))              
+            
+            # if((initial_investment<=budget_per_day) and (budget_per_day>threshold)):
+            #     oldSpendVec = copy.deepcopy(oldSpendVec_initial)
+            #     oldImpVec = copy.deepcopy(oldImpVec_initial)
+            #     oldReturn = copy.deepcopy(oldReturn_initial)
+            # else:
+            oldSpendVec = copy.deepcopy(oldSpendVec_input)
+            oldImpVec = copy.deepcopy(oldImpVec_input)
+            oldReturn = copy.deepcopy(oldReturn_input)
+                
+        else:
+            oldSpendVec_initial = self.ini_start_value(df_grp, dimension_bound, increment, grouped_dimension_bound)
+            oldReturn_initial = self.initial_conversion(oldSpendVec_initial)
+            initial_investment = sum(oldSpendVec_initial.values())
+            
+            oldSpendVec_input = {dim:value[0] for dim, value in dimension_bound.items()}
+            oldReturn_input = {dim:(self.s_curve_hill(oldSpendVec_input[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])) for dim in self.dimension_names}
+            threshold = np.mean(list({value[self.const_var] for dim, value in self.d_param.items() if value['param b'] > increment }))
+
+            # if((initial_investment<=budget_per_day) and (budget_per_day>threshold)):
+            #     oldSpendVec = copy.deepcopy(oldSpendVec_initial)
+            #     oldReturn = copy.deepcopy(oldReturn_initial)
+            # else:
+            oldSpendVec = copy.deepcopy(oldSpendVec_input)
+            oldReturn = copy.deepcopy(oldReturn_input)
+            oldImpVec = None
+            
+        return oldSpendVec, oldReturn, oldImpVec
     
         
     def lift_cal(self, result_df, budget_per_day, df_spend_dis, days, dimension_bound):
@@ -883,62 +1265,7 @@ class optimizer_iterative:
             df_res.loc[df_res[i].values != None, i]=df_res.loc[df_res[i].values != None, i].astype(float).round().astype(int)
 
         return df_res, summary_metrics_dic
-        
-    
-    def check_initialization_required(self, increment, df_grp, dimension_bound, dimension_bound_actual, grouped_dimension_bound, budget_per_day):
-        """Initialization to avoid local minima problem-
-                Budget: Minimum non-zero spend based on historic data is intialized
-                Target, impression (if selected): Respective target, impression based on spend is initialized 
-                Note: If sum initailized spend exceeds budget per day then initialization is done based on user constarints
-            
-        Returns:
-            Dictionay - 
-                newSpendVec: Budget allocated to each dimension
-                totalReturn: Conversion for allocated budget for each dimension
-                newImpVec: Impression allocated to each dimension if applicable otherwise null value is allocated
-        """
-        
-        if self.use_impression:
-            oldSpendVec_initial, oldImpVec_initial = self.ini_start_value(df_grp, dimension_bound, increment, grouped_dimension_bound)
-            oldReturn_initial = self.initial_conversion(oldImpVec_initial)
-            initial_investment = sum(oldReturn_initial.values())
-            
-            oldSpendVec_input = {dim:value[0] for dim, value in dimension_bound.items()}
-            oldImpVec_input = {dim:((oldSpendVec_input[dim]*1000)/(dimension_bound[dim][2])) for dim in self.dimension_names}
-            oldReturn_input = {dim:(self.s_curve_hill(oldImpVec_input[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])) for dim in self.dimension_names}
-            
-            inflection_spend_dim = {dim:((self.d_param[dim]['param b']*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
-            const_spend_dim = {dim:((self.d_param[dim][self.const_var]*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
-            threshold = np.mean(list({const_spend_dim[dim] for dim in self.dimension_names if inflection_spend_dim[dim] > increment }))              
-            
-            if((initial_investment<=budget_per_day) and (budget_per_day>threshold)):
-                oldSpendVec = copy.deepcopy(oldSpendVec_initial)
-                oldImpVec = copy.deepcopy(oldImpVec_initial)
-                oldReturn = copy.deepcopy(oldReturn_initial)
-            else:
-                oldSpendVec = copy.deepcopy(oldSpendVec_input)
-                oldImpVec = copy.deepcopy(oldImpVec_input)
-                oldReturn = copy.deepcopy(oldReturn_input)
-                
-        else:
-            oldSpendVec_initial = self.ini_start_value(df_grp, dimension_bound, increment, grouped_dimension_bound)
-            oldReturn_initial = self.initial_conversion(oldSpendVec_initial)
-            initial_investment = sum(oldSpendVec_initial.values())
-            
-            oldSpendVec_input = {dim:value[0] for dim, value in dimension_bound.items()}
-            oldReturn_input = {dim:(self.s_curve_hill(oldSpendVec_input[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])) for dim in self.dimension_names}
-            threshold = np.mean(list({value[self.const_var] for dim, value in self.d_param.items() if value['param b'] > increment }))
-
-            if((initial_investment<=budget_per_day) and (budget_per_day>threshold)):
-                oldSpendVec = copy.deepcopy(oldSpendVec_initial)
-                oldReturn = copy.deepcopy(oldReturn_initial)
-            else:
-                oldSpendVec = copy.deepcopy(oldSpendVec_input)
-                oldReturn = copy.deepcopy(oldReturn_input)
-            oldImpVec = None
-            
-        return oldSpendVec, oldReturn, oldImpVec
-            
+                    
                 
     def execute(self, df_grp, budget, days, df_spend_dis, discard_json, dimension_bound, group_constraint, isolate_dim_list, lst_dim):
         """main function for calculating target conversion
@@ -988,17 +1315,19 @@ class optimizer_iterative:
         # Calculating increment budget for optimization
         increment = self.increment_factor(df_grp)
         
+        dimScurveList, dimScurveWeights, ScurveElbowDim = self.get_s_curves(dimension_bound, df_grp)
+
         """optimization process-
             Initialization if required
             Optimzation on budget and constarints
         """
         oldSpendVec, oldReturn, oldImpVec = self.check_initialization_required(increment, df_grp, dimension_bound, dimension_bound_actual, grouped_dimension_bound, budget_per_day)
         if self.use_impression:
-            result_df, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, oldImpVec)
+            result_df, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, dimScurveList, dimScurveWeights, ScurveElbowDim, oldImpVec)
             result_df=result_df[['dimension', 'spend', 'impression', 'return']]
             result_df[['spend', 'impression', 'return']]=result_df[['spend', 'impression', 'return']].round(2)
         else:
-            result_df, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, None)
+            result_df, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, dimScurveList, dimScurveWeights, ScurveElbowDim, None)
             result_df=result_df[['dimension', 'spend', 'return']]
             result_df[['spend', 'return']]=result_df[['spend', 'return']].round(2)
 
@@ -1013,6 +1342,7 @@ class optimizer_iterative:
 
 
 class optimizer_iterative_seasonality:
+    
     def __init__(self, df_param, constraint_type, target_type):
         """initialization
 
@@ -1048,10 +1378,10 @@ class optimizer_iterative_seasonality:
         # Precision used for optimization
         self.precision = 1e-0
         # Max iterations used for optimization
-        self.max_iter = 50000
+        self.max_iter = 500000
 
     
-    def s_curve_hill(
+    def s_curve_hill_seasonality(
         self,
         X,
         a,
@@ -1084,25 +1414,9 @@ class optimizer_iterative_seasonality:
             + mcoeff[9] * month[9]
             + mcoeff[10] * month[10]
         )
-        
+         
 
-    def s_curve_hill_(self, X, a, b, c):
-        """This method performs the scurve function on param, X and
-        Returns the outcome as a varible called y"""
-        return c * (X ** a / (X ** a + b ** a))
-    
-
-    def s_curve_hill_inv(self, Y, a, b, c):
-        """This method performs the inverse of scurve function on param, target and
-        Returns the outcome as investment"""
-        Y = (Y-(self.precision/100)) if(Y==c) else Y
-        if (Y<=0):
-            return 0
-        else:
-            return ((Y * (b ** a))/(c - Y)) ** (1/a)
-
-
-    def s_curve_hill_inv_seas(
+    def s_curve_hill_inv_seasonality(
         self,
         Y,
         a,
@@ -1138,6 +1452,22 @@ class optimizer_iterative_seasonality:
             return 0
         else:
             return ((Y_ * (b ** a))/(c - Y_)) ** (1/a)
+      
+
+    def s_curve_hill(self, X, a, b, c):
+        """This method performs the scurve function on param, X and
+        Returns the outcome as a varible called y"""
+        return c * (X ** a / (X ** a + b ** a))
+    
+    
+    def s_curve_hill_inv(self, Y, a, b, c):
+        """This method performs the inverse of scurve function on param, target and
+        Returns the outcome as investment"""
+        Y = (Y-(self.precision/100)) if(Y==c) else Y
+        if (Y<=0):
+            return 0
+        else:
+            return ((Y * (b ** a))/(c - Y)) ** (1/a)
     
     
     def dimension_bound_max_check(self, dimension_bound):
@@ -1161,11 +1491,11 @@ class optimizer_iterative_seasonality:
             # Geting budget for Max conversion possible and conversion for Max budget entered by user
             if self.use_impression:
                 dim_max_inp_imp=(dim_max_inp_budget * 1000) / dimension_bound[dim][2]
-                dim_max_inp_conversion=self.s_curve_hill_(dim_max_inp_imp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
+                dim_max_inp_conversion=self.s_curve_hill(dim_max_inp_imp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
                 dim_max_poss_imp=int(self.s_curve_hill_inv(dim_max_poss_conversion, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]))
                 dim_max_poss_budget=(dim_max_poss_imp * dimension_bound[dim][2])/1000
             else:
-                dim_max_inp_conversion=self.s_curve_hill_(dim_max_inp_budget, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
+                dim_max_inp_conversion=self.s_curve_hill(dim_max_inp_budget, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
                 dim_max_poss_budget=int(self.s_curve_hill_inv(dim_max_poss_conversion, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]))
             
             # Comparing max conversion/budget possible and max budget/conversion entered by user
@@ -1264,7 +1594,7 @@ class optimizer_iterative_seasonality:
                     oldSpendVec[dim]=input_start_spend
                 else:
                     oldSpendVec[dim]=start_value_spend
-        
+
         if self.is_group_dimension_selected == True:
             checked_dim_list = []
             for dim in self.dimension_names:
@@ -1277,7 +1607,6 @@ class optimizer_iterative_seasonality:
                     for sub_dim in sub_dim_list:
                         oldSpendVec[sub_dim] = dimension_bound[sub_dim][0]
                 checked_dim_list = checked_dim_list + sub_dim_list
-
                 
         if self.use_impression:
             return oldSpendVec, oldImpVec
@@ -1299,7 +1628,7 @@ class optimizer_iterative_seasonality:
         return increment
     
     
-    def initial_conversion(self, oldMetricVec, init_weekday, init_month):
+    def initial_conversion(self, oldMetricVec):
         """initialization of initial conversions for each dimension for initail slected metric (spend or impression)
         
         Returns:
@@ -1309,16 +1638,12 @@ class optimizer_iterative_seasonality:
         oldReturn = {}
         for dim in self.dimension_names:
             oldReturn[dim]=(self.s_curve_hill(oldMetricVec[dim],
-                                                self.d_param[dim]["param a"],
-                                                self.d_param[dim]["param b"],
-                                                self.d_param[dim]["param c"],
-                                                list(self.d_param[dim].values())[3:9],
-                                                list(self.d_param[dim].values())[9:20],
-                                                init_weekday,
-                                                init_month))
+                                          self.d_param[dim]["param a"],
+                                          self.d_param[dim]["param b"],
+                                          self.d_param[dim]["param c"]))
 
         return oldReturn
-
+    
 
     def get_grouped_dimension_constraint(self, grouped_dimension_bound, dim, newSpendVec):
         """Function to get allocated spend to sub-dimensions under a group and the group dimension's spend constarint
@@ -1333,9 +1658,9 @@ class optimizer_iterative_seasonality:
         for sub_dim in sub_dim_list:
             subDimSpend = subDimSpend + newSpendVec[sub_dim]
         return subDimSpend, grp_dim_const
-
     
-    def get_conversion_dimension(self, newSpendVec, dimension_bound, increment, grouped_dimension_bound, init_weekday, init_month, newImpVec):
+
+    def get_conversion_dimension(self, newSpendVec, dimension_bound, increment, grouped_dimension_bound, newImpVec):
         """Function to get dimension and their conversion for increment budget - to derive dimension having maximum conversion
         
         Returns:
@@ -1408,44 +1733,16 @@ class optimizer_iterative_seasonality:
             # check for increment return
             if self.use_impression:
                 newImpTemp = ((newSpendTemp*1000)/(dimension_bound[dim][2]))
-                incReturns[dim]=(self.s_curve_hill(newImpTemp,
-                                                    self.d_param[dim]["param a"],
-                                                    self.d_param[dim]["param b"],
-                                                    self.d_param[dim]["param c"],
-                                                    list(self.d_param[dim].values())[3:9],
-                                                    list(self.d_param[dim].values())[9:20],
-                                                    init_weekday,
-                                                    init_month)
-                            -  self.s_curve_hill(oldImpTemp,
-                                                    self.d_param[dim]["param a"],
-                                                    self.d_param[dim]["param b"],
-                                                    self.d_param[dim]["param c"],
-                                                    list(self.d_param[dim].values())[3:9],
-                                                    list(self.d_param[dim].values())[9:20],
-                                                    init_weekday,
-                                                    init_month))
+                incReturns[dim]=(self.s_curve_hill(newImpTemp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
+                            -  self.s_curve_hill(oldImpTemp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]))
             else:
-                incReturns[dim]=(self.s_curve_hill(newSpendTemp,
-                                                    self.d_param[dim]["param a"],
-                                                    self.d_param[dim]["param b"],
-                                                    self.d_param[dim]["param c"],
-                                                    list(self.d_param[dim].values())[3:9],
-                                                    list(self.d_param[dim].values())[9:20],
-                                                    init_weekday,
-                                                    init_month)
-                            -  self.s_curve_hill(oldSpendTemp,
-                                                    self.d_param[dim]["param a"],
-                                                    self.d_param[dim]["param b"],
-                                                    self.d_param[dim]["param c"],
-                                                    list(self.d_param[dim].values())[3:9],
-                                                    list(self.d_param[dim].values())[9:20],
-                                                    init_weekday,
-                                                    init_month))
-        
+                incReturns[dim]=(self.s_curve_hill(newSpendTemp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
+                            -  self.s_curve_hill(oldSpendTemp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]))  
+
         return incReturns, incBudget
         
         
-    def total_return(self, newSpendVec, totalReturn, dimension_bound, dim, init_weekday, init_month, newImpVec):
+    def total_return(self, newSpendVec, totalReturn, dimension_bound, dim, newImpVec):
         """calculate total spend based on spend or impression
         
         Returns:
@@ -1455,27 +1752,307 @@ class optimizer_iterative_seasonality:
         """
         if self.use_impression:
             newImpVec[dim] = ((newSpendVec[dim]*1000)/(dimension_bound[dim][2]))
-            totalReturn[dim] = self.s_curve_hill(newImpVec[dim],
-                                                    self.d_param[dim]["param a"],
-                                                    self.d_param[dim]["param b"],
-                                                    self.d_param[dim]["param c"],
-                                                    list(self.d_param[dim].values())[3:9],
-                                                    list(self.d_param[dim].values())[9:20],
-                                                    init_weekday,
-                                                    init_month)
+            totalReturn[dim] = self.s_curve_hill(newImpVec[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
         else:
-            totalReturn[dim] = self.s_curve_hill(newSpendVec[dim],
-                                                    self.d_param[dim]["param a"],
-                                                    self.d_param[dim]["param b"],
-                                                    self.d_param[dim]["param c"],
-                                                    list(self.d_param[dim].values())[3:9],
-                                                    list(self.d_param[dim].values())[9:20],
-                                                    init_weekday,
-                                                    init_month)
+            totalReturn[dim] = self.s_curve_hill(newSpendVec[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
         return totalReturn, newImpVec
     
+
+    def get_s_curves(self, dimension_bound, df_grp):
     
-    def allocate_remaining_budget(self, budgetGoal, newSpendVec, dimension_bound_actual, totalReturn, grouped_dimension_bound, iteration, msg, init_weekday, init_month, newImpVec):
+        dimList = list({dim for dim, value in self.d_param.items() if (value['param a']>1.2)})
+        
+        dimListFiltered_v1 = []
+        dimScurveWeights = {}
+
+        for dim in dimList:
+            dim_metric = 0
+            if self.use_impression:
+                dim_metric = (dimension_bound[dim][1]*1000)/dimension_bound[dim][2]
+                dimConv = self.s_curve_hill(dim_metric, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
+                dim_metric = dim_metric/1000
+            else:
+                dim_metric = dimension_bound[dim][1]
+                dimConv = self.s_curve_hill(dim_metric, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
+            
+            if (dimConv>=1):
+                dimListFiltered_v1 = dimListFiltered_v1 + [dim]
+                dimScurveWeights[dim] = [dim_metric, dimConv, (dimConv/dim_metric)]
+                
+        if self.use_impression:
+            dimListFiltered_v2 = list({dim for dim in dimListFiltered_v1 if (self.d_param[dim]['param b']>(dimension_bound[dim][0]*1000)/dimension_bound[dim][2])})
+        else:
+            dimListFiltered_v2 = list({dim for dim in dimListFiltered_v1 if (self.d_param[dim]['param b']>dimension_bound[dim][0])})
+        
+        dimListFiltered = sorted(dimListFiltered_v2, key=lambda dim: dimScurveWeights[dim][2], reverse=True)
+
+        ScurveElbowDim = {}
+        ScurveElbowDim_temp = {}
+        for dim in dimListFiltered:
+            if self.use_impression:
+                df_temp = df_grp[df_grp['dimension']==dim][['impression', 'predictions']].sort_values(by='impression').reset_index(drop=True)
+                data = df_temp[df_temp['impression']<self.d_param[dim]['param b']].reset_index(drop=True).values.tolist()
+            else:
+                df_temp = df_grp[df_grp['dimension']==dim][['spend', 'predictions']].sort_values(by='spend').reset_index(drop=True)
+                data = df_temp[df_temp['spend']<self.d_param[dim]['param b']].reset_index(drop=True).values.tolist()
+            rotor = Rotor()
+            rotor.fit_rotate(data)
+            elbow_index = rotor.get_elbow_index()
+            ScurveElbowDim[dim] = data[elbow_index]
+            min_bnd = int(ScurveElbowDim[dim][0]*0.75)
+            max_bnd = int(ScurveElbowDim[dim][0]*1.25)
+            ScurveElbowDim_temp[dim] = data[elbow_index]
+            # print(min_bnd, max_bnd+1, int((max_bnd-min_bnd)/50))
+            counter = int((max_bnd-min_bnd)/25)
+            if counter < 1:
+                counter = 1
+            for i in range(min_bnd, max_bnd+1, counter):
+                target = self.s_curve_hill(i, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
+                if self.use_impression:
+                    df_temp = df_temp.append({'impression':i , 'predictions' : target}, ignore_index=True).reset_index(drop=True)
+                else:
+                    df_temp = df_temp.append({'spend':i , 'predictions' : target}, ignore_index=True).reset_index(drop=True)
+            if self.use_impression:
+                df_temp = df_temp.sort_values(by='impression').reset_index(drop=True)
+                data = df_temp[df_temp['impression']<self.d_param[dim]['param b']].reset_index(drop=True).values.tolist()
+            else:
+                df_temp = df_temp.sort_values(by='spend').reset_index(drop=True)
+                data = df_temp[df_temp['spend']<self.d_param[dim]['param b']].reset_index(drop=True).values.tolist()
+            rotor = Rotor()
+            rotor.fit_rotate(data)
+            elbow_index = rotor.get_elbow_index()
+            ScurveElbowDim[dim] = data[elbow_index]
+        # print('Scurve Elbow before: ',ScurveElbowDim_temp)
+        # print('Scurve Elbow after: ',ScurveElbowDim)
+        # print('Weights: ',dimScurveWeights)
+        
+        return dimListFiltered, dimScurveWeights, ScurveElbowDim
+     
+    
+    def adjust_conversions(self, newSpendVec, totalReturn, dimension_bound, budgetGoal, dimScurveList, ScurveElbowDim, dimAdjustConversionPrevious, grouped_dimension_bound, newImpVec):
+    
+        dimCounter = dimScurveList
+
+        dimScurveAllocationList = []
+        dimAdjustConversion = []
+        dimNormalSwapList = []
+        dimScurveSwapList =[]
+        i = 0
+        # print("#####Before reinitialization: ",newSpendVec,"#####",totalReturn)
+        while (i < len(dimCounter)):
+            dimCheck = dimCounter[i]
+            i = i + 1
+            # print("Mudit", dimCheck)
+
+            dimSpend = newSpendVec[dimCheck]
+            dimConversion = totalReturn[dimCheck]
+            
+            dimCheckSpend = {}
+            dimCheckConversion = {}
+
+            if self.is_group_dimension_selected == True:
+                subDimSpend, groupSpendConstraint = self.get_grouped_dimension_constraint(grouped_dimension_bound, dimCheck, newSpendVec)              
+
+            if self.use_impression:
+
+                dimImpression = newImpVec[dimCheck]
+                dimCheckImpression = {}
+
+                # dimCheckList = list({dim for dim, value in self.d_param.items() if ((newImpVec[dim]>dimImpression) and (newImpVec[dim]>((dimension_bound[dim][0]*1000)/dimension_bound[dimCheck][2])))})
+                # dimCheckList = sorted(dimCheckList, key=lambda dim: newImpVec[dim], reverse=True)
+                dimCheckList = list({dim for dim, value in self.d_param.items() if ((newSpendVec[dim]>dimSpend) and (newSpendVec[dim]>dimension_bound[dim][0]))})
+                dimCheckList = sorted(dimCheckList, key=lambda dim: newSpendVec[dim], reverse=True)
+
+                for dim_idx in dimCheckList:
+                    dimSpendItr = newSpendVec[dim_idx]
+                    dimImpressionItr = ((dimSpendItr*1000)/(dimension_bound[dimCheck][2]))
+                    if ((dimImpressionItr>=((dimension_bound[dimCheck][0]*1000)/dimension_bound[dimCheck][2])) and (dimImpressionItr<=((dimension_bound[dimCheck][1]*1000)/dimension_bound[dimCheck][2]))):
+                        tempImp = dimImpressionItr
+                    elif (dimImpressionItr>=((dimension_bound[dimCheck][1]*1000)/dimension_bound[dimCheck][2])):
+                        tempImp = (dimension_bound[dimCheck][1]*1000)/dimension_bound[dimCheck][2]
+                    else:
+                        continue
+
+                    tempSpend = (tempImp*dimension_bound[dimCheck][2])/1000
+
+                    if self.is_group_dimension_selected == True:
+                        groupSpendAdjust = subDimSpend - dimSpend + tempSpend
+                        if (groupSpendAdjust<=groupSpendConstraint):
+                            tempSpend = tempSpend
+                            tempImp = tempImp
+                        elif((subDimSpend<groupSpendConstraint) & (groupSpendAdjust>groupSpendConstraint)):
+                            if(dim_idx in grouped_dimension_bound[dimCheck]['dimension']):
+                                tempSpend = tempSpend
+                                tempImp = tempImp
+                            elif((groupSpendConstraint-subDimSpend)>dimSpend):
+                                tempSpend = groupSpendConstraint-subDimSpend
+                                tempImp = ((tempSpend*1000)/(dimension_bound[dimCheck][2]))
+                            else:
+                                continue
+                        else:
+                            continue
+
+                    tempConv = self.s_curve_hill(tempImp, self.d_param[dimCheck]["param a"], self.d_param[dimCheck]["param b"], self.d_param[dimCheck]["param c"])
+
+                    if (tempConv > dimConversion) and (round(tempConv) >= 1):
+                        if ((tempConv-dimConversion)/tempConv)>0.01:
+                            dimCheckSpend[dim_idx] = tempSpend
+                            dimCheckConversion[dim_idx] = tempConv
+                            dimCheckImpression[dim_idx] = tempImp
+                        else:
+                            continue
+                    else:
+                        continue
+                                            
+                    adjustSpendSwap = dimSpend + (newSpendVec[dim_idx] - dimCheckSpend[dim_idx])
+                    # print(dimSpend," ",newSpendVec[dim_idx]," ",dimCheckSpend[dim_idx])
+                    adjustImpressionSwap = (adjustSpendSwap*1000)/dimension_bound[dim_idx][2]
+                    adjustReturnSwap = self.s_curve_hill(adjustImpressionSwap, self.d_param[dim_idx]["param a"], self.d_param[dim_idx]["param b"], self.d_param[dim_idx]["param c"])
+                    
+                    if (adjustSpendSwap<dimension_bound[dim_idx][0]):
+                        if (budgetGoal>=(sum(newSpendVec.values())+dimension_bound[dim_idx][0]-adjustSpendSwap)):
+                            adjustSpendSwap = dimension_bound[dim_idx][0]
+                            adjustImpressionSwap = (adjustSpendSwap*1000)/dimension_bound[dim_idx][2]
+                            adjustReturnSwap = self.s_curve_hill(adjustImpressionSwap, self.d_param[dim_idx]["param a"], self.d_param[dim_idx]["param b"], self.d_param[dim_idx]["param c"])
+                        else:
+                            continue
+                    elif (adjustSpendSwap>dimension_bound[dim_idx][1]):
+                        adjustSpendSwap = dimension_bound[dim_idx][1]
+                        adjustImpressionSwap = (adjustSpendSwap*1000)/dimension_bound[dim_idx][2]
+                        adjustReturnSwap = self.s_curve_hill(adjustImpressionSwap, self.d_param[dim_idx]["param a"], self.d_param[dim_idx]["param b"], self.d_param[dim_idx]["param c"])
+
+                    if self.is_group_dimension_selected == True:
+                        subDimSpendSwap, groupSpendConstraintSwap = self.get_grouped_dimension_constraint(grouped_dimension_bound, dim_idx, newSpendVec)
+                        groupSpendAdjustSwap = subDimSpendSwap - newSpendVec[dim_idx] + adjustSpendSwap
+                        if (groupSpendAdjustSwap<=groupSpendConstraintSwap):
+                            adjustSpendSwap = adjustSpendSwap
+                            adjustImpressionSwap = adjustImpressionSwap
+                            adjustReturnSwap = adjustReturnSwap
+                        elif((subDimSpendSwap<groupSpendConstraintSwap) & (groupSpendAdjustSwap>groupSpendConstraintSwap)):
+                            if(dim_idx in grouped_dimension_bound[dimCheck]['dimension']):
+                                adjustSpendSwap = adjustSpendSwap
+                                adjustImpressionSwap = adjustImpressionSwap
+                                adjustReturnSwap = adjustReturnSwap
+                            else:
+                                adjustSpendSwap = groupSpendConstraintSwap-subDimSpendSwap
+                                adjustImpressionSwap = ((adjustSpendSwap*1000)/(dimension_bound[dim_idx][2]))
+                                adjustReturnSwap = self.s_curve_hill(adjustImpressionSwap, self.d_param[dim_idx]["param a"], self.d_param[dim_idx]["param b"], self.d_param[dim_idx]["param c"])
+                        else:
+                            continue
+
+                    if (dimConversion+totalReturn[dim_idx])<(adjustReturnSwap+dimCheckConversion[dim_idx]):
+                        newSpendVec[dim_idx] = adjustSpendSwap
+                        newImpVec[dim_idx] = adjustImpressionSwap
+                        totalReturn[dim_idx] = adjustReturnSwap
+                        newSpendVec[dimCheck] = dimCheckSpend[dim_idx]
+                        newImpVec[dimCheck] = dimCheckImpression[dim_idx]
+                        totalReturn[dimCheck] = dimCheckConversion[dim_idx]
+                        # print("Swapped ",dim_idx," ",dimCheck)
+                        dimNormalSwapList = dimNormalSwapList + [dim_idx]
+                        dimScurveSwapList = dimScurveSwapList + [dimCheck]
+                        if (dimCheck in dimScurveList) and (newImpVec[dimCheck]>=ScurveElbowDim[dimCheck][0]):
+                            dimScurveAllocationList = dimScurveAllocationList + [dimCheck]
+                        break
+
+            else:
+                dimCheckList = list({dim for dim, value in self.d_param.items() if ((newSpendVec[dim]>dimSpend) and (newSpendVec[dim]>dimension_bound[dim][0]))})
+                dimCheckList = sorted(dimCheckList, key=lambda dim: newSpendVec[dim], reverse=True)
+
+                for dim_idx in dimCheckList:
+                    dimSpendItr = newSpendVec[dim_idx]
+                    if ((dimSpendItr>=dimension_bound[dimCheck][0]) and (dimSpendItr<=dimension_bound[dimCheck][1])):
+                        tempSpend = dimSpendItr
+                    elif (dimSpendItr>=dimension_bound[dimCheck][1]):
+                        tempSpend = dimension_bound[dimCheck][1]
+                    else:
+                        continue
+
+                    if self.is_group_dimension_selected == True:
+                        groupSpendAdjust = subDimSpend - dimSpend + tempSpend
+                        if (groupSpendAdjust<=groupSpendConstraint):
+                            tempSpend = tempSpend
+                        elif((subDimSpend<groupSpendConstraint) & (groupSpendAdjust>groupSpendConstraint)):
+                            if(dim_idx in grouped_dimension_bound[dimCheck]['dimension']):
+                                tempSpend = tempSpend
+                            elif((groupSpendConstraint-subDimSpend)>dimSpend):
+                                tempSpend = groupSpendConstraint-subDimSpend
+                            else:
+                                continue
+                        else:
+                            continue
+
+                    tempConv = self.s_curve_hill(tempSpend, self.d_param[dimCheck]["param a"], self.d_param[dimCheck]["param b"], self.d_param[dimCheck]["param c"])
+                    if (tempConv > dimConversion) and (round(tempConv) >= 1):
+                        if ((tempConv-dimConversion)/tempConv)>0.01:
+                            dimCheckSpend[dim_idx] = tempSpend
+                            dimCheckConversion[dim_idx] = tempConv
+                        else:
+                            continue
+                    else:
+                        continue
+                    
+                    adjustSpendSwap = dimSpend + (newSpendVec[dim_idx] - dimCheckSpend[dim_idx])
+                    adjustReturnSwap = self.s_curve_hill(adjustSpendSwap, self.d_param[dim_idx]["param a"], self.d_param[dim_idx]["param b"], self.d_param[dim_idx]["param c"])                        
+                    
+                    if (adjustSpendSwap<dimension_bound[dim_idx][0]):
+                        if (budgetGoal>=(sum(newSpendVec.values())+dimension_bound[dim_idx][0]-dimSpend)):
+                            adjustSpendSwap = dimension_bound[dim_idx][0]
+                            adjustReturnSwap = self.s_curve_hill(adjustSpendSwap, self.d_param[dim_idx]["param a"], self.d_param[dim_idx]["param b"], self.d_param[dim_idx]["param c"])
+                        else:
+                            continue
+                    elif (adjustSpendSwap>dimension_bound[dim_idx][1]):
+                            adjustSpendSwap = dimension_bound[dim_idx][1]
+                            adjustReturnSwap = self.s_curve_hill(adjustSpendSwap, self.d_param[dim_idx]["param a"], self.d_param[dim_idx]["param b"], self.d_param[dim_idx]["param c"])
+
+                    if self.is_group_dimension_selected == True:
+                        subDimSpendSwap, groupSpendConstraintSwap = self.get_grouped_dimension_constraint(grouped_dimension_bound, dim_idx, newSpendVec)
+                        groupSpendAdjustSwap = subDimSpendSwap - newSpendVec[dim_idx] + adjustSpendSwap
+                        if (groupSpendAdjustSwap<=groupSpendConstraintSwap):
+                            adjustSpendSwap = adjustSpendSwap
+                            adjustReturnSwap = adjustReturnSwap
+                        elif((subDimSpendSwap<groupSpendConstraintSwap) & (groupSpendAdjustSwap>groupSpendConstraintSwap)):
+                            if(dim_idx in grouped_dimension_bound[dimCheck]['dimension']):
+                                adjustSpendSwap = adjustSpendSwap
+                                adjustReturnSwap = adjustReturnSwap
+                            else:
+                                adjustSpendSwap = groupSpendConstraintSwap-subDimSpendSwap
+                                adjustReturnSwap = self.s_curve_hill(adjustSpendSwap, self.d_param[dim_idx]["param a"], self.d_param[dim_idx]["param b"], self.d_param[dim_idx]["param c"])
+                        else:
+                            continue
+                            
+                    if (dimConversion+totalReturn[dim_idx])<(adjustReturnSwap+dimCheckConversion[dim_idx]):
+                        newSpendVec[dim_idx] = adjustSpendSwap
+                        totalReturn[dim_idx] = adjustReturnSwap
+                        newSpendVec[dimCheck] = dimCheckSpend[dim_idx]
+                        totalReturn[dimCheck] = dimCheckConversion[dim_idx]
+                        # print("Swapped ",dim_idx," ",dimCheck)
+                        dimNormalSwapList = dimNormalSwapList + [dim_idx]
+                        dimScurveSwapList = dimScurveSwapList + [dimCheck]
+                        if (dimCheck in dimScurveList) and (newSpendVec[dimCheck]>=ScurveElbowDim[dimCheck][0]):
+                            dimScurveAllocationList = dimScurveAllocationList + [dimCheck]
+                        break
+        
+        if dimScurveSwapList:
+            dimAdjustConversion = dimScurveSwapList + dimNormalSwapList
+            dimMaxAdjust = max(list({value for dim, value in newSpendVec.items() if (dim in dimScurveSwapList)}))
+            # print("Value: ",dimMaxAdjust)
+            
+            # print("Before reinitialization: ",newSpendVec)
+            for dim in newSpendVec:
+                if dim in dimAdjustConversion :
+                    continue
+                elif dim in dimAdjustConversionPrevious:
+                    continue
+                elif newSpendVec[dim]>dimMaxAdjust:
+                    continue
+                newSpendVec[dim] = dimension_bound[dim][0]
+                totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound, dim, newImpVec)
+            # print("After reinitialization: ",newSpendVec,"#####",totalReturn)
+                
+        return newSpendVec, totalReturn, newImpVec, set(dimScurveAllocationList)
+    
+    
+    def allocate_remaining_budget(self, budgetGoal, newSpendVec, dimension_bound_actual, totalReturn, grouped_dimension_bound, iteration, msg, newImpVec):
         """allocate remaining budget when total maximum possible conversion have been allocated
 
         Returns:
@@ -1505,20 +2082,20 @@ class optimizer_iterative_seasonality:
                     if (newSpendVec[dim]<dimension_bound_actual[dim][1]):
                         allocation_dim_list = allocation_dim_list + [dim]
                         newSpendVec_filtered[dim] = newSpendVec[dim]
-
+                
             # Check list if all remianing dimensions have been allocated some budget or not in optimization process
             check_noSpendDim = all(value == 0 for value in newSpendVec_filtered.values())
 
             # Get proportion to allocate remaining budget: 
             # budget allocated during optimization process (or median/mean spend if no budget is allocated in optimization process)
-
+            
             if self.use_impression:
                 agg_constSpend=sum((self.d_param[dim_filtered][self.const_var]*self.d_param[dim_filtered]['cpm'])/1000 for dim_filtered in allocation_dim_list)
             else:
                 agg_constSpend=sum(self.d_param[dim_filtered][self.const_var] for dim_filtered in allocation_dim_list)
-            
+        
             incrementCalibration = {}
-
+            
             for dim in allocation_dim_list:
                 incrementProportion = 0
                 budgetRemainDim = 0
@@ -1552,24 +2129,25 @@ class optimizer_iterative_seasonality:
                         else:
                             incrementCalibrationUpdate = incrementCalibration[grp_dim]
                         newSpendVec[grp_dim] = newSpendVec[grp_dim] + incrementCalibrationUpdate
-                        totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, init_weekday, init_month, newImpVec)
+                        totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, grp_dim, newImpVec)
                         if(grp_dim!=dim):
                             allocation_dim_list.remove(grp_dim)                
             else:
                 for dim in allocation_dim_list:
                     newSpendVec[dim] = newSpendVec[dim] + incrementCalibration[dim]
-                    totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, init_weekday, init_month, newImpVec)
+                    totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, newImpVec)
 
             iteration+=1
             
             if (iteration>self.max_iter):
                 msg = 4002
+                # print("#####Iteration: ",iteration)
                 raise Exception("Optimal solution not found")
 
         return newSpendVec, totalReturn, msg, newImpVec
-
-
-    def projections_compare(self, newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, grouped_dimension_bound, init_weekday, init_month,  newImpVec):
+        
+        
+    def projections_compare(self, newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, grouped_dimension_bound, newImpVec):
         """Budget for each dimension is checked and adjusted based on comparing with historic budget projection,
             if the budget allocation by optimization is higher for same target
 
@@ -1598,41 +2176,12 @@ class optimizer_iterative_seasonality:
 
             dim_spend = 0
             spend_projection[dim] = budgetGoal * const_spend_per[dim]
-            return_projection, imp_projection = self.total_return(spend_projection, return_projection, dimension_bound_actual, dim, init_weekday, init_month, imp_projection)
-
-            # calculating max conversion for dimension with considering daily and monthly seasonality
-            wcoeff = list(self.d_param[dim].values())[3:9]
-            mcoeff = list(self.d_param[dim].values())[9:20]
-            max_conversion_dim = (self.d_param[dim]['param c']
-            + wcoeff[0] * init_weekday[0]
-            + wcoeff[1] * init_weekday[1]
-            + wcoeff[2] * init_weekday[2]
-            + wcoeff[3] * init_weekday[3]
-            + wcoeff[4] * init_weekday[4]
-            + wcoeff[5] * init_weekday[5]
-            + mcoeff[0] * init_month[0]
-            + mcoeff[1] * init_month[1]
-            + mcoeff[2] * init_month[2]
-            + mcoeff[3] * init_month[3]
-            + mcoeff[4] * init_month[4]
-            + mcoeff[5] * init_month[5]
-            + mcoeff[6] * init_month[6]
-            + mcoeff[7] * init_month[7]
-            + mcoeff[8] * init_month[8]
-            + mcoeff[9] * init_month[9]
-            + mcoeff[10] * init_month[10])
-
-            if((round(return_projection[dim])>=max_conversion_dim) | (round(return_projection[dim])==0)):
+            return_projection, imp_projection = self.total_return(spend_projection, return_projection, dimension_bound_actual, dim, imp_projection)
+            
+            if((round(return_projection[dim])>=self.d_param[dim]['param c']) | (round(return_projection[dim])==0)):
                 continue
 
-            dim_metric_estimate = int(self.s_curve_hill_inv_seas(round(return_projection[dim]),
-                                                                        self.d_param[dim]["param a"],
-                                                                        self.d_param[dim]["param b"],
-                                                                        self.d_param[dim]["param c"],
-                                                                        list(self.d_param[dim].values())[3:9],
-                                                                        list(self.d_param[dim].values())[9:20],
-                                                                        init_weekday,
-                                                                        init_month))
+            dim_metric_estimate = int(self.s_curve_hill_inv(round(return_projection[dim]), self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]))
             if self.use_impression:
                 dim_imp_estimate = dim_metric_estimate
                 dim_spend_estimate = (dim_imp_estimate * dimension_bound_actual[dim][2])/1000
@@ -1647,18 +2196,18 @@ class optimizer_iterative_seasonality:
                     if ((round(totalReturn[dim])==round(return_projection[dim])) and (newSpendVec[dim]>dim_spend)):
                         budgetDecrement = budgetDecrement + (newSpendVec[dim] - dim_spend)
                         newSpendVec[dim] = dim_spend
-                        totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, init_weekday, init_month, newImpVec)
-            else:    
+                        totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, newImpVec)
+            else:
                 if ((dim_spend>=dimension_bound_actual[dim][0]) and (dim_spend<=dimension_bound_actual[dim][1])):
                     if ((round(totalReturn[dim])==round(return_projection[dim])) and (newSpendVec[dim]>dim_spend)):
                         budgetDecrement = budgetDecrement + (newSpendVec[dim] - dim_spend)
                         newSpendVec[dim] = dim_spend
-                        totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, init_weekday, init_month, newImpVec)
+                        totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, newImpVec)
 
         return newSpendVec, totalReturn, newImpVec
 
 
-    def adjust_budget(self, newSpendVec, totalReturn, dimension_bound_actual, init_weekday, init_month,  newImpVec):
+    def adjust_budget(self, newSpendVec, totalReturn, dimension_bound_actual, newImpVec):
         """Budget for each dimension is checked and adjusted based on the following:
             Budget adjust due to rounding error in target
             If a particular dimension has zero target but some budget allocated by optimizer, this scenario occurs when inilization is done before optimization process
@@ -1675,25 +2224,20 @@ class optimizer_iterative_seasonality:
             Zero conversion dimension: Budget will be reduced to 0 or lower bound where no conversion is generated
         """
         budgetDecrement = 0
+
         # adjust budget due to rounding error
         for dim in self.d_param:
             dim_spend=newSpendVec[dim]
             dim_return = 0
             conv=totalReturn[dim]
             if (round(conv)>conv):
-                dim_return=(np.trunc(conv*10)/10)
+                dim_return=np.trunc(conv*10)/10
             elif (round(conv)<conv):
                 dim_return=int(conv)
             else:
                 continue
-            dim_metric = self.s_curve_hill_inv_seas(totalReturn[dim],
-                                                    self.d_param[dim]["param a"],
-                                                    self.d_param[dim]["param b"],
-                                                    self.d_param[dim]["param c"],
-                                                    list(self.d_param[dim].values())[3:9],
-                                                    list(self.d_param[dim].values())[9:20],
-                                                    init_weekday,
-                                                    init_month)
+            dim_metric = self.s_curve_hill_inv(totalReturn[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
+            
             if self.use_impression:
                 dim_metric_spend=(newImpVec[dim] * dimension_bound_actual[dim][2])/1000
                 if(dim_metric_spend>=dimension_bound_actual[dim][0]):
@@ -1708,7 +2252,7 @@ class optimizer_iterative_seasonality:
                     totalReturn[dim] = dim_return
                 else:
                     continue
-
+            
             budgetDecrement = budgetDecrement + (newSpendVec[dim] - dim_spend)
 
         # decrement unused budget from dimensions having almost zero conversion as part of budget allocation during initialization of initial budget value
@@ -1716,17 +2260,20 @@ class optimizer_iterative_seasonality:
             if ((totalReturn[dim]<1) and (newSpendVec[dim]>0)):
                 budgetDecrement = budgetDecrement + (newSpendVec[dim] - dimension_bound_actual[dim][0])
                 newSpendVec[dim] = dimension_bound_actual[dim][0]
-                totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, init_weekday, init_month, newImpVec)
-        
+                totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, newImpVec)
+    
         # add seasonlaity related target when spend is 0
         for dim in self.d_param:
-            if (newSpendVec[dim]==0):
-                totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim, init_weekday, init_month, newImpVec)
+            if (totalReturn[dim]<0):
+                newSpendVec[dim]=0
+                totalReturn[dim]=0
+                if self.use_impression:
+                    newImpVec[dim]=0
 
         return newSpendVec, totalReturn, newImpVec
-              
-    
-    def budget_optimize(self, increment_factor, oldSpendVec, oldReturn, budgetGoal, dimension_bound, dimension_bound_actual, grouped_dimension_bound, init_weekday, init_month, oldImpVec):
+
+
+    def budget_optimize(self, increment_factor, oldSpendVec, oldReturn, budgetGoal, dimension_bound, dimension_bound_actual, grouped_dimension_bound, dimScurveList, dimScurveWeights, ScurveElbowDim, oldImpVec):
         """function for calculating budget when metric as spend is selected
         
         Returns:
@@ -1754,33 +2301,47 @@ class optimizer_iterative_seasonality:
         iteration = 0
         msg = 4001
         check_noConversion = 0
+        check_budget_per = 0.05
+        dimScurveCheck = dimScurveList
+        dimAdjustConversionPrevious = []
+        # print(dimScurveCheck)
 
         while(budgetGoal > sum(newSpendVec.values())):
             # print(sum(newSpendVec.values()))
             # Get dim with max incremental conversion
-            incReturns, incBudget = self.get_conversion_dimension(newSpendVec, dimension_bound, increment, grouped_dimension_bound, init_weekday, init_month, newImpVec)  
+            incReturns, incBudget = self.get_conversion_dimension(newSpendVec, dimension_bound, increment, grouped_dimension_bound, newImpVec)  
             dim_idx = max(incReturns, key=incReturns.get)
             # print(iteration," ",dim_idx," ",incReturns[dim_idx]," ",incBudget[dim_idx])
-
+            
             # If incremental conversion is present
             if(incReturns[dim_idx] > 0):
                 iteration+=1
                 newSpendVec[dim_idx] = newSpendVec[dim_idx] + incBudget[dim_idx]
-                totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound, dim_idx, init_weekday, init_month, newImpVec)
+                totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound, dim_idx, newImpVec)
                 resultIter_df = resultIter_df.append({'spend':sum(newSpendVec.values()) , 'impression': sum(newImpVec.values()), 'return' : sum(totalReturn.values())}, ignore_index=True).reset_index(drop=True)
 
              # If incremental conversion is not present
             else:
-                newSpendVec, totalReturn, msg, newImpVec = self.allocate_remaining_budget(budgetGoal, newSpendVec, dimension_bound_actual, totalReturn, grouped_dimension_bound, iteration, msg, init_weekday, init_month, newImpVec)
-                resultIter_df = resultIter_df.append({'spend':sum(newSpendVec.values()) , 'impression': sum(newImpVec.values()), 'return' : sum(totalReturn.values())}, ignore_index=True).reset_index(drop=True)
-                break
+                budgetUntilized_temp = sum(newSpendVec.values())
+                if dimScurveCheck:
+                    newSpendVec, totalReturn, newImpVec, dimScurveReturn = self.adjust_conversions(newSpendVec, totalReturn, dimension_bound, budgetGoal, dimScurveCheck, ScurveElbowDim, dimAdjustConversionPrevious, grouped_dimension_bound, newImpVec)
+                    dimScurveCheck = list(set(dimScurveCheck).difference(dimScurveReturn))
+                    dimScurveCheck = sorted(dimScurveCheck, key=lambda dim: dimScurveWeights[dim][2], reverse=True)
+                    dimAdjustConversionPrevious = list(set(dimAdjustConversionPrevious + dimScurveReturn))
+                    # print(dimScurveReturn)
+                    # print("remaining ",dimScurveCheck)
+                    # print()
+                if((math.isclose(sum(newSpendVec.values()), budgetUntilized_temp, abs_tol=self.precision)) | (sum(newSpendVec.values()) > budgetUntilized_temp)):
+                    newSpendVec, totalReturn, msg, newImpVec = self.allocate_remaining_budget(budgetGoal, newSpendVec, dimension_bound_actual, totalReturn, grouped_dimension_bound, iteration, msg, newImpVec)
+                    resultIter_df = resultIter_df.append({'spend':sum(newSpendVec.values()) , 'impression': sum(newImpVec.values()), 'return' : sum(totalReturn.values())}, ignore_index=True).reset_index(drop=True)
+                    break
                 
             # If budget goal is reached, check for dimension with no conversion but some budget is allocated during inital spend allocation
             if(math.isclose(sum(newSpendVec.values()), budgetGoal, abs_tol=self.precision)):
                 if (check_noConversion == 0):
                     check_noConversion = 1
-                    newSpendVec, totalReturn, newImpVec = self.projections_compare(newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, grouped_dimension_bound, init_weekday, init_month,  newImpVec)
-                    newSpendVec, totalReturn, newImpVec = self.adjust_budget(newSpendVec, totalReturn, dimension_bound_actual, init_weekday, init_month,  newImpVec)
+                    newSpendVec, totalReturn, newImpVec = self.projections_compare(newSpendVec, totalReturn, dimension_bound_actual, budgetGoal, grouped_dimension_bound, newImpVec)
+                    newSpendVec, totalReturn, newImpVec = self.adjust_budget(newSpendVec, totalReturn, dimension_bound_actual, newImpVec)
                     increment = increment_factor
                     resultIter_df = resultIter_df.append({'spend':sum(newSpendVec.values()) , 'impression': sum(newImpVec.values()), 'return' : sum(totalReturn.values())}, ignore_index=True).reset_index(drop=True)
                 else:
@@ -1789,15 +2350,30 @@ class optimizer_iterative_seasonality:
             # If allocated budget exceed budget goal
             elif(sum(newSpendVec.values())>budgetGoal):
                 newSpendVec[dim_idx] = newSpendVec[dim_idx] - incBudget[dim_idx]
-                totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim_idx, init_weekday, init_month, newImpVec)
+                totalReturn, newImpVec = self.total_return(newSpendVec, totalReturn, dimension_bound_actual, dim_idx, newImpVec)
                 increment = budgetGoal - sum(newSpendVec.values())
                 resultIter_df = resultIter_df.append({'spend':sum(newSpendVec.values()) , 'impression': sum(newImpVec.values()), 'return' : sum(totalReturn.values())}, ignore_index=True).reset_index(drop=True)
 
+            if(sum(newSpendVec.values())/budgetGoal>=check_budget_per) and (dimScurveCheck):
+                # print(sum(newSpendVec.values())/budgetGoal," ",check_budget_per)
+                newSpendVec, totalReturn, newImpVec, dimScurveReturn = self.adjust_conversions(newSpendVec, totalReturn, dimension_bound, budgetGoal, dimScurveCheck, ScurveElbowDim, dimAdjustConversionPrevious, grouped_dimension_bound, newImpVec)
+                dimScurveCheck = list(set(dimScurveCheck).difference(dimScurveReturn))
+                dimScurveCheck = sorted(dimScurveCheck, key=lambda dim: dimScurveWeights[dim][2], reverse=True)
+                dimAdjustConversionPrevious = list(set(dimAdjustConversionPrevious + list(dimScurveReturn)))
+                # print("#####Iteration: ",iteration)
+                # print(dimScurveReturn)
+                # print("remaining ",dimScurveCheck)
+                # print()
+                budget_per = (sum(newSpendVec.values())/budgetGoal)*100
+                check_budget_per = (math.ceil(budget_per/5)*5)/100
+                if check_budget_per>=0.95:
+                    check_budget_per=0.95
+            
             # If max iteration is reached
             if(iteration > self.max_iter):
                 msg = 4002
                 raise Exception("Optimal solution not found")
-                
+                            
         conversion_return_df = pd.DataFrame(totalReturn.items())
         budget_return_df = pd.DataFrame(newSpendVec.items())
         
@@ -1811,9 +2387,66 @@ class optimizer_iterative_seasonality:
             result_df = pd.merge(result_df, imp_return_df, on='dimension', how='outer')
         else:
             resultIter_df=resultIter_df[['spend', 'return']]
+
+        # print("#####Iteration: ",iteration)
                 
         return result_df, resultIter_df, msg
     
+
+    def check_initialization_required(self, increment, df_grp, dimension_bound, dimension_bound_actual, grouped_dimension_bound, budget_per_day):
+        """Initialization to avoid local minima problem-
+                Budget: Minimum non-zero spend based on historic data is intialized
+                Target, impression (if selected): Respective target, impression based on spend is initialized 
+                Note: If sum initailized spend exceeds budget per day then initialization is done based on user constarints
+            
+        Returns:
+            Dictionay - 
+                newSpendVec: Budget allocated to each dimension
+                totalReturn: Conversion for allocated budget for each dimension
+                newImpVec: Impression allocated to each dimension if applicable otherwise null value is allocated
+        """
+        
+        if self.use_impression:
+            oldSpendVec_initial, oldImpVec_initial = self.ini_start_value(df_grp, dimension_bound, increment, grouped_dimension_bound)
+            oldReturn_initial = self.initial_conversion(oldImpVec_initial)
+            initial_investment = sum(oldReturn_initial.values())
+            
+            oldSpendVec_input = {dim:value[0] for dim, value in dimension_bound.items()}
+            oldImpVec_input = {dim:((oldSpendVec_input[dim]*1000)/(dimension_bound[dim][2])) for dim in self.dimension_names}
+            oldReturn_input = {dim:(self.s_curve_hill(oldImpVec_input[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])) for dim in self.dimension_names}
+            
+            inflection_spend_dim = {dim:((self.d_param[dim]['param b']*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
+            const_spend_dim = {dim:((self.d_param[dim][self.const_var]*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
+            threshold = np.mean(list({const_spend_dim[dim] for dim in self.dimension_names if inflection_spend_dim[dim] > increment }))              
+            
+            # if((initial_investment<=budget_per_day) and (budget_per_day>threshold)):
+            #     oldSpendVec = copy.deepcopy(oldSpendVec_initial)
+            #     oldImpVec = copy.deepcopy(oldImpVec_initial)
+            #     oldReturn = copy.deepcopy(oldReturn_initial)
+            # else:
+            oldSpendVec = copy.deepcopy(oldSpendVec_input)
+            oldImpVec = copy.deepcopy(oldImpVec_input)
+            oldReturn = copy.deepcopy(oldReturn_input)
+                
+        else:
+            oldSpendVec_initial = self.ini_start_value(df_grp, dimension_bound, increment, grouped_dimension_bound)
+            oldReturn_initial = self.initial_conversion(oldSpendVec_initial)
+            initial_investment = sum(oldSpendVec_initial.values())
+            
+            oldSpendVec_input = {dim:value[0] for dim, value in dimension_bound.items()}
+            oldReturn_input = {dim:(self.s_curve_hill(oldSpendVec_input[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])) for dim in self.dimension_names}
+            threshold = np.mean(list({value[self.const_var] for dim, value in self.d_param.items() if value['param b'] > increment }))
+
+            # if((initial_investment<=budget_per_day) and (budget_per_day>threshold)):
+            #     oldSpendVec = copy.deepcopy(oldSpendVec_initial)
+            #     oldReturn = copy.deepcopy(oldReturn_initial)
+            # else:
+            oldSpendVec = copy.deepcopy(oldSpendVec_input)
+            oldReturn = copy.deepcopy(oldReturn_input)
+            oldImpVec = None
+            
+        return oldSpendVec, oldReturn, oldImpVec
+
         
     def lift_cal(self, result_df, budget_per_day, df_spend_dis, days, dimension_bound):
         """function for calculating different columns to be displayed for n days selected by the user
@@ -1904,7 +2537,7 @@ class optimizer_iterative_seasonality:
                 day_month = str(day_.weekday())+"_"+str(day_.month)
                 init_weekday = d_weekday[day_month]
                 init_month = d_month[day_month]
-                target_projection = target_projection + self.s_curve_hill(metric_projections,
+                target_projection = target_projection + self.s_curve_hill_seasonality(metric_projections,
                                                     self.d_param[dim]["param a"],
                                                     self.d_param[dim]["param b"],
                                                     self.d_param[dim]["param c"],
@@ -1960,79 +2593,45 @@ class optimizer_iterative_seasonality:
             df_res.loc[df_res[i].values != None, i]=df_res.loc[df_res[i].values != None, i].astype(float).round().astype(int)
 
         return df_res, summary_metrics_dic
-    
-    
-    def check_initialization_required(self, increment, df_grp, dimension_bound, dimension_bound_actual, grouped_dimension_bound, budget_per_day, init_weekday, init_month):
-        """Initialization to avoid local minima problem-
-                Budget: Minimum non-zero spend based on historic data is intialized
-                Target, impression (if selected): Respective target, impression based on spend is initialized 
-                Note: If sum initailized spend exceeds budget per day then initialization is done based on user constarints
-            
-        Returns:
-            Dictionay - 
-                newSpendVec: Budget allocated to each dimension
-                totalReturn: Conversion for allocated budget for each dimension
-                newImpVec: Impression allocated to each dimension if applicable otherwise null value is allocated
-        """
+
+
+    def total_return_seasonality(self, Spend, dimension_bound, dim, init_weekday, init_month):
+        """calculate total return based on spend or impression
         
+        Returns:
+                totalReturn: Conversion for allocated budget or impression for each dimension
+        """
         if self.use_impression:
-            oldSpendVec_initial, oldImpVec_initial = self.ini_start_value(df_grp, dimension_bound, increment, grouped_dimension_bound)
-            oldReturn_initial = self.initial_conversion(oldImpVec_initial, init_weekday, init_month)
-            initial_investment = sum(oldReturn_initial.values())
-            
-            oldSpendVec_input = {dim:value[0] for dim, value in dimension_bound.items()}
-            oldImpVec_input = {dim:((oldSpendVec_input[dim]*1000)/(dimension_bound[dim][2])) for dim in self.dimension_names}
-            oldReturn_input = {dim:(self.s_curve_hill(oldImpVec_input[dim],
-                                                        self.d_param[dim]["param a"],
-                                                        self.d_param[dim]["param b"],
-                                                        self.d_param[dim]["param c"],
-                                                        list(self.d_param[dim].values())[3:9],
-                                                        list(self.d_param[dim].values())[9:20],
-                                                        init_weekday,
-                                                        init_month)) for dim in self.dimension_names}
-            
-            inflection_spend_dim = {dim:((self.d_param[dim]['param b']*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
-            const_spend_dim = {dim:((self.d_param[dim][self.const_var]*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
-            threshold = np.mean(list({const_spend_dim[dim] for dim in self.dimension_names if inflection_spend_dim[dim] > increment }))              
-            
-            if((initial_investment<=budget_per_day) and (budget_per_day>threshold)):
-                oldSpendVec = copy.deepcopy(oldSpendVec_initial)
-                oldImpVec = copy.deepcopy(oldImpVec_initial)
-                oldReturn = copy.deepcopy(oldReturn_initial)
-            else:
-                oldSpendVec = copy.deepcopy(oldSpendVec_input)
-                oldImpVec = copy.deepcopy(oldImpVec_input)
-                oldReturn = copy.deepcopy(oldReturn_input)
-                
+            Imp = ((Spend*1000)/(dimension_bound[dim][2]))
+            totalReturn = self.s_curve_hill_seasonality(Imp,
+                                                    self.d_param[dim]["param a"],
+                                                    self.d_param[dim]["param b"],
+                                                    self.d_param[dim]["param c"],
+                                                    list(self.d_param[dim].values())[3:9],
+                                                    list(self.d_param[dim].values())[9:20],
+                                                    init_weekday,
+                                                    init_month)
         else:
-            oldSpendVec_initial = self.ini_start_value(df_grp, dimension_bound, increment, grouped_dimension_bound)
-            oldReturn_initial = self.initial_conversion(oldSpendVec_initial, init_weekday, init_month)
-            initial_investment = sum(oldSpendVec_initial.values())
-            
-            oldSpendVec_input = {dim:value[0] for dim, value in dimension_bound.items()}
-            
-            oldReturn_input = {dim:(self.s_curve_hill(oldSpendVec_input[dim],
-                                                        self.d_param[dim]["param a"],
-                                                        self.d_param[dim]["param b"],
-                                                        self.d_param[dim]["param c"],
-                                                        list(self.d_param[dim].values())[3:9],
-                                                        list(self.d_param[dim].values())[9:20],
-                                                        init_weekday,
-                                                        init_month)) for dim in self.dimension_names}
+            totalReturn = self.s_curve_hill_seasonality(Spend,
+                                                    self.d_param[dim]["param a"],
+                                                    self.d_param[dim]["param b"],
+                                                    self.d_param[dim]["param c"],
+                                                    list(self.d_param[dim].values())[3:9],
+                                                    list(self.d_param[dim].values())[9:20],
+                                                    init_weekday,
+                                                    init_month)
+        return totalReturn
+    
 
-            threshold = np.mean(list({value[self.const_var] for dim, value in self.d_param.items() if value['param b'] > increment }))
+    def get_seasonality_result(self, result_df, dimension_bound, init_weekday, init_month):
 
-            if((initial_investment<=budget_per_day) and (budget_per_day>threshold)):
-                oldSpendVec = copy.deepcopy(oldSpendVec_initial)
-                oldReturn = copy.deepcopy(oldReturn_initial)
-            else:
-                oldSpendVec = copy.deepcopy(oldSpendVec_input)
-                oldReturn = copy.deepcopy(oldReturn_input)
-            oldImpVec = None
-            
-        return oldSpendVec, oldReturn, oldImpVec
-            
-                
+        for dim in result_df['dimension'].unique():
+            Spend = result_df[result_df['dimension']==dim]['spend'].values[0]
+            result_df.loc[result_df['dimension']==dim, 'return'] = self.total_return_seasonality(Spend, dimension_bound, dim, init_weekday, init_month)
+        
+        return result_df
+
+
     def execute(self, df_grp, budget, date_range, df_spend_dis, discard_json, dimension_bound, group_constraint, isolate_dim_list, lst_dim):
         """main function for calculating target conversion
         
@@ -2097,12 +2696,34 @@ class optimizer_iterative_seasonality:
         # Calculating increment budget for optimization
         increment = self.increment_factor(df_grp)
 
+        dimScurveList, dimScurveWeights, ScurveElbowDim = self.get_s_curves(dimension_bound, df_grp)
+
+        """optimization process-
+            Initialization if required
+            Optimzation on budget and constarints
+            """
+        
+        oldSpendVec, oldReturn, oldImpVec = self.check_initialization_required(increment, df_grp, dimension_bound, dimension_bound_actual, grouped_dimension_bound, budget_per_day)
+        if self.use_impression:
+            result_df_, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, dimScurveList, dimScurveWeights, ScurveElbowDim, oldImpVec)
+            result_df_=result_df_[['dimension', 'spend', 'impression', 'return']]
+            result_df_[['spend', 'impression', 'return']]=result_df_[['spend', 'impression', 'return']].round()
+        else:
+            result_df_, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, dimScurveList, dimScurveWeights, ScurveElbowDim, None)
+            result_df_=result_df_[['dimension', 'spend', 'return']]
+            result_df_[['spend', 'return']]=result_df_[['spend', 'return']].round()
+
+        # print("##### Without Seasonality: ")
+        # print(result_df_)
+
         # Checking distinct combination of daily and monthly for seasonality
         seasonality_combination = []
         for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both"):
             seasonality_combination = seasonality_combination + [str(day_.weekday())+"_"+str(day_.month)]
         seasonality_combination = set(seasonality_combination)
-
+        # print()
+        # print("##### With Seasonality: ")
+        # print(seasonality_combination)
         # Optimization for each combination of seasonality
         for day_month in seasonality_combination:
             
@@ -2118,32 +2739,23 @@ class optimizer_iterative_seasonality:
             d_weekday[day_month] = init_weekday
             d_month[day_month] = init_month
 
-            """optimization process-
-            Initialization if required
-            Optimzation on budget and constarints
-            """
-            oldSpendVec, oldReturn, oldImpVec = self.check_initialization_required(increment, df_grp, dimension_bound, dimension_bound_actual, grouped_dimension_bound, budget_per_day, init_weekday, init_month)
+            result_df_seasonality = self.get_seasonality_result(result_df_, dimension_bound, init_weekday, init_month)
             
-            if self.use_impression:
-                result_df_, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, init_weekday, init_month, oldImpVec)
-                result_df_=result_df_[['dimension', 'spend', 'impression', 'return']]
-                result_df_[['spend', 'impression', 'return']]=result_df_[['spend', 'impression', 'return']].round()
-            else:
-                result_df_, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, init_weekday, init_month, None)
-                result_df_=result_df_[['dimension', 'spend', 'return']]
-                result_df_[['spend', 'return']]=result_df_[['spend', 'return']].round()
+            # print(day_month)
+            # print(result_df_seasonality)
+            # print()
 
-            sol[day_month] = result_df_.set_index('dimension').T.to_dict('dict')
-            sol_check[day_month] = msg
+            sol[day_month] = result_df_seasonality.set_index('dimension').T.to_dict('dict')
+            # sol_check[day_month] = msg
 
             init_weekday = [0, 0, 0, 0, 0, 0]
             init_month = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             count_day += 1
-        
-        for day_month in sol_check.keys():
+        # print(sol)
+        # for day_month in sol_check.keys():
 
-            if sol_check[day_month] != 4001:
-                raise Exception("Optimal solution not found")
+        #     if sol_check[day_month] != 4001:
+        #         raise Exception("Optimal solution not found")
 
         # Aggregating results for entire date range
         if self.use_impression:
