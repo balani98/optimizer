@@ -2280,9 +2280,9 @@
 
       // function to draw the CPA bars graph
       function populate_cpa_graph(summary_metric_json, target_type){
-        Chart.register(ChartDataLabels);
         let xValues = []
         let y_label = ""
+        let max_value_on_y_axis = Math.max(summary_metric_json["Current Projection CPA/ROI"], summary_metric_json["Optimized CPA/ROI"])
         if(target_type == 'volume'){
           xValues = ["CPA plans"]
           y_label = "CPA"
@@ -2293,6 +2293,17 @@
         }
         let barColors = global_chart_colors
         ctx = "optimizer_CPA_chart"
+        const topLabels = {
+          'id': 'topLabels',
+          afterDatasetsDraw(chart, args, pluginOptions){
+            const {ctx, scales : {x, y} } = chart;
+            ctx.font = 'bold 15px sans-serif'
+            ctx.fillStyle = '#9A3334';
+            ctx.textAlign = 'center'
+            ctx.fillText('20', x.getPixelForValue(0) - 80, chart.getDatasetMeta(0).data[0].y-10)
+            ctx.fillText('20', x.getPixelForValue(0) + 80, chart.getDatasetMeta(1).data[0].y-10)
+          }
+        }
         config = {
           type: "bar",
           data: {
@@ -2310,6 +2321,7 @@
                 backgroundColor: '#9A3334',
               }],
           },
+          plugins:[topLabels],
           options: {
             responsive: true,
             interaction: {
@@ -2331,7 +2343,10 @@
                       if (label) {
                           label += ': ';
                       }
-                      label += '$ ' + context.parsed.y ;
+                      if(target_type == 'volume')
+                        label += '$ ' + context.parsed.y ;
+                      else 
+                        label += context.parsed.y ; 
                       return label;
                   }
                 }
@@ -2354,7 +2369,9 @@
                 ticks:{
                   callback: function(value, index) {
                     return '$' + value
-                  }
+                  },
+                  beginAtZero: true,
+                  max: Math.round(max_value_on_y_axis + 0.10*max_value_on_y_axis)
                 }
               }
             },
