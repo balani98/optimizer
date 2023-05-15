@@ -358,9 +358,6 @@
       cpm_selector = window.localStorage.getItem('cpm_selector')
       if(cpm_selector != '' && cpm_selector != 'undefined' && cpm_selector != null){
         $('#cpm_value').val(cpm_selector);
-        $('#target_type_value').css('display', 'none')
-      }else{
-        $('#target_type_value').css('display', 'block')
       }
     }
     date_selector = window.localStorage.getItem('date_selector');
@@ -773,12 +770,8 @@
     window.localStorage.setItem('cpm_checkbox',checkBox.checked)
     if (checkBox.checked == true) {
       selector.style.display = "block";
-      target_type_selector.value = 'volume';
-      $('#target_type_value').css('display', 'none');
-      window.localStorage.setItem("target_type",target_type_selector.value)
     } else {
       selector.style.display = "none";
-      $('#target_type_value').css('display', 'block');
     }
   }
   function selectorDimensionroupingDisplay() {

@@ -1261,7 +1261,6 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
       x_label = 'Impression'
     }else 
       x_label = 'Investment'
-    
     var margin = {top: 10, right: 50, bottom: 50, left: 70},
     currentWidth = parseInt(d3.select('#multi_line_chart_with_checkboxes').style('width'))
     width = currentWidth - margin.left - margin.right,
@@ -1292,7 +1291,7 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
     var x = d3.scaleLinear()
               .domain( [0,max_spend + 0.1 *max_spend])
               .range([0,width])
-    
+        // adding dollars to x axis
         svg.append("g")
         .attr("transform","translate(0," + height + ")")
         .call(d3.axisBottom(x)
@@ -1303,7 +1302,6 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
                     return d.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
                 })
             )
-      
         // text label for x axis
     svg.append("text")             
       .attr("transform",
@@ -1335,8 +1333,15 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
     var y = d3.scaleLinear()
               .domain( [0,max_predictions + 0.1 * max_predictions])
               .range([height,0]);
+    // adding dollars to y axis
         svg.append("g")
-            .call(d3.axisLeft(y))
+            .call(d3.axisLeft(y)
+            .tickFormat(function(d){
+               if(y_label != 'predictions' && target_type == 'volume')
+                return "＄" + d.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+               else 
+                return d.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+            }))
     
     var line = d3.line()
                  .x(function(d){ 
