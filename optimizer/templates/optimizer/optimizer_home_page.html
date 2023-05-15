@@ -820,7 +820,7 @@
                       {% if target_type == 'volume' %}
                         <th>Total cost per target :</th>
                       {% elif target_type == 'revenue' %}
-                        <th>Revenue :</th>
+                        <th>Return On Investment :</th>
                       {% endif %}
                       {% comment %} <td>$ 100</td> {% endcomment %}
                     </tr>
@@ -844,6 +844,17 @@
               </div>
             </div>
             <div class="col-lg-5 col-sm-12">
+              <div class="tooltip_outer_div">
+                <i
+                  class="fa fa-info-circle"
+                  aria-hidden="true"
+                  style="color:#9a3334;font-size:2rem"
+                ></i>
+                <span class="tooltiptext" style="top:10rem;left:60rem"
+                > Calculation based on projected budget and target values which is in turn 
+                calculated using Original Median or Mean Budget Allocation %</span
+              >
+              </div>
               <h4 class="text-center">Cost per {{targetSelector}}</h4>
               <div
                 style="
@@ -2300,8 +2311,8 @@
             ctx.font = 'bold 15px sans-serif'
             ctx.fillStyle = '#9A3334';
             ctx.textAlign = 'center'
-            ctx.fillText('20', x.getPixelForValue(0) - 80, chart.getDatasetMeta(0).data[0].y-10)
-            ctx.fillText('20', x.getPixelForValue(0) + 80, chart.getDatasetMeta(1).data[0].y-10)
+            ctx.fillText(Math.round(summary_metric_json["Current Projection CPA/ROI"]), x.getPixelForValue(0) - 80, chart.getDatasetMeta(0).data[0].y-10)
+            ctx.fillText(Math.round(summary_metric_json["Optimized CPA/ROI"]), x.getPixelForValue(0) + 80, chart.getDatasetMeta(1).data[0].y-10)
           }
         }
         config = {
