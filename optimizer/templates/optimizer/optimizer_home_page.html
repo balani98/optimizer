@@ -845,12 +845,17 @@
             </div>
             <div class="col-lg-5 col-sm-12">
               <div class="tooltip_outer_div">
-                <i
-                  class="fa fa-info-circle"
-                  aria-hidden="true"
-                  style="color:#9a3334;font-size:2rem"
-                ></i>
-                <span class="tooltiptext" style="top:10rem;left:60rem"
+                <div style="display:flex;flex-direction:row;justify-content:right">
+                  <div><h6>Initial Plan :&nbsp;</h6></div>
+                  <div>
+                    <i
+                    class="fa fa-info-circle"
+                    aria-hidden="true"
+                    style="color:#9a3334;font-size:1.5rem"
+                  ></i>
+                  </div>
+                </div>
+                <span class="tooltiptext" style="top:10rem;left:90rem"
                 > Calculation based on projected budget and target values which is in turn 
                 calculated using Original Median or Mean Budget Allocation %</span
               >
@@ -2379,10 +2384,13 @@
                 },
                 ticks:{
                   callback: function(value, index) {
-                    return '$' + value
+                    if(target_type == 'volume')
+                      return '$ ' + value;
+                    else 
+                      return value;
                   },
                   beginAtZero: true,
-                  max: Math.round(max_value_on_y_axis + 0.10*max_value_on_y_axis)
+                  max: Math.round(max_value_on_y_axis + 0.20*max_value_on_y_axis)
                 }
               }
             },
