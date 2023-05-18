@@ -183,20 +183,33 @@ def create_pdf_for_multiple_plots(multi_line_chart_json, seasonality, cpm_checke
     return multi_line_chart_data
 
 
-def get_multi_line_chart_data2(multi_line_chart_json, cpm_checked):
+def get_multi_line_chart_data2(multi_line_chart_json, cpm_checked, mean_median_dic):
     multi_line_chart_data2 = []
     old_key = ""
     multi_line_chart_obj = {}
     predictions_spend_obj = {}
+    transformed_mean_median_array = []
+    mean_median_obj = {}
     for index, obj in enumerate(multi_line_chart_json, start=0):
         dimension_key = obj['dimension']
         if old_key != dimension_key:
             if bool(multi_line_chart_obj) is True:
                 multi_line_chart_data2.append(multi_line_chart_obj)
+            mean_median_obj = {}
+            mean_median_obj["name"] = dimension_key
+            mean_median_values_obj = {}
+            mean_median_obj["values"] = []
+            mean_median_values_obj["mean_spend_or_impression"] = mean_median_dic[dimension_key]["mean"][0]
+            mean_median_values_obj["mean_predictions"] = mean_median_dic[dimension_key]["mean"][1]
+            mean_median_values_obj["median_spend_or_impression"] = mean_median_dic[dimension_key]["median"][0]
+            mean_median_values_obj["median_predictions"] = mean_median_dic[dimension_key]["median"][1]
+            mean_median_obj["values"].append(mean_median_values_obj)
+            transformed_mean_median_array.append(mean_median_obj)
             multi_line_chart_obj = {}
             multi_line_chart_obj["name"] = dimension_key
             multi_line_chart_obj["values"] = []
         predictions_spend_obj = {}
+       
         if cpm_checked == "True":
             predictions_spend_obj["impression"] = obj["impression"]
             predictions_spend_obj["predictions"] = obj["predictions"]
@@ -210,7 +223,7 @@ def get_multi_line_chart_data2(multi_line_chart_json, cpm_checked):
         if index == len(multi_line_chart_json)-1:
             multi_line_chart_data2.append(multi_line_chart_obj)
         old_key = dimension_key
-    return multi_line_chart_data2
+    return (multi_line_chart_data2, transformed_mean_median_array)
 
 def predictor_ajax_y_axis_onchange(request):
     try:
@@ -289,7 +302,8 @@ def predictor_ajax_left_panel_submit(request):
                     scatter_plot_df,
                     drop_dimension,
                     d_cpm,
-                    df_spend_dis
+                    df_spend_dis,
+                    mean_median_dic
                 ) = object_predictor_ml.execute()
             except Exception as error:
                 print(str(error))
@@ -306,7 +320,8 @@ def predictor_ajax_left_panel_submit(request):
                     df_score_final,
                     scatter_plot_df,
                     drop_dimension,
-                    df_spend_dis
+                    df_spend_dis,
+                    mean_median_dic
                 ) = object_predictor_ml.execute()
             except Exception as error:
                 print(str(error))
@@ -345,7 +360,7 @@ def predictor_ajax_left_panel_submit(request):
         max_predictions = multi_line_chart_df.loc[multi_line_chart_df["predictions"].idxmax()]["predictions"]
         # multi_line_chart_df = multi_line_chart_df[(multi_line_chart_df["dimension"] == "SEM Brand")]
         multi_line_chart_json = multi_line_chart_df.to_dict("records")
-        multi_line_chart_data2 = get_multi_line_chart_data2(multi_line_chart_json, cpm_checked)
+        (multi_line_chart_data2, transformed_mean_median_array) = get_multi_line_chart_data2(multi_line_chart_json, cpm_checked, mean_median_dic)
         # weekly_predictions_dataframes
         _uuid = request.session.get("_uuid")
         save_predictor_page_latest_data(df_param, _uuid)
@@ -443,6 +458,7 @@ def predictor_ajax_left_panel_submit(request):
         context["drop_dimension"] = drop_dimension
         context["seasonality"] = seasonality
         context["multi_line_chart_data2"] = multi_line_chart_data2
+        context["transformed_mean_median_array"] = transformed_mean_median_array
         context["max_spend"] = max_spend
         context["max_predictions"] = max_predictions
         context["target_type"] = target_type

@@ -388,6 +388,13 @@
               style="display:none;flex-direction:row;justify-content:space-between;background-color:#fff;position:absolute;width:12.5rem
               ;overflow-y:scroll;max-height:20rem"></div>
           </div>
+          <div class="form-check" style="margin-bottom:10px;">
+            <input class="form-check-input" type="checkbox" value="" id="both_mean_median"
+              onclick="showBothMeanMedianPoints(this)">
+            <label class="form-check-label" style="color: #000;font-size:1rem" for="both_mean_median">
+              Show Both Mean and Median Points
+            </label>
+          </div>
           <div class="dropdown">
             <select
               id="YAxisSelector"
@@ -665,6 +672,7 @@
     let global_x_axis  = "Investment per day"
   {% endif %}
   let multi_line_chart_data2 = {}
+  let original_mean_median_plotting_array = []
   let unchecked_dimensions = []
   let expanded = false; 
   let global_unique_dimensions_json = {} 
@@ -708,6 +716,17 @@
     $('#container').css('pointer-events','auto');
     $('#spinner-optimizer').css('display','none');
   }
+  // function to display both mean and median points 
+  function showBothMeanMedianPoints(this_value){
+    plotting_data = multi_line_chart_data2;
+    target_type = 'volume';
+    cpm_message = 'Cpm selected';
+    subsetted_data = remove_data_unchecked_dimensions(plotting_data, global_unchecked_dimensions)
+    last_plotting_data = subsetted_data.last_plotting_data;
+    arr = changexydomain(last_plotting_data, cpm_message, 'predictions')
+    plot_multi_line_chart_checkboxes(last_plotting_data, cpm_message, arr[0], arr[1], 'predictions', target_type, subsetted_data.unchecked_dimensions, false, this_value.checked)
+  }
+
   // Fuction to get start and End date
   function getPredictorStartAndEndDates() {
     console.log("addStartAndEndDate");
@@ -1067,6 +1086,7 @@
         global_seasonality_from_session = data.seasonality;
         weekly_predictions_json = data.weekly_predictions_json
         multi_line_chart_data2 = data.multi_line_chart_data2;
+        original_mean_median_plotting_array = data.transformed_mean_median_array
         monthly_predictions_json = data.monthly_predictions_json
         // make progress bar settings as before
         $("#inner-progressbarDiv").animate(
@@ -1132,7 +1152,7 @@
           plot_monthly_seasonality(monthly_predictions_json);
         }
         document.getElementById("YAxisSelector").value = 'predictions'
-        plot_multi_line_chart_checkboxes(multi_line_chart_data2, data.cpm_message ,data.max_spend, data.max_predictions,y_label = 'predictions')
+        plot_multi_line_chart_checkboxes(multi_line_chart_data2, original_mean_median_plotting_array, data.cpm_message ,data.max_spend, data.max_predictions,y_label = 'predictions')
         if (data.cpm_message == "cpm selected") {
           document.getElementById("predictor_cpm_budget").style.display =
             "block";
@@ -1254,8 +1274,42 @@
 
 {% comment %} scatter plot and multi line hart {% endcomment %}
 <script>
+function plot_median_points(mean_median_plotting_array, svg, x, y){
+  mean_median_plotting_array.forEach((obj)=>{
+    svg
+    .append("g")
+    .selectAll("dot")
+    .data(obj.values)
+    .enter()
+    .append("circle")
+      .attr("cx", function(d) { 
+        return x(d.median_spend_or_impression) } )
+      .attr("cy", function(d) { 
+        return y(d.median_predictions) } )
+      .attr("r", 3)
+      .attr("fill", 'red')
+  })
+}
+function plot_mean_points(mean_median_plotting_array, svg, x, y){
+  mean_median_plotting_array.forEach((obj)=>{
+    svg
+    .append("g")
+    .selectAll("dot")
+    .data(obj.values)
+    .enter()
+    .append("circle")
+      .attr("cx", function(d) { 
+        return x(d.mean_spend_or_impression) } )
+      .attr("cy", function(d) { 
+        return y(d.median_predictions) } )
+      .attr("r", 3)
+      .attr("fill", 'blue')
+  })
+}
 // plot multiple line charts with checkboxes
-function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,max_predictions, y_label = 'predictions', target_type = 'revenue', dimension_to_uncheck=[],to_be_checked=true){
+function plot_multi_line_chart_checkboxes(plotting_data, mean_median_plotting_array, cpm_message, max_spend,max_predictions, y_label = 'predictions', target_type = 'revenue', dimension_to_uncheck=[],to_be_checked=true, show_both_mean_median=false){
+  // Mean median selection 
+  constraint_type = document.getElementById("select_mean_median").value
   // set the dimensions and margins of the graph
     if (cpm_message == "cpm selected"){
       x_label = 'Impression'
@@ -1412,6 +1466,15 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
               return myColor(d.name)
           })
           .style("font-size", 15)
+          // plotting mean median points
+          if(show_both_mean_median == true){
+            plot_median_points(mean_median_plotting_array, svg, x, y)
+            plot_mean_points(mean_median_plotting_array, svg, x, y)
+          }
+          else if(constraint_type == 'median' && show_both_mean_median == false)
+            plot_median_points(mean_median_plotting_array, svg, x, y)
+          else if(constraint_type == 'mean' && show_both_mean_median == false)
+            plot_mean_points(mean_median_plotting_array, svg, x, y)
       // creating the searchbox
       var searchBox = document.createElement('input');
       searchBox.type = 'text';
@@ -1453,9 +1516,10 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
 			divcheckSelectAll.appendChild(labelSelectAll);
 			document.getElementById("menu").appendChild(divcheckSelectAll);
       selectAllCheckbox.addEventListener("click",function(){
-          var last_plotting_data = []
-               subsetted_data_select_unselect_all = subset_data_select_unselect_all(multi_line_chart_data2 ,this.checked);
+               var last_plotting_data = []
+               subsetted_data_select_unselect_all = subset_data_select_unselect_all(multi_line_chart_data2 ,mean_median_plotting_array,this.checked);
                last_plotting_data = subsetted_data_select_unselect_all.last_plotting_data
+               last_mean_median_plotting_data = subsetted_data_select_unselect_all.last_mean_median_plotting_data
                y_label = document.getElementById("YAxisSelector").value;
                if(y_label != 'predictions')
                 last_plotting_data = filter_plotting_data(last_plotting_data)
@@ -1465,7 +1529,7 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
                while (element.firstChild) {
                 element.removeChild(element.firstChild);
               }
-              plot_multi_line_chart_checkboxes(last_plotting_data, cpm_message, arr[0],arr[1], y_label, target_type, subsetted_data_select_unselect_all.unchecked_dimensions,this.checked)
+              plot_multi_line_chart_checkboxes(last_plotting_data, last_mean_median_plotting_data, cpm_message, arr[0],arr[1], y_label, target_type, subsetted_data_select_unselect_all.unchecked_dimensions,this.checked)
       })
       for(let i = 0 ; i < dimension_groups.length ; i++){
           var tick = document.createElement('input');
@@ -1493,8 +1557,9 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
 					    var textline = d3.select('#text-' + lineSelected.replace(/\s/g, '').replace(/[^\w\s]/gi, '').replace("/",""));
               var last_plotting_data = []
               y_label = document.getElementById("YAxisSelector").value;
-              subsetted_data = subset_data(plotting_data , dimension_to_uncheck, this.checked, this.value);
+              subsetted_data = subset_data(plotting_data , mean_median_plotting_array, dimension_to_uncheck, this.checked, this.value);
               last_plotting_data = subsetted_data.last_plotting_data;
+              last_mean_median_plotting_data = subsetted_data.last_mean_median_plotting_data;
               if(y_label != 'predictions')
                 last_plotting_data = filter_plotting_data(last_plotting_data)
               arr = changexydomain(last_plotting_data, cpm_message, y_label)
@@ -1503,7 +1568,7 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
               while (element.firstChild) {
                 element.removeChild(element.firstChild);
               }
-              plot_multi_line_chart_checkboxes(last_plotting_data ,cpm_message, arr[0], arr[1], y_label, target_type, subsetted_data.unchecked_dimensions,false)
+              plot_multi_line_chart_checkboxes(last_plotting_data ,last_mean_median_plotting_data, cpm_message, arr[0], arr[1], y_label, target_type, subsetted_data.unchecked_dimensions,false)
           })
     var x_range = d3.scaleLinear().range([0, width]);
     var y_range = d3.scaleLinear().range([height, 0]);
@@ -1534,41 +1599,49 @@ function remove_data_unchecked_dimensions(plotting_data, dimensions_to_uncheck =
   return subsetted_data
 }
 // subset the data for selection / unselection all dimensions 
-function subset_data_select_unselect_all(plotting_data, select_all_checked){
+function subset_data_select_unselect_all(plotting_data, mean_median_plotting_data ,select_all_checked){
   const dimension_groups = plotting_data.map((obj)=>{
     return obj.name
   })
   if(select_all_checked == true){
     last_plotting_data = [...multi_line_chart_data2]
+    last_mean_median_plotting_data = [...original_mean_median_plotting_array]
     unchecked_dimensions = []
     global_unchecked_dimensions = []
     }else{
     last_plotting_data = [];
+    last_mean_median_plotting_data = []
     unchecked_dimensions = [...dimension_groups];
     global_unchecked_dimensions = [...dimension_groups];
   }
   var subsetted_data = {
     last_plotting_data:last_plotting_data,
-    unchecked_dimensions:unchecked_dimensions
+    unchecked_dimensions:unchecked_dimensions,
+    last_mean_median_plotting_data:last_mean_median_plotting_data
   }
   return subsetted_data
 }
 // subset the data for selection / unselection 
-function subset_data(plotting_data, unchecked_dimensions, is_dimension_checked, dimension_name){
+function subset_data(plotting_data, mean_median_plotting_data, unchecked_dimensions, is_dimension_checked, dimension_name){
   if(is_dimension_checked==true){
     last_plotting_data = [...plotting_data]
+    last_mean_median_plotting_data = [...mean_median_plotting_data]
     filtered_array = multi_line_chart_data2.filter(a => a.name == dimension_name)
+    filtered_mean_median_array =  original_mean_median_plotting_array.filter(a => a.name == dimension_name)
     last_plotting_data.push(...filtered_array)
+    last_mean_median_plotting_data.push(...filtered_mean_median_array)
     unchecked_dimensions.splice(unchecked_dimensions.indexOf(dimension_name),1)
     global_unchecked_dimensions = [...unchecked_dimensions]
     }else{
     last_plotting_data = plotting_data.filter(a => a.name != dimension_name);
+    last_mean_median_plotting_data = mean_median_plotting_data.filter(a => a.name != dimension_name);
     unchecked_dimensions.push(dimension_name)
     global_unchecked_dimensions = [...unchecked_dimensions]
    }
    var subsetted_data = {
      last_plotting_data:last_plotting_data,
-     unchecked_dimensions:unchecked_dimensions
+     unchecked_dimensions:unchecked_dimensions,
+     last_mean_median_plotting_data:last_mean_median_plotting_data
    }
    return subsetted_data;
 }
