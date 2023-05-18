@@ -1472,13 +1472,13 @@ function plot_multi_line_chart_checkboxes(plotting_data, mean_median_plotting_ar
           })
           .style("font-size", 15)
           // plotting mean median points
-          if(show_both_mean_median == true){
+          if(show_both_mean_median == true && y_label=='predictions'){
             plot_median_points(mean_median_plotting_array, svg, x, y)
             plot_mean_points(mean_median_plotting_array, svg, x, y)
           }
-          else if(constraint_type == 'median' && show_both_mean_median == false)
+          else if(constraint_type == 'median' && show_both_mean_median == false && y_label=='predictions')
             plot_median_points(mean_median_plotting_array, svg, x, y)
-          else if(constraint_type == 'mean' && show_both_mean_median == false)
+          else if(constraint_type == 'mean' && show_both_mean_median == false && y_label=='predictions')
             plot_mean_points(mean_median_plotting_array, svg, x, y)
       // creating the searchbox
       var searchBox = document.createElement('input');
