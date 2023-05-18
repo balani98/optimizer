@@ -50,6 +50,7 @@ global_weekly_predictions_df = None
 global_monthly_predictions_df = None
 global_unique_dim = None
 global_multi_line_chart_data = None
+global_mean_median_dic = None
 # Create your views here.
 
 # helper function
@@ -229,9 +230,11 @@ def predictor_ajax_y_axis_onchange(request):
     try:
         global global_scatter_plot_df
         global global_unique_dim
+        global global_mean_median_dic
         context = {}
         body = json.loads(request.body)
         y_axis_selector_value = body['y_axis_selector_value']
+        mean_median_dic = global_mean_median_dic
         multi_line_chart_df = global_scatter_plot_df
         multi_line_chart_df = multi_line_chart_df[multi_line_chart_df["dimension"].isin(global_unique_dim)]
         cpm_checked = request.session.get('cpm_checked')
@@ -247,7 +250,7 @@ def predictor_ajax_y_axis_onchange(request):
         # this variable can have values releated to spend predictions rate / predictions
         max_predictions = multi_line_chart_df.loc[multi_line_chart_df[y_axis_selector_value].idxmax()][y_axis_selector_value]
         multi_line_chart_json = multi_line_chart_df.to_dict("records")
-        multi_line_chart_data2 = get_multi_line_chart_data2(multi_line_chart_json, cpm_checked)
+        multi_line_chart_data2 = get_multi_line_chart_data2(multi_line_chart_json, cpm_checked, mean_median_dic)
         context["max_spend"] = max_spend
         context["max_predictions"] = max_predictions
         context["multi_line_chart_data2"] = multi_line_chart_data2
@@ -336,6 +339,7 @@ def predictor_ajax_left_panel_submit(request):
         global global_df_param
         global global_df_score_final
         global global_scatter_plot_df
+        global global_mean_median_dic
         global global_drop_dimension
         global global_d_cpm
         global global_weekly_predictions_df
@@ -347,6 +351,7 @@ def predictor_ajax_left_panel_submit(request):
         global_drop_dimension = drop_dimension
         global_d_cpm = d_cpm
         multi_line_chart_df = scatter_plot_df
+        global_mean_median_dic = mean_median_dic
         global_weekly_predictions_df = weekly_predictions_df
         global_monthly_predictions_df = monthly_predictions_df
         global_unique_dim = None
@@ -421,7 +426,7 @@ def predictor_ajax_left_panel_submit(request):
                 (scatter_plot_df["dimension"] == default_dim)
                ]
         multi_line_chart_data = create_pdf_for_multiple_plots(multi_line_chart_json, seasonality, cpm_checked)
-        global global_multi_line_chart_data 
+        global global_multi_line_chart_data
         global_multi_line_chart_data = multi_line_chart_data
         plot_curve(multi_line_chart_data, seasonality, cpm_checked, df_score_final, weekly_predictions_df, monthly_predictions_df, None, request)
         df_score_final = df_score_final[(df_score_final["dimension"] == default_dim)]
@@ -474,6 +479,7 @@ def predictor_ajax_date_dimension_onchange(request):
     print("predictor_ajax_date_dimension_onchange")
     try:
         global global_unique_dim
+        global mean_median_dic
         context = {}
         seasonality = int(request.session.get("seasonality"))
         default_dim = request.GET.get("dimension_value_selector")
@@ -531,8 +537,10 @@ def predictor_ajax_date_dimension_onchange(request):
             cpm_checked = request.session.get("cpm_checked")
             # replotting the curves for downloading 
             global global_multi_line_chart_data 
+            global global_mean_median_dic
             # discarding the dimension for 1st curve also 
             multi_line_chart_data = global_multi_line_chart_data
+            mean_median_dic = global_mean_median_dic
             plot_curve(multi_line_chart_data, seasonality, cpm_checked, df_score_final, weekly_predictions_df, monthly_predictions_df, global_unique_dim, request) 
             multi_line_chart_df = scatter_plot_df
             multi_line_chart_df = multi_line_chart_df[multi_line_chart_df["dimension"].isin(global_unique_dim)]
@@ -547,10 +555,11 @@ def predictor_ajax_date_dimension_onchange(request):
             multi_line_chart_df = multi_line_chart_df.sort_values(by=sort_multi)
             max_predictions = multi_line_chart_df.loc[multi_line_chart_df["predictions"].idxmax()]["predictions"]
             multi_line_chart_json = multi_line_chart_df.to_dict("records")
-            multi_line_chart_data2 = get_multi_line_chart_data2(multi_line_chart_json, cpm_checked)
+            (multi_line_chart_data2, transformed_mean_median_array) = get_multi_line_chart_data2(multi_line_chart_json, cpm_checked, mean_median_dic)
             context["multi_line_chart_data2"] = multi_line_chart_data2
             context["max_spend"] = max_spend
             context["max_predictions"] = max_predictions
+            context["transformed_mean_median_array"] = transformed_mean_median_array
         dimension_value_selector = unique_dim
         # converting from string to datetime
         scatter_plot_df["date"] = pd.to_datetime(scatter_plot_df["date"]).dt.date
@@ -839,6 +848,7 @@ def predictor_window_on_load(request):
         print("default_dim", default_dim)
         print("cpm_checked", cpm_checked)
         global global_unique_dim
+        global global_mean_median_dic
         if cpm_checked == "True":
             print("CPM selected ,reading impdata")
             # data = pd.read_csv("data/impression_sample.csv")
@@ -851,6 +861,7 @@ def predictor_window_on_load(request):
             d_cpm = global_d_cpm
             weekly_predictions_df = global_weekly_predictions_df
             monthly_predictions_df = global_monthly_predictions_df
+            mean_median_dic = global_mean_median_dic
             # as cpm is selected
             enter_cpm = d_cpm[default_dim]
             enter_cpm = round(enter_cpm, 2)
@@ -867,6 +878,7 @@ def predictor_window_on_load(request):
             drop_dimension = global_drop_dimension_with_user_discarded if global_drop_dimension_with_user_discarded  else global_drop_dimension
             weekly_predictions_df = global_weekly_predictions_df
             monthly_predictions_df = global_monthly_predictions_df
+            mean_median_dic = global_mean_median_dic
             d_cpm = None
         multi_line_chart_df = scatter_plot_df
         multi_line_chart_df = multi_line_chart_df[multi_line_chart_df["dimension"].isin(global_unique_dim)]
@@ -880,7 +892,7 @@ def predictor_window_on_load(request):
         max_predictions = multi_line_chart_df.loc[multi_line_chart_df["predictions"].idxmax()]["predictions"]
         # multi_line_chart_df = multi_line_chart_df[(multi_line_chart_df["dimension"] == "SEM Brand")]
         multi_line_chart_json = multi_line_chart_df.to_dict("records")
-        multi_line_chart_data2 = get_multi_line_chart_data2(multi_line_chart_json, cpm_checked)
+        (multi_line_chart_data2, transformed_mean_median_array) = get_multi_line_chart_data2(multi_line_chart_json, cpm_checked, mean_median_dic)
         df_score_final = df_score_final[
             df_score_final["dimension"].isin(scatter_plot_df["dimension"].unique())
         ]
@@ -944,6 +956,7 @@ def predictor_window_on_load(request):
             context["weekly_predictions_json"] = weekly_predictions_json
             context["monthly_predictions_json"] = monthly_predictions_json
         context["multi_line_chart_data2"] = multi_line_chart_data2
+        context["transformed_mean_median_array"] = transformed_mean_median_array
         context["max_spend"] = max_spend
         context["max_predictions"] = max_predictions
         context["target_type"] = target_type
