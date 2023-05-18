@@ -250,10 +250,11 @@ def predictor_ajax_y_axis_onchange(request):
         # this variable can have values releated to spend predictions rate / predictions
         max_predictions = multi_line_chart_df.loc[multi_line_chart_df[y_axis_selector_value].idxmax()][y_axis_selector_value]
         multi_line_chart_json = multi_line_chart_df.to_dict("records")
-        multi_line_chart_data2 = get_multi_line_chart_data2(multi_line_chart_json, cpm_checked, mean_median_dic)
+        (multi_line_chart_data2, transformed_mean_median_array) = get_multi_line_chart_data2(multi_line_chart_json, cpm_checked, mean_median_dic)
         context["max_spend"] = max_spend
         context["max_predictions"] = max_predictions
         context["multi_line_chart_data2"] = multi_line_chart_data2
+        context["transformed_mean_median_array"] = transformed_mean_median_array
         context["target_type"] = target_type
         return JsonResponse(context, status=200)
     except Exception as exp:
