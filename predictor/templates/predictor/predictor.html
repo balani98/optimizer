@@ -892,9 +892,9 @@
         plotting_data = data.multi_line_chart_data2;
         target_type = data.target_type;
         cpm_message = data.cpm_message
-        subsetted_data = remove_data_unchecked_dimensions(plotting_data, global_unchecked_dimensions)
         last_plotting_data = subsetted_data.last_plotting_data;
         original_mean_median_plotting_array = data.transformed_mean_median_array
+        subsetted_data = remove_data_unchecked_dimensions(plotting_data, original_mean_median_plotting_array,global_unchecked_dimensions)
         if(y_axis_selector_value != 'predictions')
           last_plotting_data = filter_plotting_data(last_plotting_data)
         arr = changexydomain(last_plotting_data, cpm_message, y_axis_selector_value)

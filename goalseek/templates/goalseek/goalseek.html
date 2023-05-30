@@ -118,8 +118,8 @@
   }
   .styled_checkbox {
     margin-right: 1em;
-    width: 2em;
-    height: 2em;
+    width: 1.5rem;
+    height: 1.5em;
     margin-top: -0.5em;
   }
 </style>
@@ -207,16 +207,27 @@
               aria-hidden="true"
               style="color: white; margin-right: 10px"
             ></i>
+            {% if constraint_type == 'median' %}
             <span class="tooltiptext"
               >Please enter a minimum and maximum spend per day/week. The ranges
-              in the placeholders are calculated from the data. Max values are
-              the 3x the median spend per day/week. Min values are the historic min 
-              (non-zero) spend per day/week Application will not accept
+              in the placeholders are calculated from data. Max values are the
+              3x the median spend per day/week. Application will not accept
               values beyond the placeholder ranges. Min cannot be equal to max
               value as the optimizer needs a non-zero search space. This is an
               optional input. If no input is provided the placeholder ranges are
               used</span
             >
+            {% else %}
+            <span class="tooltiptext"
+              >Please enter a minimum and maximum spend per day/week. The ranges
+              in the placeholders are calculated from data. Max values are the
+              3x the mean spend per day/week. Application will not accept values
+              beyond the placeholder ranges. Min cannot be equal to max value as
+              the optimizer needs a non-zero search space. This is an optional
+              input. If no input is provided the placeholder ranges are
+              used</span
+            >
+            {% endif %}
           </div>
           <div class="mb-3 pt-2 pb-2 ml-1 searchbox_div">
             <i class="fa fa-search" style="color: #fff; font-size: 1.2rem"></i>
@@ -246,21 +257,27 @@
             </label>
           </div>
           <div
-            id="labels_div_percentages"
-            style="
-              width: 84%;
-              margin-left: 16%;
-              display: none;
-              flex-direction: row;
-              justify-content: space-between;
-              margin-bottom: 10px;
-            "
-          >
-            <p class="label_for_inputs label_styling">% less than median</p>
-            <p class="label_for_inputs label_styling">Median Spend</p>
-            <p class="label_for_inputs label_styling">% more than median</p>
-          </div>
-          <div
+          id="labels_div_percentages"
+          style="
+            display: none;
+            flex-direction: row;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            width: 84%;
+            margin-left: 16%;
+          "
+        >
+          {% if constraint_type == 'median' %}
+          <p class="label_for_inputs label_styling">% less than median</p>
+          <p class="label_for_inputs label_styling">Median Spend</p>
+          <p class="label_for_inputs label_styling">% more than median</p>
+          {% else %}
+          <p class="label_for_inputs label_styling">% less than mean</p>
+          <p class="label_for_inputs label_styling">Mean Spend</p>
+          <p class="label_for_inputs label_styling">% more than mean</p>
+          {% endif %}
+        </div>
+        <div
             id="labels_div_absolute"
             style="
               width: 84%;
@@ -674,7 +691,7 @@
 
     <main
       class="col-md-9 ms-sm-auto col-lg-10 px-md-4"
-      style="display: block; align-items: center"
+      style="display: block; align-items: center; left: 9%; width: 100vw"
     >
       <div id="right_div" style="display: none; align-items: center">
         <div
@@ -722,23 +739,31 @@
                     </div>
                     Dimension
                   </th>
-                  {% if is_weekly_selected == 1 or convert_to_weekly_data == 1 %}
+                  {% if is_weekly_selected == 1 or convert_to_weekly_data == 1%}
+                  {% if constraint_type == 'median' %}
                   <th scope="col">Original Median Budget/week</th>
-                  <th scope="col">Recommended Budget/week</th>
                   {% else %}
+                  <th scope="col">Original Mean Budget/week</th>
+                  {% endif %}
+                  <th scope="col">Recommended Budget/week</th>
+                  {% else %} {% if constraint_type == 'median' %}
                   <th scope="col">Original Median Budget/day</th>
+                  {% else %}
+                  <th scope="col">Original Mean Budget/day</th>
+                  {% endif %}
                   <th scope="col">Recommended Budget/day</th>
                   {% endif %}
-                  <th scope="col">Budget Allocation Original</th>
-                  <th scope="col">Budget Allocation New</th>
-                  <th scope="col">Total Recommended Budget Allocation</th>
-                  {% if is_weekly_selected == 1 or convert_to_weekly_data == 1%}
-                    <th scope="col">Target per week</th>
+                  <th scope="col">Original Total Budget Allocation %</th>
+                  {% if constraint_type == 'median' %}
+                  <th scope="col">Original Median Budget Allocation %</th>
                   {% else %}
-                    <th scope="col">Target per day</th>
+                  <th scope="col">Original Mean Budget Allocation %</th>
                   {% endif %}
-                    <th scope="col">% of Target</th>
-                  <th scope="col">Overall Target</th>
+                  <th scope="col">Recommended Budget Allocation %</th>
+                  <th scope="col">Recommended Total Budget Allocation</th>
+                  <th scope="col">{{targetSelector}} per day</th>
+                  <th scope="col">Overall {{targetSelector}}</th>
+                  <th scope="col">% of {{targetSelector}}</th>
                 </tr>
               </thead>
               <tbody style="text-align: center" class="table_body_1_optimizer">
@@ -1090,17 +1115,17 @@
             });
           // renaming the table column (conversion)
           var table_element0 = document.getElementById('table_1_optimizer').
-                        children[0].children[0].children[6];
-          var table_element1 = document.getElementById('table_1_optimizer').
                         children[0].children[0].children[7];
-          var table_element2 = document.getElementById('table_1_optimizer').
+          var table_element1 = document.getElementById('table_1_optimizer').
                         children[0].children[0].children[8];
+          var table_element2 = document.getElementById('table_1_optimizer').
+                        children[0].children[0].children[9];
           if(is_weekly_selected == 1 || convert_to_weekly_data)
             table_element0.innerText = window.localStorage.getItem('target_selector') + " per week";
           else 
-            table_element0.innerText = window.localStorage.getItem('target_selector') + " per day";
-          table_element1.innerText = "% of " + window.localStorage.getItem('target_selector');
-          table_element2.innerText = "Overall " + window.localStorage.getItem('target_selector');
+          table_element0.innerText = window.localStorage.getItem('target_selector') + " per day";
+          table_element1.innerText = "Overall " + window.localStorage.getItem('target_selector');
+          table_element2.innerText = "% of "  + window.localStorage.getItem('target_selector');
           document.getElementById('conversion_name').innerText = window.localStorage.getItem('target_selector')
           $('#optimizer_date_picker').on("apply.daterangepicker", function (ev, picker) {
             $('#total_conversion').val(null);
@@ -1480,10 +1505,24 @@
             alert("Atleast one dimension must be selected")
            return
           }
+          if(global_seasonality){
+            global_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
+            global_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
+          }
+          if(global_seasonality){
           data_to_send = {
             dimension_min_max:stringified_global_goalseek_left_pannel_data,
-            selected_dimensions:checkedDimensions.toString()
+            selected_dimensions:checkedDimensions.toString(),
+            start_date:global_start_date,
+            end_date:global_end_date
           }
+        }else{
+          data_to_send = {
+            dimension_min_max:stringified_global_goalseek_left_pannel_data,
+            selected_dimensions:checkedDimensions.toString(),
+            number_of_days : goalseek_left_panel_number_of_days
+          }
+        }
           $.ajax({
             data: JSON.stringify(data_to_send),
             url: '/goalseek/ajax/conversion_bound/',
@@ -1498,8 +1537,8 @@
               $('#spinner-optimizer').css('display','none');
               console.log("Success in '/optimizer/ajax/conversion_bound/'")
               conversion_bound = data.conversion_bound
-              global_range_min   = conversion_bound[0]*total_no_of_days;
-              global_range_max = conversion_bound[1]*total_no_of_days;
+              global_range_min   = conversion_bound[0]
+              global_range_max = conversion_bound[1]
               total_conversion.setAttribute('placeholder',
               `${global_range_min.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")} - ${global_range_max.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
             },error: function (error_object) {
@@ -1558,7 +1597,8 @@
           total_conversion : goalseek_left_panel_total_conversion,
           start_date: global_start_date,
           end_date:global_end_date,
-          discarded_dimensions:stringified_discarded_dimensions_json
+          discarded_dimensions:stringified_discarded_dimensions_json,
+          selected_dimensions:checkedDimensions.toString()
         }
       }else{
         data_to_submit = {
@@ -1589,12 +1629,13 @@
             //json_donut_chart_data = data.json_donut_chart_data
             dict_donut_chart_data = data.dict_donut_chart_data
             dict_line_chart_data = data.dict_line_chart_data
+            constraint_type = data.constraint_type
             console.log("Success")
             console.log("submit_predictor_left_pannel_chart_inputs", global_optimizer_download_csv_json)
             console.log("json_table_1_data", json_table_1_data)
             //console.log("json_donut_chart_data", json_donut_chart_data)
             console.log("dict_donut_chart_data", dict_donut_chart_data)
-            populate_table_1(json_table_1_data)
+            populate_table_1(json_table_1_data, constraint_type)
             if(global_my_optimizer_bar_chart != 0){
               console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
               global_my_optimizer_bar_chart.destroy();
@@ -1648,7 +1689,7 @@
     }
 
     {% comment %} Start : Populate Table  1 {% endcomment %}
-    function populate_table_1(json_table_1_data){
+    function populate_table_1(json_table_1_data, constraint_type){
       console.log("json_table_1_data")
 
       table_body_1_optimizer.innerHTML = ""
@@ -1657,56 +1698,70 @@
         // console.log(`${key} : ${value}`);
         tableRow = document.createElement("tr");
 
+    
         td1 = document.createElement("td");
         textNode1 = document.createTextNode(value["dimension"]);
         td1.appendChild(textNode1);
 
         td2 = document.createElement("td");
-        textNode2 = document.createTextNode(`$ ${value["original_median_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        if(constraint_type == 'median')
+          textNode2 = document.createTextNode(`$ ${value["original_median_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        else
+          textNode2 = document.createTextNode(`$ ${value["original_mean_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
         td2.appendChild(textNode2);
 
         td3 = document.createElement("td");
-        textNode3 = document.createTextNode(`$${value["estimated_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        textNode3 = document.createTextNode(`$ ${value["recommended_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
         td3.appendChild(textNode3);
 
         td4 = document.createElement("td");
-        textNode4 = document.createTextNode(`${value["buget_allocation_old_%"] + " %"}`);
+        if(value["dimension"] == "Total"){
+        textNode4 = document.createTextNode(Math.round(value["total_buget_allocation_old_%"],2)+" %");
         td4.appendChild(textNode4);
-
+        }
+        else{
+          textNode4 = document.createTextNode(value["total_buget_allocation_old_%"]+" %");
+          td4.appendChild(textNode4);
+        }
         td5 = document.createElement("td");
-        textNode5 = document.createTextNode(`${value["buget_allocation_new_%"] + " %"}`);
+        if(constraint_type == 'median')
+          textNode5 = document.createTextNode(value["median_buget_allocation_old_%"]+" %");
+        else
+          textNode5 = document.createTextNode(value["mean_buget_allocation_old_%"]+" %");
         td5.appendChild(textNode5);
 
         td6 = document.createElement("td");
-        textNode6 = document.createTextNode(`${value["estimated_budget_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        textNode6 = document.createTextNode(value["buget_allocation_new_%"]+" %");
         td6.appendChild(textNode6);
 
         td7 = document.createElement("td");
-        if(value["recommended_return_per_day"]){
-          textNode7 = document.createTextNode(`${value["recommended_return_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-          td7.appendChild(textNode7);
-        }else{
-          textNode7 = document.createTextNode(`${value["recommended_return_per_day"]}`);
-          td7.appendChild(textNode7);
-        }
+        textNode7 = document.createTextNode(`$ ${value["recommended_budget_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        td7.appendChild(textNode7);
 
         td8 = document.createElement("td");
-        if(value["dimension"] == "Total"){
-          textNode8 = document.createTextNode(Math.round(value["recommended_return_%"],2)+ " %");
+        if(value["estimated_return_per_day"]){
+          textNode8 = document.createTextNode(`${value["estimated_return_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+          td8.appendChild(textNode8);
+        }else{
+          textNode8 = document.createTextNode(`${value["estimated_return_per_day"]}`);
           td8.appendChild(textNode8);
         }
-        else{
-          textNode8 = document.createTextNode(value["recommended_return_%"]+ " %");
-          td8.appendChild(textNode8);
-        }
-
         td9 = document.createElement("td");
-        if(value["recommended_return_for_n_days"]){
-          textNode9 = document.createTextNode(`${value["recommended_return_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        if(value["estimated_return_for_n_days"]){
+          textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
           td9.appendChild(textNode9);
         }else{
-          textNode9 = document.createTextNode(`${value["recommended_return_for_n_days"]}`);
+          textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"]}`);
           td9.appendChild(textNode9);
+        }
+        td10 = document.createElement("td");
+        if(value["dimension"] == "Total"){
+          textNode10 = document.createTextNode(Math.round(value["estimated_return_%"],2)+" %");
+          td10.appendChild(textNode10);
+        }
+        else{
+          textNode10 = document.createTextNode(value["estimated_return_%"] +" %");
+          td10.appendChild(textNode10);
         }
 
         tableRow.appendChild(td1)
@@ -1718,6 +1773,8 @@
         tableRow.appendChild(td7)
         tableRow.appendChild(td8)
         tableRow.appendChild(td9)
+        tableRow.appendChild(td10)
+
         table_body_1_optimizer.appendChild(tableRow)
       }
     }
@@ -1727,7 +1784,7 @@
     function populate_grouped_bar_chart(dict_donut_chart_data){
         console.log("populate_grouped_bar_chart")
         let xValues = dict_donut_chart_data['dimension']
-        let buget_allocation_old = dict_donut_chart_data['buget_allocation_old_%']
+        let buget_allocation_old = dict_donut_chart_data['total_buget_allocation_old_%']
         let buget_allocation_new = dict_donut_chart_data['buget_allocation_new_%']
         let barColors = global_chart_colors
         ctx = "optimizer_bar_chart"
