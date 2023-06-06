@@ -895,10 +895,11 @@
         last_plotting_data = subsetted_data.last_plotting_data;
         original_mean_median_plotting_array = data.transformed_mean_median_array
         subsetted_data = remove_data_unchecked_dimensions(plotting_data, original_mean_median_plotting_array,global_unchecked_dimensions)
+        last_mean_median_plotting_data = subsetted_data.last_mean_median_plotting_data
         if(y_axis_selector_value != 'predictions')
           last_plotting_data = filter_plotting_data(last_plotting_data)
         arr = changexydomain(last_plotting_data, cpm_message, y_axis_selector_value)
-        plot_multi_line_chart_checkboxes(last_plotting_data, original_mean_median_plotting_array,data.cpm_message, arr[0], arr[1], y_axis_selector_value, target_type, subsetted_data.unchecked_dimensions, false)
+        plot_multi_line_chart_checkboxes(last_plotting_data, last_mean_median_plotting_data, data.cpm_message, arr[0], arr[1], y_axis_selector_value, target_type, subsetted_data.unchecked_dimensions, false)
       },error:function(error){
 
       }
