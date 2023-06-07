@@ -388,11 +388,21 @@
               style="display:none;flex-direction:row;justify-content:space-between;background-color:#fff;position:absolute;width:12.5rem
               ;overflow-y:scroll;max-height:20rem"></div>
           </div>
-          <div class="form-check" style="margin-bottom:10px;">
-            <input class="form-check-input" type="checkbox" value="" id="both_mean_median"
-              onclick="showBothMeanMedianPoints(this)">
-            <label class="form-check-label" style="color: #000;font-size:1rem" for="both_mean_median">
-              Show Both Mean (Blue) and Median (Red) Points
+          <div class="form-check" style="margin-bottom:10px;display:flex;align-items:center">
+            <input class="form-check-input" type="checkbox" value="" id="median_check_box"
+              onclick="showPoints()">
+            <label class="form-check-label" style="color: #000;font-size:1rem" for="median_check_box">
+              Median Points
+              <canvas id="median_dot" width="20" height="25">
+            </label>
+          </div>
+          <div class="form-check" style="margin-bottom:10px;display:flex;align-items:center">
+            <input class="form-check-input" type="checkbox" value="" id="mean_check_box"
+              onclick="showPoints()">
+            
+            <label class="form-check-label" style="color: #000;font-size:1rem" for="mean_check_box">
+              Mean Points
+              <canvas id="mean_dot" width="20" height="25">
             </label>
           </div>
           <div class="dropdown">
@@ -717,7 +727,7 @@
     $('#spinner-optimizer').css('display','none');
   }
   // function to display both mean and median points 
-  function showBothMeanMedianPoints(this_value){
+  function showPoints(){
     plotting_data = multi_line_chart_data2;
     target_type = 'volume';
     cpm_message = 'Cpm selected';
@@ -725,7 +735,9 @@
     last_plotting_data = subsetted_data.last_plotting_data;
     last_mean_median_plotting_data = subsetted_data.last_mean_median_plotting_data
     arr = changexydomain(last_plotting_data, cpm_message, 'predictions')
-    plot_multi_line_chart_checkboxes(last_plotting_data, last_mean_median_plotting_data, cpm_message, arr[0], arr[1], 'predictions', target_type, subsetted_data.unchecked_dimensions, false, this_value.checked)
+    plot_median = document.getElementById("median_check_box").checked;
+    plot_mean = document.getElementById("mean_check_box").checked; 
+    plot_multi_line_chart_checkboxes(last_plotting_data, last_mean_median_plotting_data, cpm_message, arr[0], arr[1], 'predictions', target_type, subsetted_data.unchecked_dimensions, false, plot_median, plot_mean)
   }
 
   // Fuction to get start and End date
@@ -1157,8 +1169,16 @@
           plot_weekly_seasonality(weekly_predictions_json);
           plot_monthly_seasonality(monthly_predictions_json);
         }
-        document.getElementById("YAxisSelector").value = 'predictions'
-        plot_multi_line_chart_checkboxes(multi_line_chart_data2, original_mean_median_plotting_array, data.cpm_message ,data.max_spend, data.max_predictions,y_label = 'predictions')
+        document.getElementById("YAxisSelector").value = 'predictions';
+        constraint_type = document.getElementById("select_mean_median").value
+        if(constraint_type == 'median'){
+          plot_median = document.getElementById("median_check_box").checked = true
+          plot_mean = document.getElementById("mean_check_box").checked = false 
+        }else{ 
+          plot_mean = document.getElementById("mean_check_box").checked = true
+          plot_median = document.getElementById("median_check_box").checked = false 
+        }
+         plot_multi_line_chart_checkboxes(multi_line_chart_data2, original_mean_median_plotting_array, data.cpm_message ,data.max_spend, data.max_predictions,y_label = 'predictions',  target_type, dimension_to_uncheck=[], to_be_checked=true, plot_median, plot_mean)
         if (data.cpm_message == "cpm selected") {
           document.getElementById("predictor_cpm_budget").style.display =
             "block";
@@ -1313,7 +1333,7 @@ function plot_mean_points(mean_median_plotting_array, svg, x, y){
   })
 }
 // plot multiple line charts with checkboxes
-function plot_multi_line_chart_checkboxes(plotting_data, mean_median_plotting_array, cpm_message, max_spend,max_predictions, y_label = 'predictions', target_type = 'revenue', dimension_to_uncheck=[],to_be_checked=true, show_both_mean_median=false){
+function plot_multi_line_chart_checkboxes(plotting_data, mean_median_plotting_array, cpm_message, max_spend,max_predictions, y_label = 'predictions', target_type = 'revenue', dimension_to_uncheck=[],to_be_checked=true, plot_median, plot_mean){
   // Mean median selection 
   constraint_type = document.getElementById("select_mean_median").value
   // set the dimensions and margins of the graph
@@ -1472,14 +1492,9 @@ function plot_multi_line_chart_checkboxes(plotting_data, mean_median_plotting_ar
               return myColor(d.name)
           })
           .style("font-size", 15)
-          // plotting mean median points
-          if(show_both_mean_median == true && y_label=='predictions'){
+          if(plot_median == true && y_label=='predictions')
             plot_median_points(mean_median_plotting_array, svg, x, y)
-            plot_mean_points(mean_median_plotting_array, svg, x, y)
-          }
-          else if(constraint_type == 'median' && show_both_mean_median == false && y_label=='predictions')
-            plot_median_points(mean_median_plotting_array, svg, x, y)
-          else if(constraint_type == 'mean' && show_both_mean_median == false && y_label=='predictions')
+          if(plot_mean == true && y_label=='predictions')
             plot_mean_points(mean_median_plotting_array, svg, x, y)
       // creating the searchbox
       var searchBox = document.createElement('input');
@@ -1535,8 +1550,9 @@ function plot_multi_line_chart_checkboxes(plotting_data, mean_median_plotting_ar
                while (element.firstChild) {
                 element.removeChild(element.firstChild);
               }
-              show_both_mean_median_temp = document.getElementById("both_mean_median").checked;
-              plot_multi_line_chart_checkboxes(last_plotting_data, last_mean_median_plotting_data, cpm_message, arr[0],arr[1], y_label, target_type, subsetted_data_select_unselect_all.unchecked_dimensions,this.checked, show_both_mean_median_temp)
+              plot_median = document.getElementById("median_check_box").checked;
+              plot_mean = document.getElementById("mean_check_box").checked;
+              plot_multi_line_chart_checkboxes(last_plotting_data, last_mean_median_plotting_data, cpm_message, arr[0],arr[1], y_label, target_type, subsetted_data_select_unselect_all.unchecked_dimensions,this.checked, plot_median, plot_mean)
       })
       for(let i = 0 ; i < dimension_groups.length ; i++){
           var tick = document.createElement('input');
@@ -1575,8 +1591,9 @@ function plot_multi_line_chart_checkboxes(plotting_data, mean_median_plotting_ar
               while (element.firstChild) {
                 element.removeChild(element.firstChild);
               }
-              show_both_mean_median_temp = document.getElementById("both_mean_median").checked;
-              plot_multi_line_chart_checkboxes(last_plotting_data ,last_mean_median_plotting_data, cpm_message, arr[0], arr[1], y_label, target_type, subsetted_data.unchecked_dimensions,false,show_both_mean_median_temp)
+              plot_median = document.getElementById("median_check_box").checked;
+              plot_mean = document.getElementById("mean_check_box").checked;
+              plot_multi_line_chart_checkboxes(last_plotting_data ,last_mean_median_plotting_data, cpm_message, arr[0], arr[1], y_label, target_type, subsetted_data.unchecked_dimensions,false, plot_median, plot_mean)
           })
     var x_range = d3.scaleLinear().range([0, width]);
     var y_range = d3.scaleLinear().range([height, 0]);
@@ -2277,6 +2294,24 @@ function scatter_plot_chart(data) {
   })
 
   }
+function plot_median_dot(){
+  let c = document.getElementById("median_dot");
+  let ctx = c.getContext("2d");
+  ctx.beginPath();
+  ctx.arc(10, 17, 5, 0, 2 * Math.PI);
+  ctx.fillStyle = "red"
+  ctx.fill()
+  //ctx.stroke();
+}
+function plot_mean_dot(){
+  let c = document.getElementById("mean_dot");
+  let ctx = c.getContext("2d");
+  ctx.beginPath();
+  ctx.arc(10, 17, 5, 0, 2 * Math.PI);
+  ctx.fillStyle = "blue"
+  ctx.fill()
+  //ctx.stroke();
+}
 $(window).on('load',function(){
     get_seasonality_from_session()
     getPredictorStartAndEndDates() 
@@ -2287,6 +2322,8 @@ $(window).on('load',function(){
       $('#optimizer-btn').addClass('disabled');  
     get_is_weekly_selected()
     get_convert_to_weekly_data()
+    plot_median_dot()
+    plot_mean_dot()
    })
   {% if run_wondow_onload %}
     window.onload = predictor_window_on_load_front_end;
