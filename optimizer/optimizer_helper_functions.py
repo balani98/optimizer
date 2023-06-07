@@ -1013,7 +1013,7 @@ class optimizer_iterative:
                     newSpendVec, totalReturn, newImpVec, dimScurveReturn = self.adjust_conversions(newSpendVec, totalReturn, dimension_bound, budgetGoal, dimScurveCheck, ScurveElbowDim, dimAdjustConversionPrevious, grouped_dimension_bound, newImpVec)
                     dimScurveCheck = list(set(dimScurveCheck).difference(dimScurveReturn))
                     dimScurveCheck = sorted(dimScurveCheck, key=lambda dim: dimScurveWeights[dim][2], reverse=True)
-                    dimAdjustConversionPrevious = list(set(dimAdjustConversionPrevious + dimScurveReturn))
+                    dimAdjustConversionPrevious = list(set(dimAdjustConversionPrevious + list(dimScurveReturn)))
                     # print(dimScurveReturn)
                     # print("remaining ",dimScurveCheck)
                     # print()
@@ -1152,8 +1152,8 @@ class optimizer_iterative:
         result_df['estimated_return_per_day']=result_df['estimated_return_per_day'].round().astype(int)
         result_df['recommended_budget_for_n_days'] = (result_df['recommended_budget_per_day']*days).round().astype(int)
         result_df['estimated_return_for_n_days'] = (result_df['estimated_return_per_day']*days).round().astype(int)
-        result_df['buget_allocation_new_%'] = (result_df['recommended_budget_per_day']/sum(result_df['recommended_budget_per_day'])).round(2)
-        result_df['estimated_return_%'] = ((result_df['estimated_return_per_day']/sum(result_df['estimated_return_per_day']))*100).round(2)
+        result_df['buget_allocation_new_%'] = (result_df['recommended_budget_per_day']/sum(result_df['recommended_budget_per_day'])).round(1)
+        result_df['estimated_return_%'] = ((result_df['estimated_return_per_day']/sum(result_df['estimated_return_per_day']))*100).round(1)
                 
         result_df=result_df[['dimension', 'recommended_budget_per_day', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days']]
         
@@ -1196,10 +1196,10 @@ class optimizer_iterative:
             df_res.index = df_res.index + 1  # shifting index
             df_res = df_res.sort_index()
 
-        df_res['buget_allocation_new_%'] = ((df_res['recommended_budget_per_day']/sum(df_res['recommended_budget_per_day']))*100).round(2)
+        df_res['buget_allocation_new_%'] = ((df_res['recommended_budget_per_day']/sum(df_res['recommended_budget_per_day']))*100).round(1)
 
         df_res = df_res.merge(df_spend_dis[['dimension', 'median spend', 'mean spend', 'spend']], on='dimension', how='left')
-        df_res['total_buget_allocation_old_%'] = ((df_res['spend']/df_res['spend'].sum())*100).round(2)
+        df_res['total_buget_allocation_old_%'] = ((df_res['spend']/df_res['spend'].sum())*100).round(1)
 
         if self.constraint_type == 'median':
             df_res['buget_allocation_old_%'] = ((df_res['median spend']/df_res['median spend'].sum())*100)
@@ -1220,8 +1220,8 @@ class optimizer_iterative:
                 metric_projections = spend_projections
             df_res.loc[df_res['dimension']==dim, 'current_projections_per_day'] = self.s_curve_hill(metric_projections, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]).round(2)
         df_res['current_projections_for_n_days'] = df_res['current_projections_per_day']*days
-        df_res['current_projections_%'] = ((df_res['current_projections_per_day']/df_res['current_projections_per_day'].sum())*100).round(2)
-        df_res['buget_allocation_old_%']=df_res['buget_allocation_old_%'].round(2)
+        df_res['current_projections_%'] = ((df_res['current_projections_per_day']/df_res['current_projections_per_day'].sum())*100).round(1)
+        df_res['buget_allocation_old_%']=df_res['buget_allocation_old_%'].round(1)
         df_res["spend_projection_constraint_for_n_day"]=df_res["spend_projection_constraint_for_n_day"].round()
         df_res['current_projections_for_n_days']=df_res['current_projections_for_n_days'].round()
 
@@ -2327,7 +2327,7 @@ class optimizer_iterative_seasonality:
                     newSpendVec, totalReturn, newImpVec, dimScurveReturn = self.adjust_conversions(newSpendVec, totalReturn, dimension_bound, budgetGoal, dimScurveCheck, ScurveElbowDim, dimAdjustConversionPrevious, grouped_dimension_bound, newImpVec)
                     dimScurveCheck = list(set(dimScurveCheck).difference(dimScurveReturn))
                     dimScurveCheck = sorted(dimScurveCheck, key=lambda dim: dimScurveWeights[dim][2], reverse=True)
-                    dimAdjustConversionPrevious = list(set(dimAdjustConversionPrevious + dimScurveReturn))
+                    dimAdjustConversionPrevious = list(set(dimAdjustConversionPrevious + list(dimScurveReturn)))
                     # print(dimScurveReturn)
                     # print("remaining ",dimScurveCheck)
                     # print()
@@ -2466,8 +2466,8 @@ class optimizer_iterative_seasonality:
         result_df['estimated_return_for_n_days'] = result_df['estimated_return_for_n_days'].round().astype(int)
         result_df['recommended_budget_per_day']=(result_df['recommended_budget_for_n_days']/days).round().astype(int)
         result_df['estimated_return_per_day']=(result_df['estimated_return_for_n_days']/days).round().astype(int)
-        result_df['buget_allocation_new_%'] = (result_df['recommended_budget_for_n_days']/sum(result_df['recommended_budget_for_n_days'])).round(2)
-        result_df['estimated_return_%'] = ((result_df['estimated_return_for_n_days']/sum(result_df['estimated_return_for_n_days']))*100).round(2)
+        result_df['buget_allocation_new_%'] = (result_df['recommended_budget_for_n_days']/sum(result_df['recommended_budget_for_n_days'])).round(1)
+        result_df['estimated_return_%'] = ((result_df['estimated_return_for_n_days']/sum(result_df['estimated_return_for_n_days']))*100).round(1)
         
         result_df=result_df[['dimension', 'recommended_budget_per_day', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days']]
         
@@ -2510,7 +2510,7 @@ class optimizer_iterative_seasonality:
             df_res.index = df_res.index + 1  # shifting index
             df_res = df_res.sort_index()
 
-        df_res['buget_allocation_new_%'] = ((df_res['recommended_budget_for_n_days']/sum(df_res['recommended_budget_for_n_days']))*100).round(2)
+        df_res['buget_allocation_new_%'] = ((df_res['recommended_budget_for_n_days']/sum(df_res['recommended_budget_for_n_days']))*100).round(1)
 
         df_res = df_res.merge(df_spend_dis[['dimension', 'median spend', 'mean spend', 'spend']], on='dimension', how='left')
         df_res['total_buget_allocation_old_%'] = ((df_res['spend']/df_res['spend'].sum())*100).round(2)
@@ -2548,7 +2548,7 @@ class optimizer_iterative_seasonality:
             df_res.loc[df_res['dimension']==dim, 'current_projections_for_n_days'] = target_projection
         df_res['current_projections_for_n_days'] = df_res['current_projections_for_n_days'].round()
         df_res['current_projections_per_day'] = (df_res['current_projections_for_n_days']/days).round()
-        df_res['current_projections_%'] = ((df_res['current_projections_for_n_days']/df_res['current_projections_for_n_days'].sum())*100).round(2)
+        df_res['current_projections_%'] = ((df_res['current_projections_for_n_days']/df_res['current_projections_for_n_days'].sum())*100).round(1)
         df_res['buget_allocation_old_%']=df_res['buget_allocation_old_%'].round(2)
         df_res["spend_projection_constraint_for_n_day"]=df_res["spend_projection_constraint_for_n_day"].round()
         df_res['current_projections_for_n_days']=df_res['current_projections_for_n_days'].round()
