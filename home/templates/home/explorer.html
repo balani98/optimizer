@@ -90,9 +90,9 @@
 <div id='container'class="container-fluid">
   <div class="bg"></div>
   <div class="row">
-    <nav id="sidebarMenu" class="col-md-2 col-lg-2 d-md-block sidebar collapse hide_scroller"
+    <nav id="sidebarMenu" class="col-md-2 col-lg-2 d-md-block sidebar collapse"
       style="width: 15rem">
-      <div class="position-sticky pt-3 hide_scroller" style="max-height:44rem;overflow-y:auto">
+      <div class="position-sticky pt-3 scrollbar" style="height:100%;padding-right:12px">
         <a class="explorer-nav-link xm-logo"><img src="{% static '/assets/Redboxlogo-black.png' %}" alt="CROSSMEDIA"></a>
 
         <form action="{%url 'home'%}" method="post" enctype="multipart/form-data">
@@ -102,9 +102,9 @@
               <input type="file" id="inputGroupFile02" name="excel_file" style ="display:none"accept=".csv">
               <label for="inputGroupFile02" class="btn" 
                  data-toggle="tooltip" data-placement="right" title="only .csv files allowed"  
-                style="color:white; background-color:#fff;border-color:#fff;width:100%;color:black">Select file  <i class="fa fa-refresh fa-spin icon-spin"style="display:none;color:black"></i></label>
+                style="color:white; background-color:#fff;border-color:#fff;width:13.7rem;color:black">Select file  <i class="fa fa-refresh fa-spin icon-spin"style="display:none;color:black"></i></label>
              </div>
-              <p id = "filename_to_put" style = "color:white" hidden = "true"></p>
+              <p id = "filename_to_put" style = "color:white;word-break:break-word;width:13.7rem" hidden = "true"></p>
             <input type="submit" class="btn" style = "display:none"id="explorer__upload_file_submit_div" value="Upload" name="Upload" onclick="fn_explorer_upload_file_submit()">
             <button type="button" class="btn btn-link" id="explorer__download_sample__file" onclick="explorer_download_sample_csv_fn()">
               <i class="fa fa-download" aria-hidden="true" style="color:#fff; margin-right: 10px;"></i>
@@ -148,7 +148,7 @@
           <p class="date_error" style="color: #fff; display: none;"></p>
 
           <div class="dropdown" style="margin-bottom: 10px; width: 100%;">
-              <div class="selectBox " onclick="showCheckboxes()">
+              <div class="selectBox " style="width:13.7rem"onclick="showCheckboxes()">
                 <select class="btn btn-secondary explorer-sidebar-dropdown .hide_scroller" id="dimension_value">
                   <option value="hi">Dimension Selector</option>
                 </select>

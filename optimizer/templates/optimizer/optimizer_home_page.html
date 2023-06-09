@@ -232,8 +232,8 @@
       style="width: 15rem"
     >
       <div
-        class="position-sticky pt-3 y_scroll hide_scroller"
-        style="max-height: 44rem"
+        class="position-sticky pt-3 scrollbar" style="height:100%"
+        style="padding-right:7px;"
       >
         <a class="explorer-nav-link xm-logo"
           ><img
@@ -268,7 +268,7 @@
               class="days"
               style="
                 padding: 10px;
-                width: 100%;
+                width: 13.9rem;
                 margin-bottom: 10px;
                 margin-top: -2rem;
                 height: 20%;
@@ -288,7 +288,7 @@
               class="days"
               style="
                 padding: 10px;
-                width: 100%;
+                width: 13.9rem;
                 margin-bottom: 10px;
                 margin-top: -2rem;
                 height: 20%;
@@ -331,7 +331,7 @@
             >
             {% endif %}
           </div>
-          <div class="mb-3 pt-2 pb-2 ml-1 searchbox_div">
+          <div class="mb-3 pt-2 pb-2 searchbox_div"style="width:13.9rem">
             <i class="fa fa-search" style="color: #fff; font-size: 1.2rem"></i>
             <input
               type="text"
@@ -342,7 +342,7 @@
             />
           </div>
 
-          <div class="custom-control custom-switch mb-2">
+          <div class="custom-control custom-switch mb-2" style="width:13.9rem">
             <input
               type="checkbox"
               class="custom-control-input"
@@ -365,8 +365,8 @@
               flex-direction: row;
               justify-content: space-between;
               margin-bottom: 10px;
-              width: 84%;
-              margin-left: 16%;
+              width: 11.8rem;
+              margin-left: 2.1rem;
             "
           >
             {% if constraint_type == 'median' %}
@@ -386,8 +386,8 @@
               flex-direction: row;
               justify-content: space-between;
               margin-bottom: 10px;
-              width: 84%;
-              margin-left: 16%;
+              width: 11.8rem;
+              margin-left: 2.1rem;
             "
           >
             <p class="label_for_inputs label_styling">Min</p>
@@ -404,8 +404,8 @@
               flex-direction: row;
               justify-content: space-between;
               margin-bottom: 10px;
-              width: 84%;
-              margin-left: 16%;
+              width: 11.8rem;
+              margin-left: 2.1rem;
             "
           >
             <div
@@ -463,7 +463,7 @@
           <div
             id="outer_div_multiple_inputs_percentages"
             class="mb-4 hide_scroller"
-            style="display: none; overflow-y: scroll; height: 15rem"
+            style="display: none; overflow-y: scroll; height: 15rem;width:13.9rem"
           >
             <div
               id="multiple_inputs"
@@ -600,7 +600,7 @@
           <div
             id="outer_div_multiple_inputs"
             class="mb-4 hide_scroller"
-            style="overflow-y: scroll; height: 15rem"
+            style="overflow-y: scroll; height: 15rem;width:13.9rem"
           >
             <div
               id="multiple_inputs"
@@ -742,7 +742,7 @@
               onchange="update_budget(this)"
               style="
                 padding: 10px;
-                width: 100%;
+                width: 13.9rem;
                 margin-bottom: 10px;
                 height: 20%;
               "
@@ -845,7 +845,7 @@
               </div>
             </div>
             <div class="col-lg-5 col-sm-12">
-              <div class="tooltip_outer_div">
+              <div class="tooltip_outer_div"style="position:relative">
                 <div style="display:flex;flex-direction:row;justify-content:right">
                   <div><h6>Initial Plan :&nbsp;</h6></div>
                   <div>
@@ -856,9 +856,9 @@
                   ></i>
                   </div>
                 </div>
-                <span class="tooltiptext" style="top:10rem;left:90rem"
-                > Calculation based on projected budget and target values which is in turn 
-                calculated using Original Median or Mean Budget Allocation %</span
+                <span class="tooltiptext" style="top:100%;position:absolute"
+                >Initial Plan calculation is based on Original budget and projected target value. 
+                 Original budget is calculated using Original Median or Mean Budget Allocation %</span
               >
               </div>
               <h4 class="text-center">Cost per {{targetSelector}}</h4>
@@ -912,7 +912,7 @@
               </div>
             </div>
             <div class="col-lg-6 col-sm-12">
-              <h4 class="text-center">{{targetSelector}} Allocation</h4>
+              <h4 class="text-center">{{targetSelector}} Projections</h4>
               <br />
               <div
                 style="
@@ -2315,14 +2315,14 @@
           afterDatasetsDraw(chart, args, pluginOptions){
             const {ctx, scales : {x, y} } = chart;
             ctx.font = 'bold 15px sans-serif'
-            ctx.fillStyle = '#9A3334';
+            ctx.fillStyle = '#fff';
             ctx.textAlign = 'center'
             if(target_type == 'volume'){
-              ctx.fillText(`$ ${Math.round(summary_metric_json["Current Projection CPA/ROI"])}`, x.getPixelForValue(0) - 80, chart.getDatasetMeta(0).data[0].y-10)
-              ctx.fillText(`$ ${Math.round(summary_metric_json["Optimized CPA/ROI"])}`, x.getPixelForValue(0) + 80, chart.getDatasetMeta(1).data[0].y-10)
+              ctx.fillText(`$ ${Math.round(summary_metric_json["Current Projection CPA/ROI"])}`, x.getPixelForValue(0) - 80, chart.getDatasetMeta(0).data[0].y+14)
+              ctx.fillText(`$ ${Math.round(summary_metric_json["Optimized CPA/ROI"])}`, x.getPixelForValue(0) + 80, chart.getDatasetMeta(1).data[0].y+14)
             }else{
-              ctx.fillText(`${Math.round(summary_metric_json["Current Projection CPA/ROI"])}`, x.getPixelForValue(0) - 80, chart.getDatasetMeta(0).data[0].y-10)
-              ctx.fillText(`${Math.round(summary_metric_json["Optimized CPA/ROI"])}`, x.getPixelForValue(0) + 80, chart.getDatasetMeta(1).data[0].y-10)
+              ctx.fillText(`${Math.round(summary_metric_json["Current Projection CPA/ROI"])}`, x.getPixelForValue(0) + 80, chart.getDatasetMeta(0).data[0].y+14)
+              ctx.fillText(`${Math.round(summary_metric_json["Optimized CPA/ROI"])}`, x.getPixelForValue(0) + 80, chart.getDatasetMeta(1).data[0].y+14)
             }
             }
         }
@@ -2581,10 +2581,10 @@
         options: {
           responsive: true,
           indexAxis: 'y',
-          interaction: {
+         /* interaction: {
             mode: 'index',
             intersect: false,
-          },
+          }, */
           stacked: false,
           plugins: {
             title: {
@@ -2691,10 +2691,10 @@
             options: {
               responsive: true,
               indexAxis:'y',
-              interaction: {
+            /*  interaction: {
                 mode: 'index',
                 intersect: false,
-              },
+              }, */
               stacked: false,
               plugins: {
                 title: {
