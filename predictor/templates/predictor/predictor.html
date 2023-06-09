@@ -208,6 +208,7 @@
 .channel-date-range{
   display:flex;
   justify-content:space-between;
+  width:13.7rem;
 }
 </style>
 
@@ -216,11 +217,11 @@
   <div class="row">
     <nav id="sidebarMenu" class="col-md-2 col-lg-2 d-md-block sidebar collapse"
       style="width: 15rem">
-      <div class="position-sticky pt-3  y_scroll hide_scroller" style="max-height:44rem">
+      <div class="position-sticky pt-3 scrollbar" style="height:100%">
         <a class="explorer-nav-link xm-logo"><img src="{% static '/assets/Redboxlogo-black.png' %}" alt="CROSSMEDIA"></a>
         <form method="post" enctype="multipart/form-data">
           {% csrf_token %}
-          <div style="margin-bottom: 10px; width: 100%">
+          <div style="margin-bottom: 10px; width: 13.7rem">
             <p class="predictor_cpm_check_status_text" id="cpm_check">
               {{cpm_message}}
             </p>
@@ -234,7 +235,7 @@
               Data can be subset for non-seasonal models using the date range 
             </span>
           </div>
-          <div class="dropdown" style="margin-bottom: 10px; width: 100%">
+          <div class="dropdown" style="margin-bottom: 10px; width: 13.7rem">
             <p class="predictor_select_seasonality_label" for="cars">
               Include Seasonal Effects ?
             </p>
@@ -251,7 +252,7 @@
 
             </select>
           </div>
-          <div class="dropdown" style="margin-bottom: 10px; width: 100%">
+          <div class="dropdown" style="margin-bottom: 10px; width: 13.7rem">
             <div style="display:flex;justify-content:space-between">
                 <p class="mean_median_selection" for="select_mean_median">
                   Select Mean / Median
@@ -290,8 +291,8 @@
             <p style="color:white">Enter date range for each channel (optional)</p>
           </button>
             <div id="channel_grouping_with_search_box"style="display:none">
-              <div class="ml-1 searchbox_div">
-                <input type="text" id ="searchBox" placeholder="Search Dimension.."  class="btn predictordate" style="width:100%"name="search" 
+              <div class="searchbox_div">
+                <input type="text" id ="searchBox" placeholder="Search Dimension.."  class="btn predictordate" style="width:13.7rem"name="search" 
                       oninput = "search_dimension_names(this)" >
               </div>
               <div id="channel_grouping_inner_div">
@@ -388,7 +389,7 @@
               style="display:none;flex-direction:row;justify-content:space-between;background-color:#fff;position:absolute;width:12.5rem
               ;overflow-y:scroll;max-height:20rem"></div>
           </div>
-          <div class="form-check" style="margin-bottom:10px;display:flex;align-items:center">
+          <div class="form-check" id= "median_dot_div" style="margin-bottom:10px;display:flex;align-items:center">
             <input class="form-check-input" type="checkbox" value="" id="median_check_box"
               onclick="showPoints()">
             <label class="form-check-label" style="color: #000;font-size:1rem" for="median_check_box">
@@ -396,7 +397,7 @@
               <canvas id="median_dot" width="20" height="25">
             </label>
           </div>
-          <div class="form-check" style="margin-bottom:10px;display:flex;align-items:center">
+          <div class="form-check" id="mean_dot_div" style="margin-bottom:10px;display:flex;align-items:center">
             <input class="form-check-input" type="checkbox" value="" id="mean_check_box"
               onclick="showPoints()">
             
@@ -908,14 +909,20 @@
         subsetted_data = remove_data_unchecked_dimensions(plotting_data, original_mean_median_plotting_array,global_unchecked_dimensions)
         last_plotting_data = subsetted_data.last_plotting_data;
         last_mean_median_plotting_data = subsetted_data.last_mean_median_plotting_data
-        if(y_axis_selector_value != 'predictions')
+        if(y_axis_selector_value != 'predictions'){
           last_plotting_data = filter_plotting_data(last_plotting_data)
+          document.getElementById("median_dot_div").style.display = "none";
+          document.getElementById("mean_dot_div").style.display = "none"
+        }else{
+          document.getElementById("median_dot_div").style.display = "block";
+          document.getElementById("mean_dot_div").style.display = "block"
+        }
         arr = changexydomain(last_plotting_data, cpm_message, y_axis_selector_value)
         plot_median = document.getElementById("median_check_box").checked;
         plot_mean = document.getElementById("mean_check_box").checked;
         plot_multi_line_chart_checkboxes(last_plotting_data, last_mean_median_plotting_data, data.cpm_message, arr[0], arr[1], y_axis_selector_value, target_type, subsetted_data.unchecked_dimensions, false, plot_mean, plot_median)
       },error:function(error){
-
+          console.log("error" ,error)
       }
     })
     
