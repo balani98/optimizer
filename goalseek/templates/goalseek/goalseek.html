@@ -27,7 +27,7 @@
 
   .optimiser-date-input {
     padding: 10px;
-    width: 100%;
+    width: 13.9rem;
     margin-bottom: 10px;
     height: 20%;
     margin-top: -2rem;
@@ -132,7 +132,7 @@
       class="col-md-2 col-lg-2 d-md-block sidebar collapse"
       style="width: 15rem"
     >
-      <div class="position-sticky pt-3 y_scroll hide_scroller" style="max-height:44rem">
+      <div class="position-sticky pt-3 scrollbar" style="height:100%">
         <a class="explorer-nav-link xm-logo"
           ><img
             src="{% static '/assets/Redboxlogo-black.png' %}"
@@ -166,7 +166,7 @@
               class="days"
               style="
                 padding: 10px;
-                width: 100%;
+                width: 13.9rem;
                 margin-bottom: 10px;
                 margin-top: -2rem;
                 height: 20%;
@@ -186,7 +186,7 @@
               class="days"
               style="
                 padding: 10px;
-                width: 100%;
+                width: 13.9rem;
                 margin-bottom: 10px;
                 margin-top: -2rem;
                 height: 20%;
@@ -229,7 +229,7 @@
             >
             {% endif %}
           </div>
-          <div class="mb-3 pt-2 pb-2 ml-1 searchbox_div">
+          <div class="mb-3 pt-2 pb-2 ml-1 searchbox_div" style="width:13.9rem">
             <i class="fa fa-search" style="color: #fff; font-size: 1.2rem"></i>
             <input
               type="text"
@@ -263,8 +263,8 @@
             flex-direction: row;
             justify-content: space-between;
             margin-bottom: 10px;
-            width: 84%;
-            margin-left: 16%;
+            width: 11.8rem;
+            margin-left: 2.1rem;
           "
         >
           {% if constraint_type == 'median' %}
@@ -280,8 +280,8 @@
         <div
             id="labels_div_absolute"
             style="
-              width: 84%;
-              margin-left: 16%;
+              width: 11.8rem;
+              margin-left: 2.1rem;
               display: flex;
               flex-direction: row;
               justify-content: space-between;
@@ -301,8 +301,8 @@
               flex-direction: row;
               justify-content: space-between;
               margin-bottom: 10px;
-              width: 84%;
-              margin-left: 16%;
+              width: 11.8rem;
+              margin-left: 2.1rem;
             "
           >
             <div
@@ -359,17 +359,18 @@
           <div
             id = "hover_statement_percentages" 
             style="
-            width: 84%;
-            margin-left: 16%;
+            width: 11.8rem;
+            margin-left: 2.1rem;
             display:none;
             color:#fff;
+            text-align:center
             ">
               <p>Hover to check the minimum possible value for each dimension</p>
             </div>
             <div
             id="outer_div_multiple_inputs_percentages"
             class="mb-4 hide_scroller"
-            style="display: none; overflow-y: scroll; height: 15rem"
+            style="display: none; overflow-y: scroll; height: 15rem;width:13.9rem"
           >
             <div
               id="multiple_inputs"
@@ -507,7 +508,7 @@
           <div
             id="outer_div_multiple_inputs"
             class="mb-4 hide_scroller"
-            style="overflow-y: scroll; height: 15rem"
+            style="overflow-y: scroll; height: 15rem;width:13.9rem"
           >
             <div
               id="multiple_inputs"
@@ -650,7 +651,7 @@
               onchange="update_conversion(this)"
               style="
                 padding: 10px;
-                width: 100%;
+                width: 13.9rem;
                 margin-bottom: 10px;
                 height: 20%;
               "
