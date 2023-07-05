@@ -132,7 +132,7 @@
       class="col-md-2 col-lg-2 d-md-block sidebar collapse"
       style="width: 15rem"
     >
-      <div class="position-sticky pt-3 scrollbar" style="height:100%">
+      <div class="position-sticky pt-3 scrollbar" style="height: 100%">
         <a class="explorer-nav-link xm-logo"
           ><img
             src="{% static '/assets/Redboxlogo-black.png' %}"
@@ -152,8 +152,8 @@
               id="optimizer_date_picker"
             />
             <span class="tooltiptext"
-              >This will populate the total conversion range. Select Dates : Start
-              and End date</span
+              >This will populate the total conversion range. Select Dates :
+              Start and End date</span
             >
           </div>
           {% else %}
@@ -175,8 +175,8 @@
               onchange="update_number_of_days(this.value)"
             />
             <span class="tooltiptext"
-              >This will populate the total conversion range. Enter total number of
-              weeks for Media Plan</span
+              >This will populate the total conversion range. Enter total number
+              of weeks for Media Plan</span
             >
             {% else %}
             <input
@@ -195,8 +195,8 @@
               onchange="update_number_of_days(this.value)"
             />
             <span class="tooltiptext"
-              >This will populate the total conversion range. Enter total number of
-              days for Media Plan</span
+              >This will populate the total conversion range. Enter total number
+              of days for Media Plan</span
             >
             {% endif %}
           </div>
@@ -229,7 +229,7 @@
             >
             {% endif %}
           </div>
-          <div class="mb-3 pt-2 pb-2 ml-1 searchbox_div" style="width:13.9rem">
+          <div class="mb-3 pt-2 pb-2 ml-1 searchbox_div" style="width: 13.9rem">
             <i class="fa fa-search" style="color: #fff; font-size: 1.2rem"></i>
             <input
               type="text"
@@ -257,27 +257,27 @@
             </label>
           </div>
           <div
-          id="labels_div_percentages"
-          style="
-            display: none;
-            flex-direction: row;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            width: 11.8rem;
-            margin-left: 2.1rem;
-          "
-        >
-          {% if constraint_type == 'median' %}
-          <p class="label_for_inputs label_styling">% less than median</p>
-          <p class="label_for_inputs label_styling">Median Spend</p>
-          <p class="label_for_inputs label_styling">% more than median</p>
-          {% else %}
-          <p class="label_for_inputs label_styling">% less than mean</p>
-          <p class="label_for_inputs label_styling">Mean Spend</p>
-          <p class="label_for_inputs label_styling">% more than mean</p>
-          {% endif %}
-        </div>
-        <div
+            id="labels_div_percentages"
+            style="
+              display: none;
+              flex-direction: row;
+              justify-content: space-between;
+              margin-bottom: 10px;
+              width: 11.8rem;
+              margin-left: 2.1rem;
+            "
+          >
+            {% if constraint_type == 'median' %}
+            <p class="label_for_inputs label_styling">% less than median</p>
+            <p class="label_for_inputs label_styling">Median Spend</p>
+            <p class="label_for_inputs label_styling">% more than median</p>
+            {% else %}
+            <p class="label_for_inputs label_styling">% less than mean</p>
+            <p class="label_for_inputs label_styling">Mean Spend</p>
+            <p class="label_for_inputs label_styling">% more than mean</p>
+            {% endif %}
+          </div>
+          <div
             id="labels_div_absolute"
             style="
               width: 11.8rem;
@@ -319,8 +319,8 @@
                 id="min_all_value"
                 type="text"
                 value="{{maximum_of_minimum_value}}"
-                onkeydown = "change_all_min_perc_values(event,this)"
-                onblur = "change_all_min_perc_values(event,this)"
+                onkeydown="change_all_min_perc_values(event,this)"
+                onblur="change_all_min_perc_values(event,this)"
                 style="width: 50%; outline: none; border: none"
               />
               <span class="bg-grey float-right mr-2">%</span>
@@ -332,7 +332,8 @@
                 style="color: white; margin-right: 10px"
               ></i>
               <span class="tooltiptext"
-                >Update min and max % constraints for all dimensions simultaneously</span
+                >Update min and max % constraints for all dimensions
+                simultaneously</span
               >
             </div>
             <div
@@ -349,28 +350,34 @@
                 id="max_all_value"
                 type="text"
                 value="200"
-                onkeydown = "change_all_max_perc_values(event,this)"
-                onblur = "change_all_max_perc_values(event,this)"
+                onkeydown="change_all_max_perc_values(event,this)"
+                onblur="change_all_max_perc_values(event,this)"
                 style="width: 50%; outline: none; border: none"
               />
               <span class="bg-grey float-right mr-2" aria-hidden="true">%</span>
             </div>
           </div>
           <div
-            id = "hover_statement_percentages" 
+            id="hover_statement_percentages"
             style="
-            width: 11.8rem;
-            margin-left: 2.1rem;
-            display:none;
-            color:#fff;
-            text-align:center
-            ">
-              <p>Hover to check the minimum possible value for each dimension</p>
-            </div>
-            <div
+              width: 11.8rem;
+              margin-left: 2.1rem;
+              display: none;
+              color: #fff;
+              text-align: center;
+            "
+          >
+            <p>Hover to check the minimum possible value for each dimension</p>
+          </div>
+          <div
             id="outer_div_multiple_inputs_percentages"
             class="mb-4 hide_scroller"
-            style="display: none; overflow-y: scroll; height: 15rem;width:13.9rem"
+            style="
+              display: none;
+              overflow-y: scroll;
+              height: 15rem;
+              width: 13.9rem;
+            "
           >
             <div
               id="multiple_inputs"
@@ -440,7 +447,7 @@
                   id="min_perc_input"
                   placeholder="{{value.3}}"
                   type="text"
-                  title = "{{value.3}}% - {{value.4}}%"
+                  title="{{value.3}}% - {{value.4}}%"
                   data-toggle="tooltip"
                   data-placement="right"
                   class="min_perc_value"
@@ -508,7 +515,7 @@
           <div
             id="outer_div_multiple_inputs"
             class="mb-4 hide_scroller"
-            style="overflow-y: scroll; height: 15rem;width:13.9rem"
+            style="overflow-y: scroll; height: 15rem; width: 13.9rem"
           >
             <div
               id="multiple_inputs"
@@ -658,9 +665,9 @@
               onkeyup="add_commas()"
               oninput="check_keys()"
             />
-            <span class="tooltiptext" style = "bottom:2rem"
-              >Enter Total Conversions. The placeholder range for the total
-              is calculated by summing the min and max possible conversion for each 
+            <span class="tooltiptext" style="bottom: 2rem"
+              >Enter Total Conversions. The placeholder range for the total is
+              calculated by summing the min and max possible conversion for each
               dimension.</span
             >
           </div>
@@ -696,6 +703,7 @@
     >
       <div id="right_div" style="display: none; align-items: center">
         <div
+          class="card"
           style="
             background-color: #fff;
             padding: 20px;
@@ -704,6 +712,154 @@
             box-shadow: rgb(0 0 0 / 24%) 0px 10px 20px;
           "
         >
+          <div class="row">
+            <div class="col-lg-7 col-sm-12">
+              <h4 class="text-center" style="margin-top: 2rem">
+                Summary Metrics
+              </h4>
+              <div
+                style="
+                  margin-top: 120px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  width: 100%;
+                "
+              >
+                <table class="table table-bordered summary_metric_table">
+                  <thead style="text-align: center">
+                    <tr>
+                      <th style="text-align: left">Total Budget:</th>
+                      {% comment %}
+                      <td>$ 1000</td>
+                      {% endcomment %}
+                    </tr>
+                    <tr>
+                      <th style="text-align: left">Total Target:</th>
+                      {% comment %}
+                      <td>299</td>
+                      {% endcomment %}
+                    </tr>
+                    <tr>
+                      {% if target_type == 'volume' %}
+                      <th style="text-align: left">Total cost per target :</th>
+                      {% elif target_type == 'revenue' %}
+                      <th style="text-align: left">Return On Investment :</th>
+                      {% endif %} {% comment %}
+                      <td>$ 100</td>
+                      {% endcomment %}
+                    </tr>
+                  </thead>
+                  <tbody
+                    style="text-align: center"
+                    class="table_body_optimizer_summary_metric"
+                  >
+                    <tr>
+                      {% comment %}
+                      <td>$ 10000</td>
+                      <td>100</td>
+                      <td>$ 500</td>
+                      <td>1000</td>
+                      <td>$ 1000</td>
+                      <td>200</td>
+                      {% endcomment %}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="col-lg-5 col-sm-12">
+              <div class="tooltip_outer_div" style="position: relative">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: row;
+                    justify-content: right;
+                  "
+                >
+                  <div><h6>Initial Plan :&nbsp;</h6></div>
+                  <div>
+                    <i
+                      class="fa fa-info-circle"
+                      aria-hidden="true"
+                      style="color: #9a3334; font-size: 1.5rem"
+                    ></i>
+                  </div>
+                </div>
+                <span class="tooltiptext" style="top: 100%; position: absolute"
+                  >Initial Plan calculation is based on Original budget and
+                  projected target value. Original budget is calculated using
+                  Original Median or Mean Budget Allocation %</span
+                >
+              </div>
+              <h4 class="text-center">Cost per {{targetSelector}}</h4>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-direction: column;
+                  width: 100%;
+                  margin: auto;
+                "
+              >
+                <canvas
+                  id="optimizer_CPA_chart"
+                  style="height: 30vh; width: 20vw"
+                ></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          style="
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 10px;
+            margin-top: 20px;
+            box-shadow: rgb(0 0 0 / 24%) 0px 10px 20px;
+          "
+        >
+          <br />
+          <br />
+          <br />
+          <div class="row">
+            <div class="col-lg-6 col-sm-12">
+              <h4 class="text-center">Budget Allocation</h4>
+              <br />
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-direction: column;
+                  width: 100%;
+                  margin: auto;
+                "
+              >
+                <canvas id="optimizer_budget_bar_chart"></canvas>
+              </div>
+            </div>
+            <div class="col-lg-6 col-sm-12">
+              <h4 class="text-center">{{targetSelector}} Projections</h4>
+              <br />
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-direction: column;
+                  width: 100%;
+                  margin: auto;
+                "
+              >
+                <canvas id="optimizer_target_bar_chart"></canvas>
+              </div>
+            </div>
+          </div>
+          <br />
+          <br />
+          <br />
           <h4>Media Investment Plan</h4>
           <div
             style="
@@ -808,21 +964,6 @@
           {% comment %} pie chart {% endcomment %}
           <br />
           <br />
-          <br />
-          <h4>% Distribution Between Dimensions</h4>
-          <br />
-          <div
-            style="
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              flex-direction: column;
-              width: 100%;
-              margin: auto;
-            "
-          >
-            <canvas id="optimizer_bar_chart"></canvas>
-          </div>
           <br />
           <br />
           <br />
@@ -1061,7 +1202,7 @@
         get_all_the_key_value = document.querySelectorAll('.get_all_the_key_value')
         let table_body_1_optimizer = document.querySelector(".table_body_1_optimizer");
         let table_body_2_optimizer = document.querySelector(".table_body_2_optimizer");
-
+        let summary_metric_table = document.querySelector(".summary_metric_table");
 
 
         {% comment %} global variables  {% endcomment %}
@@ -1088,11 +1229,13 @@
         let global_sum_fixed_budget_values = 0;
         let discarded_dimensions_json = {};
         let fixed_budget_div_open = false
-        let convert_to_weekly_data 
+        let convert_to_weekly_data
         let is_weekly_selected
         {% comment %} Graphs and Charts variables  {% endcomment %}
-        global_my_optimizer_bar_chart = 0
+        global_my_optimizer_target_bar_chart = 0
+        global_my_optimizer_budget_bar_chart = 0
         global_my_optimizer_line_chart = 0
+        global_goalseek_cpa_bar_chart = 0
         let maximum_of_minimum_value = {{maximum_of_minimum_value}}
         let conversion_bound_API_to_be_called = true;
         console.log("global_seasonality", global_seasonality)
@@ -1123,7 +1266,7 @@
                         children[0].children[0].children[9];
           if(is_weekly_selected == 1 || convert_to_weekly_data)
             table_element0.innerText = window.localStorage.getItem('target_selector') + " per week";
-          else 
+          else
           table_element0.innerText = window.localStorage.getItem('target_selector') + " per day";
           table_element1.innerText = "Overall " + window.localStorage.getItem('target_selector');
           table_element2.innerText = "% of "  + window.localStorage.getItem('target_selector');
@@ -1355,7 +1498,7 @@
             global_goalseek_left_pannel_data[key][1] = max_values
           }
         }
-        // updating the discarded dimensions 
+        // updating the discarded dimensions
         $('.fixed_budget_input').each(function(i,obj){
           discarded_dimensions_json[obj.name] = parseInt(obj.value.replace(/,/g, '').replace('$',''));
           global_sum_fixed_budget_values += parseInt(obj.value.replace(/,/g, '').replace('$',''));
@@ -1375,7 +1518,7 @@
         if(is_weekly_selected == 1 || convert_to_weekly_data == 1)
           document.getElementById('conversion_per_day_text').innerText = window.localStorage.getItem('target_selector')
                   + " per week : " +   Math.round(conversion_per_day_week);
-        else 
+        else
         document.getElementById('conversion_per_day_text').innerText = window.localStorage.getItem('target_selector')
                   + " per day : " +   Math.round(conversion_per_day_week);
        }
@@ -1401,7 +1544,7 @@
             this_value.value = '200'
             return;
           }
-          // setting this value as false , so system does not call same API multiple times 
+          // setting this value as false , so system does not call same API multiple times
           conversion_bound_API_to_be_called = false;
           $('.max_perc_value').val(value_to_set);
           $('.max_perc_value').each(function(index,obj){
@@ -1437,7 +1580,7 @@
             this_value.value = maximum_of_minimum_value;
             return;
           }
-          // setting this value as false , so system does not call same API multiple times 
+          // setting this value as false , so system does not call same API multiple times
           conversion_bound_API_to_be_called = false;
           $('.min_perc_value').val(value_to_set);
           $('.min_perc_value').each(function(index,obj){
@@ -1448,9 +1591,9 @@
             );
           })
           if(conversion_bound_API_to_be_called == false)
-            update_global_goalseek_left_pannel_data() 
+            update_global_goalseek_left_pannel_data()
         }else
-          return; 
+          return;
       }
       document.onkeydown=function(event)
     {
@@ -1461,7 +1604,7 @@
             return false;
         }
     }
-  // function to get cookies 
+  // function to get cookies
   function getCookie(name) {
     if (!document.cookie) {
       return null;
@@ -1551,6 +1694,103 @@
 
 {% comment %} on submit {% endcomment %}
 <script>
+  {% comment %} Start : Budget Bar Chart{% endcomment %}
+  function populate_grouped_budget_bar_chart(dict_donut_chart_data, constraint_type){
+    console.log("populate_grouped_bar_chart")
+    let canvasElement = document.getElementById("optimizer_budget_bar_chart")
+    height = "80"
+    width = "80"
+    ctx = resizeCanvas(canvasElement, width, height)
+    let xValues = dict_donut_chart_data['dimension']
+    let buget_allocation_old = "";
+    if(constraint_type == 'median')
+      buget_allocation_old = dict_donut_chart_data['median_buget_allocation_old_%']
+    else
+      buget_allocation_old = dict_donut_chart_data['mean_buget_allocation_old_%']
+      let buget_allocation_new = dict_donut_chart_data['buget_allocation_new_%']
+    let barColors = global_chart_colors
+    // ctx = "optimizer_bar_chart"
+    config = {
+      type: "bar",
+      data: {
+        labels: xValues,
+        datasets: [
+          {
+            label: 'Buget Allocation Original',
+            data: buget_allocation_old,
+            backgroundColor: '#a7a7a6'
+
+          },
+          {
+            label: 'Buget Allocation New',
+            data: buget_allocation_new,
+            backgroundColor: '#9A3334',
+          }],
+      },
+      options: {
+        responsive: true,
+        indexAxis:'y',
+      /*  interaction: {
+          mode: 'index',
+          intersect: false,
+        }, */
+        stacked: false,
+        plugins: {
+          title: {
+            display: true,
+            text: '',
+            position: 'bottom'
+          },
+          tooltip : {
+            callbacks: {
+              label: function(context) {
+                  let label = context.dataset.label || '';
+
+                  if (label) {
+                      label += ': ';
+                  }
+                  label += context.parsed.x + '%';
+                  return label;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            display: true,
+            title: {
+              display: true,
+              text: 'Dimension',
+            },
+            ticks: {
+              // Shorten the label If it has more than 10 characters
+              callback: function(value, index) {
+                return this.getLabelForValue(value).length > 10 ?
+                        this.getLabelForValue(value).substr(0,10) : this.getLabelForValue(value) ;
+              }
+            }
+          },
+          x: {
+            display: true ,
+            title: {
+              display: true,
+              text: '',
+            },
+            ticks:{
+              callback: function(value, index) {
+                return value + '%'
+              }
+            }
+          }
+        },
+      },
+    }
+    global_my_optimizer_budget_bar_chart = new Chart(ctx, config);
+    console.log("global_my_optimizer_bar_chart", global_my_optimizer_budget_bar_chart)
+
+
+}
+{% comment %} End : Budget Bar Chart {% endcomment %}
     function submit_predictor_left_pannel_chart_inputs() {
       console.log("inputs submitted")
       // Final validation before the submit
@@ -1629,20 +1869,31 @@
             json_table_1_data = data.json_table_1_data
             //json_donut_chart_data = data.json_donut_chart_data
             dict_donut_chart_data = data.dict_donut_chart_data
-            dict_line_chart_data = data.dict_line_chart_data
+            dict_target_chart_data = data.dict_target_chart_data
             constraint_type = data.constraint_type
+            summary_metric_json = data.summary_metric_dic
+            target_type = data.target_type
             console.log("Success")
             console.log("submit_predictor_left_pannel_chart_inputs", global_optimizer_download_csv_json)
             console.log("json_table_1_data", json_table_1_data)
             //console.log("json_donut_chart_data", json_donut_chart_data)
             console.log("dict_donut_chart_data", dict_donut_chart_data)
             populate_table_1(json_table_1_data, constraint_type)
-            if(global_my_optimizer_bar_chart != 0){
-              console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
-              global_my_optimizer_bar_chart.destroy();
+            if(global_my_optimizer_target_bar_chart != 0){
+              console.log("global_my_optimizer_target_bar_chart", global_my_optimizer_target_bar_chart)
+              global_my_optimizer_target_bar_chart.destroy();
             }
-
-            populate_grouped_bar_chart(dict_donut_chart_data)
+            if(global_my_optimizer_budget_bar_chart != 0){
+              console.log("global_my_optimizer_budget_bar_chart", global_my_optimizer_budget_bar_chart)
+              global_my_optimizer_budget_bar_chart.destroy();
+            }
+            if(global_goalseek_cpa_bar_chart != 0){
+              global_goalseek_cpa_bar_chart.destroy();
+            }
+            populate_table_summary_metric(summary_metric_json,target_type)
+            populate_grouped_target_bar_chart(dict_target_chart_data)
+            populate_grouped_budget_bar_chart(dict_donut_chart_data, constraint_type)
+            populate_cpa_graph(summary_metric_json, target_type)
             //$("#optimizer__total_1_value").val(5)
             //$("#optimizer__total_2_value").val(888)
         },
@@ -1688,7 +1939,53 @@
       }
 
     }
+          // function to populate the summary metrics table
+          function populate_table_summary_metric(summary_metric_json, target_type){
+            tableRow1 =  summary_metric_table.rows[0]
+            tableRow2 =  summary_metric_table.rows[1]
+            tableRow3 =  summary_metric_table.rows[2]
+             // appending the columns of table
+             if(!summary_metric_table.rows[0].cells[1]){
+               td1 = document.createElement("td");
+               td1.style = "text-align:left";
+             }else{
+               td1 = summary_metric_table.rows[0].cells[1];
+               td1.style = "text-align:left";
+               td1.innerHTML = ""
+             }
+             textNode1 = document.createTextNode(`$ ${summary_metric_json["Optimized Total Budget"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+             td1.appendChild(textNode1);
+             if(!summary_metric_table.rows[1].cells[1]){
+               td2 = document.createElement("td");
+               td2.style = "text-align:left";
+             }else{
+               td2 = summary_metric_table.rows[1].cells[1];
+               td2.innerHTML = ""
+             }
+             textNode2 = document.createTextNode(`${summary_metric_json["Optimized Total Target"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+             td2.appendChild(textNode2);
 
+             if(!summary_metric_table.rows[2].cells[1]){
+               td3 = document.createElement("td");
+               td3.style = "text-align:left"
+             }else{
+               td3 = summary_metric_table.rows[2].cells[1];
+               td3.innerHTML = ""
+
+             }
+             if(target_type =='volume')
+               textNode3 = document.createTextNode("$ " + Math.round(summary_metric_json["Optimized CPA/ROI"]));
+             else
+               textNode3 = document.createTextNode(Math.round(summary_metric_json["Optimized CPA/ROI"]));
+             td3.appendChild(textNode3);
+
+             // appending the table row
+             tableRow1.appendChild(td1);
+             tableRow2.appendChild(td2);
+             tableRow3.appendChild(td3);
+
+             //table_body_optimizer_summary_metric.appendChild(tableRow);
+           }
     {% comment %} Start : Populate Table  1 {% endcomment %}
     function populate_table_1(json_table_1_data, constraint_type){
       console.log("json_table_1_data")
@@ -1699,7 +1996,7 @@
         // console.log(`${key} : ${value}`);
         tableRow = document.createElement("tr");
 
-    
+
         td1 = document.createElement("td");
         textNode1 = document.createTextNode(value["dimension"]);
         td1.appendChild(textNode1);
@@ -1779,39 +2076,168 @@
         table_body_1_optimizer.appendChild(tableRow)
       }
     }
+  // function to resize canvas
+  function resizeCanvas(canvas, width, height) {
+    // Get the canvas context.
+    var ctx = canvas.getContext("2d");
+
+    // Set the canvas width and height.
+    canvas.width = width;
+    canvas.height = height;
+
+    // Clear the canvas.
+    ctx.clearRect(0, 0, width, height);
+    return ctx;
+  }
+    // goalseek cpa graph
+    function populate_cpa_graph(summary_metric_json, target_type){
+      let xValues = []
+      let y_label = ""
+      let max_value_on_y_axis = Math.max(summary_metric_json["Current Projection CPA/ROI"], summary_metric_json["Optimized CPA/ROI"])
+      if(target_type == 'volume'){
+        xValues = ["CPA plans"]
+        y_label = "CPA"
+      }
+      else if(target_type == 'revenue'){
+        xValues = ["ROI plans"]
+        y_label = "ROI"
+      }
+      let barColors = global_chart_colors
+      ctx = "optimizer_CPA_chart"
+      const topLabels = {
+        'id': 'topLabels',
+        afterDatasetsDraw(chart, args, pluginOptions){
+          const {ctx, scales : {x, y} } = chart;
+          ctx.font = 'bold 15px sans-serif'
+          ctx.fillStyle = '#9A3334';
+          ctx.textAlign = 'center'
+          if(target_type == 'volume'){
+            ctx.fillText(`$ ${Math.round(summary_metric_json["Current Projection CPA/ROI"])}`, x.getPixelForValue(0) - 80, chart.getDatasetMeta(0).data[0].y - 10)
+            ctx.fillText(`$ ${Math.round(summary_metric_json["Optimized CPA/ROI"])}`, x.getPixelForValue(0) + 80, chart.getDatasetMeta(1).data[0].y - 10)
+          }else{
+            ctx.fillText(`${Math.round(summary_metric_json["Current Projection CPA/ROI"])}`, x.getPixelForValue(0) - 80, chart.getDatasetMeta(0).data[0].y - 10)
+            ctx.fillText(`${Math.round(summary_metric_json["Optimized CPA/ROI"])}`, x.getPixelForValue(0) + 80, chart.getDatasetMeta(1).data[0].y - 10)
+          }
+          }
+      }
+      config = {
+        type: "bar",
+        data: {
+          labels: xValues,
+          datasets: [
+            {
+              label: 'Initial Plan',
+              data: [Math.round(summary_metric_json["Current Projection CPA/ROI"])],
+              backgroundColor: '#a7a7a6'
+
+            },
+            {
+              label: 'Optimized Plan',
+              data: [Math.round(summary_metric_json["Optimized CPA/ROI"])],
+              backgroundColor: '#9A3334',
+            }],
+        },
+        plugins:[topLabels],
+        options: {
+          responsive: true,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          stacked: false,
+          plugins: {
+           title: {
+              display: true,
+              text: '',
+              position: 'bottom'
+            },
+            legend:{
+              position:'bottom'
+            },
+            tooltip : {
+              callbacks: {
+                label: function(context) {
+                    let label = context.dataset.label || '';
+
+                    if (label) {
+                        label += ': ';
+                    }
+                    if(target_type == 'volume')
+                      label += '$ ' + context.parsed.y ;
+                    else
+                      label += context.parsed.y ;
+                    return label;
+                }
+              }
+            },
+          },
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: '',
+              },
+            },
+            y: {
+              display: true ,
+              title: {
+                display: true,
+                text: y_label,
+              },
+              ticks:{
+                callback: function(value, index) {
+                  if(target_type == 'volume')
+                    return '$ ' + value;
+                  else
+                    return value;
+                },
+                beginAtZero: true,
+                max: Math.round(max_value_on_y_axis + 0.20*max_value_on_y_axis)
+              }
+            }
+          }
+
+        },
+      }
+      global_optimizer_cpa_bar_chart = new Chart(ctx, config);
+    }
     {% comment %} End : Populate Table  1 {% endcomment %}
 
     {% comment %} Start : Populate Donut Chart{% endcomment %}
-    function populate_grouped_bar_chart(dict_donut_chart_data){
-        console.log("populate_grouped_bar_chart")
+    function populate_grouped_target_bar_chart(dict_target_chart_data){
+        let canvasElement = document.getElementById("optimizer_target_bar_chart")
+        height = "80";
+        width = "80";
+        ctx = resizeCanvas(canvasElement, width, height);
         let xValues = dict_donut_chart_data['dimension']
-        let buget_allocation_old = dict_donut_chart_data['total_buget_allocation_old_%']
-        let buget_allocation_new = dict_donut_chart_data['buget_allocation_new_%']
+        let target_allocation_old = dict_target_chart_data['current_projections_%']
+        let target_allocation_new = dict_target_chart_data['estimated_return_%']
         let barColors = global_chart_colors
-        ctx = "optimizer_bar_chart"
         config = {
           type: "bar",
           data: {
             labels: xValues,
             datasets: [
               {
-                label: 'Buget Allocation Original',
-                data: buget_allocation_old,
+                label: 'Target Allocation Original',
+                data: target_allocation_old,
                 backgroundColor: '#a7a7a6'
 
               },
               {
-                label: 'Buget Allocation New',
-                data: buget_allocation_new,
+                label: 'Target Allocation New',
+                data: target_allocation_new,
                 backgroundColor: '#9A3334',
               }],
           },
           options: {
             responsive: true,
-            interaction: {
+            indexAxis:'y',
+            /* interaction: {
               mode: 'index',
               intersect: false,
-            },
+            }, */
             stacked: false,
             plugins: {
               title: {
@@ -1834,7 +2260,7 @@
               }
             },
             scales: {
-              x: {
+              y: {
                 display: true,
                 title: {
                   display: true,
@@ -1848,7 +2274,7 @@
                   }
                 }
               },
-              y: {
+              x: {
                 display: true ,
                 title: {
                   display: true,
@@ -1863,10 +2289,8 @@
             },
           },
         }
-        global_my_optimizer_bar_chart = new Chart(ctx, config);
-        console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
-
-
+        global_my_optimizer_target_bar_chart = new Chart(ctx, config);
+        console.log("global_my_optimizer_bartaarget__chart", global_my_optimizer_target_bar_chart)
     }
     {% comment %} End : Populate Donut Chart {% endcomment %}
 
