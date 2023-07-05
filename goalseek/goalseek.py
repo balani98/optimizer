@@ -703,8 +703,8 @@ class optimizer_conversion:
         result_df['estimated_return_per_day']=result_df['estimated_return_per_day'].round().astype(int)
         result_df['recommended_budget_for_n_days'] = (result_df['recommended_budget_per_day']*days).round().astype(int)
         result_df['estimated_return_for_n_days'] = (result_df['estimated_return_per_day']*days).round().astype(int)
-        result_df['buget_allocation_new_%'] = (result_df['recommended_budget_per_day']/sum(result_df['recommended_budget_per_day'])).round(2)
-        result_df['estimated_return_%'] = ((result_df['estimated_return_per_day']/sum(result_df['estimated_return_per_day']))*100).round(2)
+        result_df['buget_allocation_new_%'] = (result_df['recommended_budget_per_day']/sum(result_df['recommended_budget_per_day'])).round(1)
+        result_df['estimated_return_%'] = ((result_df['estimated_return_per_day']/sum(result_df['estimated_return_per_day']))*100).round(1)
                 
         result_df=result_df[['dimension', 'recommended_budget_per_day', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days']]
         
@@ -747,10 +747,10 @@ class optimizer_conversion:
             df_res.index = df_res.index + 1  # shifting index
             df_res = df_res.sort_index()
 
-        df_res['buget_allocation_new_%'] = ((df_res['recommended_budget_per_day']/sum(df_res['recommended_budget_per_day']))*100).round(2)
+        df_res['buget_allocation_new_%'] = ((df_res['recommended_budget_per_day']/sum(df_res['recommended_budget_per_day']))*100).round(1)
 
         df_res = df_res.merge(df_spend_dis[['dimension', 'median spend', 'mean spend', 'spend']], on='dimension', how='left')
-        df_res['total_buget_allocation_old_%'] = ((df_res['spend']/df_res['spend'].sum())*100).round(2)
+        df_res['total_buget_allocation_old_%'] = ((df_res['spend']/df_res['spend'].sum())*100).round(1)
 
         if self.constraint_type == 'median':
             df_res['buget_allocation_old_%'] = ((df_res['median spend']/df_res['median spend'].sum())*100)
@@ -762,7 +762,7 @@ class optimizer_conversion:
             df_res = df_res.rename(columns={"mean spend": "original_constraint_budget_per_day"})
 
         for dim in self.d_param:
-            budget_per_day = round(sum(df_res['recommended_budget_per_day']), 2)
+            budget_per_day = int(sum(df_res['recommended_budget_per_day']))
             spend_projections = budget_per_day*(df_res.loc[df_res['dimension']==dim, 'buget_allocation_old_%']/100)
             df_res.loc[df_res['dimension']==dim, 'spend_projection_constraint_for_n_day'] = spend_projections * days
             if self.use_impression:
@@ -772,8 +772,8 @@ class optimizer_conversion:
                 metric_projections = spend_projections
             df_res.loc[df_res['dimension']==dim, 'current_projections_per_day'] = self.s_curve_hill(metric_projections, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]).round(2)
         df_res['current_projections_for_n_days'] = df_res['current_projections_per_day']*days
-        df_res['current_projections_%'] = ((df_res['current_projections_per_day']/df_res['current_projections_per_day'].sum())*100).round(2)
-        df_res['buget_allocation_old_%']=df_res['buget_allocation_old_%'].round(2)
+        df_res['current_projections_%'] = ((df_res['current_projections_per_day']/df_res['current_projections_per_day'].sum())*100).round(1)
+        df_res['buget_allocation_old_%']=df_res['buget_allocation_old_%'].round(1)
         df_res["spend_projection_constraint_for_n_day"]=df_res["spend_projection_constraint_for_n_day"].round()
         df_res['current_projections_for_n_days']=df_res['current_projections_for_n_days'].round()
 
@@ -800,13 +800,11 @@ class optimizer_conversion:
         if self.constraint_type == 'median':
             df_res = df_res.rename(columns={"original_constraint_budget_per_day": "original_median_budget_per_day"})
             df_res = df_res.rename(columns={"buget_allocation_old_%": "median_buget_allocation_old_%"})
-            # df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'median_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'current_projections_%', 'optimized_CPA_ROI', 'current_projections_CPA_ROI']]
-            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'median_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%']]
+            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'median_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'current_projections_%']]
         else:
             df_res = df_res.rename(columns={"original_constraint_budget_per_day": "original_mean_budget_per_day"})
             df_res = df_res.rename(columns={"buget_allocation_old_%": "mean_buget_allocation_old_%"})
-            # df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'current_projections_%', 'optimized_CPA_ROI', 'current_projections_CPA_ROI']]
-            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%']]
+            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'current_projections_%']]
         
         df_res = df_res.replace({np.nan: None})
 
@@ -818,7 +816,7 @@ class optimizer_conversion:
         for i in int_cols:
             df_res.loc[df_res[i].values != None, i]=df_res.loc[df_res[i].values != None, i].astype(float).round().astype(int)
 
-        return df_res
+        return df_res, summary_metrics_dic
     
         
     def dimension_bound_max_check(self, dimension_bound):
@@ -895,10 +893,10 @@ class optimizer_conversion:
             result_df[['spend', 'return']]=result_df[['spend', 'return']].round(2)
         
         result_df = self.lift_cal(result_df, conv_goal, df_spend_dis, days, dimension_bound)
-        result_df = self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound, conv_goal, days)        
+        result_df, summary_metrics_dic = self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound, conv_goal, days)        
         result_itr_df=result_itr_df.round(2)
 
-        return result_df
+        return result_df, summary_metrics_dic
 
 class optimizer_conversion_seasonality:
     def __init__(self, df_param, constraint_type):
@@ -1449,8 +1447,8 @@ class optimizer_conversion_seasonality:
         result_df['estimated_return_for_n_days'] = result_df['estimated_return_for_n_days'].round().astype(int)
         result_df['recommended_budget_per_day']=(result_df['recommended_budget_for_n_days']/days).round().astype(int)
         result_df['estimated_return_per_day']=(result_df['estimated_return_for_n_days']/days).round().astype(int)
-        result_df['buget_allocation_new_%'] = (result_df['recommended_budget_for_n_days']/sum(result_df['recommended_budget_for_n_days'])).round(2)
-        result_df['estimated_return_%'] = ((result_df['estimated_return_for_n_days']/sum(result_df['estimated_return_for_n_days']))*100).round(2)
+        result_df['buget_allocation_new_%'] = (result_df['recommended_budget_for_n_days']/sum(result_df['recommended_budget_for_n_days'])).round(1)
+        result_df['estimated_return_%'] = ((result_df['estimated_return_for_n_days']/sum(result_df['estimated_return_for_n_days']))*100).round(1)
         
         result_df=result_df[['dimension', 'recommended_budget_per_day', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_%', 'estimated_return_for_n_days']]
         
@@ -1496,7 +1494,7 @@ class optimizer_conversion_seasonality:
         df_res['buget_allocation_new_%'] = ((df_res['recommended_budget_for_n_days']/sum(df_res['recommended_budget_for_n_days']))*100).round(2)
 
         df_res = df_res.merge(df_spend_dis[['dimension', 'median spend', 'mean spend', 'spend']], on='dimension', how='left')
-        df_res['total_buget_allocation_old_%'] = ((df_res['spend']/df_res['spend'].sum())*100).round(2)
+        df_res['total_buget_allocation_old_%'] = ((df_res['spend']/df_res['spend'].sum())*100).round(1)
 
         if self.constraint_type == 'median':
             df_res['buget_allocation_old_%'] = ((df_res['median spend']/df_res['median spend'].sum())*100)
@@ -1508,7 +1506,7 @@ class optimizer_conversion_seasonality:
             df_res = df_res.rename(columns={"mean spend": "original_constraint_budget_per_day"})
 
         for dim in self.d_param:
-            budget_per_day = round(sum(df_res['recommended_budget_per_day']), 2)
+            budget_per_day = int(sum(df_res['recommended_budget_per_day']))
             spend_projections = budget_per_day*(df_res.loc[df_res['dimension']==dim, 'buget_allocation_old_%']/100)
             df_res.loc[df_res['dimension']==dim, 'spend_projection_constraint_for_n_day'] = spend_projections * days
             if self.use_impression:
@@ -1532,8 +1530,8 @@ class optimizer_conversion_seasonality:
             df_res.loc[df_res['dimension']==dim, 'current_projections_for_n_days'] = target_projection
         df_res['current_projections_for_n_days'] = df_res['current_projections_for_n_days'].round()
         df_res['current_projections_per_day'] = (df_res['current_projections_for_n_days']/days).round()
-        df_res['current_projections_%'] = ((df_res['current_projections_for_n_days']/df_res['current_projections_for_n_days'].sum())*100).round(2)
-        df_res['buget_allocation_old_%']=df_res['buget_allocation_old_%'].round(2)
+        df_res['current_projections_%'] = ((df_res['current_projections_for_n_days']/df_res['current_projections_for_n_days'].sum())*100).round(1)
+        df_res['buget_allocation_old_%']=df_res['buget_allocation_old_%'].round(1)
         df_res["spend_projection_constraint_for_n_day"]=df_res["spend_projection_constraint_for_n_day"].round()
         df_res['current_projections_for_n_days']=df_res['current_projections_for_n_days'].round()
 
@@ -1560,13 +1558,11 @@ class optimizer_conversion_seasonality:
         if self.constraint_type == 'median':
             df_res = df_res.rename(columns={"original_constraint_budget_per_day": "original_median_budget_per_day"})
             df_res = df_res.rename(columns={"buget_allocation_old_%": "median_buget_allocation_old_%"})
-            # df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'median_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'current_projections_%', 'optimized_CPA_ROI', 'current_projections_CPA_ROI']]
-            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'median_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%']]
+            df_res=df_res[['dimension', 'original_median_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'median_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'current_projections_%']]
         else:
             df_res = df_res.rename(columns={"original_constraint_budget_per_day": "original_mean_budget_per_day"})
             df_res = df_res.rename(columns={"buget_allocation_old_%": "mean_buget_allocation_old_%"})
-            # df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'current_projections_%', 'optimized_CPA_ROI', 'current_projections_CPA_ROI']]
-            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%']]
+            df_res=df_res[['dimension', 'original_mean_budget_per_day', 'recommended_budget_per_day', 'total_buget_allocation_old_%', 'mean_buget_allocation_old_%', 'buget_allocation_new_%', 'recommended_budget_for_n_days', 'estimated_return_per_day', 'estimated_return_for_n_days', 'estimated_return_%', 'current_projections_for_n_days', 'current_projections_%']]
 
         df_res = df_res.replace({np.nan: None})
 
@@ -1578,7 +1574,7 @@ class optimizer_conversion_seasonality:
         for i in int_cols:
             df_res.loc[df_res[i].values != None, i]=df_res.loc[df_res[i].values != None, i].astype(float).round().astype(int)
 
-        return df_res
+        return df_res, summary_metrics_dic
     
         
     def dimension_bound_max_check(self, dimension_bound):
@@ -1798,7 +1794,7 @@ class optimizer_conversion_seasonality:
         result_df = result_df.rename_axis('dimension').reset_index()
 
         result_df = self.lift_cal(result_df, conv_goal, df_spend_dis, days, dimension_bound)
-        result_df = self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound, conv_goal, days, d_weekday, d_month, date_range)        
+        result_df, summary_metrics_dic = self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound, conv_goal, days, d_weekday, d_month, date_range)        
         result_itr_df=result_itr_df.round(2)
 
-        return result_df
+        return result_df, summary_metrics_dic

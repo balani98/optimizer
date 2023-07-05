@@ -56,6 +56,7 @@ def goalseek_home_page(request):
     drop_dimension_from_session = request.session.get("drop_dimension")
     constraint_type = request.session.get("mean_median_selection")
     target_selector = request.session.get("TargetSelector")
+    target_type = request.session.get("target_type")
     if seasonality_from_session:
         seasonality = seasonality_from_session
     else:
@@ -98,8 +99,9 @@ def goalseek_home_page(request):
         context["seasonality"] = seasonality
         context["drop_dimension_from_session"] = drop_dimension_from_session
         context["goalseek_left_pannel_data"] = goalseek_left_pannel_data
-        context["target_selector"] = target_selector
+        context["targetSelector"] = target_selector
         context["constraint_type"] = constraint_type
+        context["target_type"] = target_type
         context[
             "stringified_goalseek_left_pannel_data"
         ] = stringified_goalseek_left_pannel_data
@@ -153,6 +155,7 @@ def left_panel_submit(request):
 
         context = {}
         dict_donut_chart_data = {}
+        dict_target_chart_data = {}
         dict_line_chart_data = {}
         start_date = None
         end_date = None
@@ -177,6 +180,7 @@ def left_panel_submit(request):
         discarded_dimensions = json.loads(body["discarded_dimensions"])
         dimension_min_max = json.loads(body['dimension_min_max'])
         constraint_type = request.session.get("mean_median_selection")
+        target_type = request.session.get("target_type")
         target_selector = request.session.get("TargetSelector")
         if seasonality:
             print(
@@ -206,7 +210,8 @@ def left_panel_submit(request):
             df_spend_dis = pd.DataFrame(request.session.get('df_spend_dis'))
             df_optimizer_results_post_min_max = pd.DataFrame()
             print('number_of_days',number_of_days)
-            df_optimizer_results_post_min_max = optimize_con_obj.execute(scatter_plot_df, 
+            (df_optimizer_results_post_min_max,
+             summary_metric_dic) = optimize_con_obj.execute(scatter_plot_df, 
                                                                          total_conversion, 
                                                                          number_of_days, 
                                                                          df_spend_dis, 
@@ -238,7 +243,8 @@ def left_panel_submit(request):
                 "recommended_budget_for_n_days",
                 'estimated_return_per_day',
                 'estimated_return_%',
-                'estimated_return_for_n_days'
+                'estimated_return_for_n_days',
+                'current_projections_for_n_days'
             ]
         ]
 
@@ -310,12 +316,17 @@ def left_panel_submit(request):
             "dimension"
         ].tolist()
         dict_donut_chart_data[
-            "total_buget_allocation_old_%"
-        ] = df_optimizer_results_post_min_max["total_buget_allocation_old_%"].tolist()
+            dynamic_column_for_budget_allocation_perc
+        ] = df_optimizer_results_post_min_max[dynamic_column_for_budget_allocation_perc].tolist()
         dict_donut_chart_data[
             "buget_allocation_new_%"
         ] = df_optimizer_results_post_min_max["buget_allocation_new_%"].tolist()
-
+        dict_target_chart_data[
+             'current_projections_%'
+        ] = df_optimizer_results_post_min_max['current_projections_%'].tolist()
+        dict_target_chart_data[
+            "estimated_return_%"
+        ] = df_optimizer_results_post_min_max["estimated_return_%"].tolist()
         json_table_1_data = df_table_1_data.to_dict("records")
         print("json_table_1_data", json_table_1_data)
         # print("json_donut_chart_data", json_donut_chart_data)
@@ -326,6 +337,9 @@ def left_panel_submit(request):
         context["dict_donut_chart_data"] = dict_donut_chart_data
         context["constraint_type"] = constraint_type
         context["targetSelector"] = target_selector
+        context["target_type"] = target_type 
+        context["dict_target_chart_data"] = dict_target_chart_data
+        context["summary_metric_dic"] = summary_metric_dic
         return JsonResponse(context)
     except Exception as e:
         return HttpResponse(ERROR_DICT[str(e)], status=403)
