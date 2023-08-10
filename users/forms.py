@@ -16,6 +16,8 @@ class UserRegisterForm(UserCreationForm):
         elif "@xmedia.com" not in data:
             if "@crossmedia.com" in data:
                 return data
+            elif "@crossmedia.de" in data:
+                return data
             else:
                 raise forms.ValidationError("Must be Xmedia / Crossmedia Email Address")
         return data
