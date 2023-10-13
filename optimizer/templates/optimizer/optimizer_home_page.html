@@ -233,7 +233,7 @@
       style="width: 15rem"
     >
       <div
-        class="position-sticky pt-3 scrollbar" style="height:100%"
+        class="position-sticky pt-3 scrollbar  hide_scroller y_scroll" style="height:100%"
         style="padding-right:7px;"
       >
         <a class="explorer-nav-link xm-logo"
@@ -801,7 +801,7 @@
               <h4 class="text-center" style="margin-top:2rem">Summary Metrics</h4>
               <div
                 style="
-                  margin-top: 120px;
+                  margin-top: 5rem;
                   display: flex;
                   align-items: center;
                   justify-content: center;
@@ -825,6 +825,10 @@
                         <th style="text-align:left">Return On Investment :</th>
                       {% endif %}
                       {% comment %} <td>$ 100</td> {% endcomment %}
+                    </tr>
+                    <tr>
+                      <th style="text-align:left">Confidence Score:</th>
+                      {% comment %} <td>299</td> {% endcomment %}
                     </tr>
                   </thead>
                   <tbody
@@ -2231,12 +2235,13 @@
               dict_line_chart_data = data.dict_line_chart_data
               summary_metric_json = data.summary_metric_dic
               target_type = data.target_type
+              confidence_score = data.confidence_score
               console.log("submit_predictor_left_pannel_chart_inputs", global_optimizer_download_csv_json)
               console.log("json_table_1_data", json_table_1_data)
               //console.log("json_donut_chart_data", json_donut_chart_data)
               console.log("dict_donut_chart_data", dict_donut_chart_data)
               populate_table_1(json_table_1_data, constraint_type)
-              populate_table_summary_metric(summary_metric_json)
+              populate_table_summary_metric(summary_metric_json,confidence_score)
               if(global_my_optimizer_bar_chart != 0){
                 console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
                 global_my_optimizer_bar_chart.destroy();
@@ -2406,10 +2411,11 @@
         global_optimizer_cpa_bar_chart = new Chart(ctx, config);
       }
       // function to populate the summary metrics table
-      function populate_table_summary_metric(summary_metric_json){
+      function populate_table_summary_metric(summary_metric_json,confidence_score){
        tableRow1 =  summary_metric_table.rows[0]
        tableRow2 =  summary_metric_table.rows[1]
        tableRow3 =  summary_metric_table.rows[2]
+       tableRow4 =  summary_metric_table.rows[3]
         // appending the columns of table
         if(!summary_metric_table.rows[0].cells[1]){
           td1 = document.createElement("td");
@@ -2445,10 +2451,20 @@
           textNode3 = document.createTextNode(Math.round(summary_metric_json["Optimized CPA/ROI"]));
         td3.appendChild(textNode3);
 
+        if(!summary_metric_table.rows[3].cells[1]){
+          td4 = document.createElement("td");
+          td4.style = "text-align:left";
+        }else{
+          td4 = summary_metric_table.rows[1].cells[1];
+          td4.innerHTML = ""
+        }
+        textNode4 = document.createTextNode(`${confidence_score}`);
+        td4.appendChild(textNode4);
         // appending the table row
         tableRow1.appendChild(td1);
         tableRow2.appendChild(td2);
         tableRow3.appendChild(td3);
+        tableRow4.appendChild(td4);
 
         //table_body_optimizer_summary_metric.appendChild(tableRow);
       }
@@ -2593,6 +2609,20 @@
               text: '',
               position: 'bottom'
             },
+            zoom: {
+              zoom: {
+                wheel: {
+                  enabled: true,
+                },
+                pinch: {
+                  enabled: true
+                },
+                mode: 'y',
+              },pan:{
+                enabled:true,
+                mode:'y'
+              }
+            },
             tooltip : {
               callbacks: {
                 label: function(context) {
@@ -2702,6 +2732,20 @@
                   display: true,
                   text: '',
                   position: 'bottom'
+                },
+                zoom: {
+                  zoom: {
+                    wheel: {
+                      enabled: true,
+                    },
+                    pinch: {
+                      enabled: true
+                    },
+                    mode: 'y',
+                  },pan:{
+                    enabled:true,
+                    mode:'y'
+                  }
                 },
                 tooltip : {
                   callbacks: {

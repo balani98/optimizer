@@ -129,10 +129,10 @@
   <div class="row">
     <nav
       id="sidebarMenu"
-      class="col-md-2 col-lg-2 d-md-block sidebar collapse"
+      class="col-md-2 col-lg-2 d-md-block sidebar collapse "
       style="width: 15rem"
     >
-      <div class="position-sticky pt-3 scrollbar" style="height: 100%">
+      <div class="position-sticky pt-3 scrollbar hide_scroller y_scroll" style="height: 100%">
         <a class="explorer-nav-link xm-logo"
           ><img
             src="{% static '/assets/Redboxlogo-black.png' %}"
@@ -719,7 +719,7 @@
               </h4>
               <div
                 style="
-                  margin-top: 120px;
+                  margin-top: 5rem;
                   display: flex;
                   align-items: center;
                   justify-content: center;
@@ -749,6 +749,13 @@
                       <td>$ 100</td>
                       {% endcomment %}
                     </tr>
+                    <tr>
+                      <th style="text-align: left">Confidence Score:</th>
+                      {% comment %}
+                      <td>299</td>
+                      {% endcomment %}
+                    </tr>
+                    <tr>
                   </thead>
                   <tbody
                     style="text-align: center"
@@ -1741,6 +1748,20 @@
             text: '',
             position: 'bottom'
           },
+          zoom: {
+            zoom: {
+              wheel: {
+                enabled: true,
+              },
+              pinch: {
+                enabled: true
+              },
+              mode: 'y',
+            },pan:{
+              enabled:true,
+              mode:'y'
+            }
+          },
           tooltip : {
             callbacks: {
               label: function(context) {
@@ -1873,6 +1894,7 @@
             constraint_type = data.constraint_type
             summary_metric_json = data.summary_metric_dic
             target_type = data.target_type
+            confidence_score = data.confidence_score 
             console.log("Success")
             console.log("submit_predictor_left_pannel_chart_inputs", global_optimizer_download_csv_json)
             console.log("json_table_1_data", json_table_1_data)
@@ -1890,7 +1912,7 @@
             if(global_goalseek_cpa_bar_chart != 0){
               global_goalseek_cpa_bar_chart.destroy();
             }
-            populate_table_summary_metric(summary_metric_json,target_type)
+            populate_table_summary_metric(summary_metric_json, target_type, confidence_score)
             populate_grouped_target_bar_chart(dict_target_chart_data)
             populate_grouped_budget_bar_chart(dict_donut_chart_data, constraint_type)
             populate_cpa_graph(summary_metric_json, target_type)
@@ -1940,10 +1962,11 @@
 
     }
           // function to populate the summary metrics table
-          function populate_table_summary_metric(summary_metric_json, target_type){
+          function populate_table_summary_metric(summary_metric_json, target_type, confidence_score){
             tableRow1 =  summary_metric_table.rows[0]
             tableRow2 =  summary_metric_table.rows[1]
             tableRow3 =  summary_metric_table.rows[2]
+            tableRow4 =  summary_metric_table.rows[3]
              // appending the columns of table
              if(!summary_metric_table.rows[0].cells[1]){
                td1 = document.createElement("td");
@@ -1979,10 +2002,22 @@
                textNode3 = document.createTextNode(Math.round(summary_metric_json["Optimized CPA/ROI"]));
              td3.appendChild(textNode3);
 
+             if(!summary_metric_table.rows[3].cells[1]){
+              td4 = document.createElement("td");
+              td4.style = "text-align:left";
+            }else{
+              td4 = summary_metric_table.rows[3].cells[1];
+              td4.style = "text-align:left";
+              td4.innerHTML = ""
+            }
+            textNode4 = document.createTextNode(`${confidence_score}`);
+            td4.appendChild(textNode4);
+
              // appending the table row
              tableRow1.appendChild(td1);
              tableRow2.appendChild(td2);
              tableRow3.appendChild(td3);
+             tableRow4.appendChild(td4);
 
              //table_body_optimizer_summary_metric.appendChild(tableRow);
            }
@@ -2242,8 +2277,22 @@
             plugins: {
               title: {
                 display: true,
-                text: 'Distribution Between Dimensions',
+                text: '',
                 position: 'bottom'
+              },
+              zoom: {
+                zoom: {
+                  wheel: {
+                    enabled: true,
+                  },
+                  pinch: {
+                    enabled: true
+                  },
+                  mode: 'y',
+                },pan:{
+                  enabled:true,
+                  mode:'y'
+                }
               },
               tooltip : {
                 callbacks: {
@@ -2253,7 +2302,7 @@
                       if (label) {
                           label += ': ';
                       }
-                      label += context.parsed.y + '%';
+                      label += context.parsed.x + '%';
                       return label;
                   }
                 }

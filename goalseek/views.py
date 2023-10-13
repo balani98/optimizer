@@ -121,14 +121,15 @@ def conversion_range(request):
     dimension_min_max = json.loads(body["dimension_min_max"])
     selected_dimensions = body['selected_dimensions'].split(",")
     seasonality_from_session = request.session.get("seasonality")
+    is_weekly_selected = request.session.get("is_weekly_selected")
     if seasonality_from_session == 1:
         start_date = body["start_date"]
         end_date = body["end_date"]
         date_range = [start_date, end_date]
-        conv_bound = conversion_bound(df_predictor_page_latest_data, scatter_plot_df, dimension_min_max, selected_dimensions, seasonality_from_session, date_range)
+        conv_bound = conversion_bound(df_predictor_page_latest_data, scatter_plot_df, dimension_min_max, selected_dimensions, seasonality_from_session, date_range, is_weekly_selected)
     else:
         number_of_days = body['number_of_days']
-        conv_bound = conversion_bound(df_predictor_page_latest_data, scatter_plot_df, dimension_min_max, selected_dimensions, seasonality_from_session, number_of_days)
+        conv_bound = conversion_bound(df_predictor_page_latest_data, scatter_plot_df, dimension_min_max, selected_dimensions, seasonality_from_session, number_of_days, is_weekly_selected)
     context['conversion_bound'] = conv_bound
     print(conv_bound)
     return JsonResponse(context)
@@ -182,6 +183,10 @@ def left_panel_submit(request):
         constraint_type = request.session.get("mean_median_selection")
         target_type = request.session.get("target_type")
         target_selector = request.session.get("TargetSelector")
+        is_weekly_selected = request.session.get("is_weekly_selected")
+        df_spend_dis = pd.DataFrame(request.session.get('df_spend_dis'))
+        df_score_final = pd.DataFrame(request.session.get('df_score_final'))
+        confidence_score = 0
         if seasonality:
             print(
                 f"\ndimension_min_max - seasonality:{seasonality}, Running optimizer_with_seasonality_class"
@@ -191,33 +196,37 @@ def left_panel_submit(request):
             ).date()
             end_date = datetime.strptime(body["end_date"], "%m-%d-%y").date()
             date_range = [start_date, end_date]
-            df_spend_dis = pd.DataFrame(request.session.get('df_spend_dis'))
             df_optimizer_results_post_min_max = pd.DataFrame()
-            optimize_obj_seasonality = optimizer_conversion_seasonality(df_predictor_page_latest_data, constraint_type)
-            df_optimizer_results_post_min_max = optimize_obj_seasonality.execute(scatter_plot_df,
+            optimize_obj_seasonality = optimizer_conversion_seasonality(df_predictor_page_latest_data, constraint_type,target_type, is_weekly_selected)
+            (df_optimizer_results_post_min_max,
+            summary_metric_dic,
+            confidence_score) = optimize_obj_seasonality.execute(scatter_plot_df,
                                                                          total_conversion, 
                                                                          date_range,
                                                                          df_spend_dis,
                                                                          discarded_dimensions, 
                                                                          dimension_min_max,
-                                                                         selected_dimensions)
+                                                                         selected_dimensions,
+                                                                         df_score_final)
         else:
             print(
                 f"\ndimension_min_max - seasonality:{seasonality}, Running optimizer_class"
             )
             number_of_days = int(body["number_of_days"])
-            optimize_con_obj = optimizer_conversion(df_predictor_page_latest_data, constraint_type)
+            optimize_con_obj = optimizer_conversion(df_predictor_page_latest_data, constraint_type, target_type)
             df_spend_dis = pd.DataFrame(request.session.get('df_spend_dis'))
             df_optimizer_results_post_min_max = pd.DataFrame()
             print('number_of_days',number_of_days)
             (df_optimizer_results_post_min_max,
-             summary_metric_dic) = optimize_con_obj.execute(scatter_plot_df, 
+             summary_metric_dic,
+             confidence_score) = optimize_con_obj.execute(scatter_plot_df, 
                                                                          total_conversion, 
                                                                          number_of_days, 
                                                                          df_spend_dis, 
                                                                          discarded_dimensions, 
                                                                          dimension_min_max , 
-                                                                         selected_dimensions)
+                                                                         selected_dimensions,
+                                                                         df_score_final)
         print(
 
             "\n number_of_days",
@@ -339,6 +348,7 @@ def left_panel_submit(request):
         context["targetSelector"] = target_selector
         context["target_type"] = target_type 
         context["dict_target_chart_data"] = dict_target_chart_data
+        context["confidence_score"] = confidence_score
         context["summary_metric_dic"] = summary_metric_dic
         return JsonResponse(context)
     except Exception as e:
