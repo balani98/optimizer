@@ -223,6 +223,8 @@ def dimension_min_max(request):
         target_type = request.session.get('target_type')
         selected_dimensions = body['selected_dimensions'].split(",")
         is_group_dimension_selected = request.session.get("dimension_grouping_check")
+        is_weekly_selected = request.session.get("is_weekly_selected")
+        df_score_final =  pd.DataFrame(request.session.get('df_score_final'))
         if is_group_dimension_selected == True:
             isolated_dimensions = body['isolated_dimensions'].split(",")
             grouped_dimension_constraints = json.loads(body['dimension_capping_constraints'])
@@ -242,11 +244,11 @@ def dimension_min_max(request):
             print(start_date, end_date)
             date_range = [start_date, end_date]
             optimizer_object = optimizer_iterative_seasonality(
-                df_predictor_page_latest_data, constraint_type, target_type
+                df_predictor_page_latest_data, constraint_type, target_type, is_weekly_selected
             )
             try:
                 (
-                    df_optimizer_results_post_min_max, summary_metric_dic
+                    df_optimizer_results_post_min_max, summary_metric_dic, confidence_score
                 ) = optimizer_object.execute(scatter_plot_df,
                                              total_budget,
                                              date_range,
@@ -255,7 +257,8 @@ def dimension_min_max(request):
                                              dimension_min_max,
                                              grouped_dimension_constraints,
                                              isolated_dimensions,
-                                             selected_dimensions)
+                                             selected_dimensions,
+                                             df_score_final)
             except Exception as error:
                 return JsonResponse({"error": str(error)}, status=501)
         else:
@@ -267,7 +270,7 @@ def dimension_min_max(request):
             optimizer_object = optimizer_iterative(df_predictor_page_latest_data, constraint_type, target_type)
             try:
                 (
-                    df_optimizer_results_post_min_max, summary_metric_dic
+                    df_optimizer_results_post_min_max, summary_metric_dic, confidence_score
                 ) = optimizer_object.execute(
                     scatter_plot_df,
                     total_budget,
@@ -277,7 +280,8 @@ def dimension_min_max(request):
                     dimension_min_max,
                     grouped_dimension_constraints,
                     isolated_dimensions,
-                    selected_dimensions
+                    selected_dimensions,
+                    df_score_final
                 )
             except Exception as error:
                 return JsonResponse({"error": str(error)}, status=501)
@@ -339,7 +343,7 @@ def dimension_min_max(request):
 
         #   To Download CSV
         # df_optimizer_results_post_min_max.to_csv("optimizer_results_post_min_max.csv")
-        is_weekly_selected = request.session.get("is_weekly_selected")
+     
         convert_to_weekly_data = request.session.get("convert_to_weekly_data")
         df_table_for_csv = pd.DataFrame()
        
@@ -422,6 +426,7 @@ def dimension_min_max(request):
         context["dict_target_chart_data"] = dict_target_chart_data
         context["summary_metric_dic"] = summary_metric_dic
         context["target_type"] = target_type
+        context["confidence_score"] = confidence_score
         return JsonResponse(context)
     except Exception as e:
         return JsonResponse({"error": ERROR_DICT[str(e)]}, status=500)

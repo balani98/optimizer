@@ -9,25 +9,29 @@ warnings.filterwarnings('ignore')
 # isolate function
 def dimension_bound(df_param, dimension_data, constraint_type, is_group_dimension_selected):
 
-    """bounds for optimizer
+    """dimension level and group level bounds for optimizer
 
     Returns:
-        dictionary: key dimension value [min,max] / [min,max,cpm]
+        dictionary: key dimension value [min,max] for non-cpm case / [min,max,cpm] for cpm case
         dictionary: key group dimension value [list of sub-dimension] and [min,max]
-        flag: multiple dimensions selected or not
     """
 
+    # median/mean selection by the user on predict tab for bounds
     constraint_type = constraint_type.lower()
+
+    # bound thresholds [min, max]
     threshold = [0, 3]
 
     df_param_opt = df_param.T
     df_param_opt.columns = df_param_opt.iloc[0, :]
-
     d_param = df_param_opt.iloc[1:, :].to_dict()
 
     dim_bound = {}
     grp_dim_bound = {}
 
+    # calculation of dimension level bounds if impressions is selected
+    # bounds calculation is based on median/mean selection, impression value and threshold
+    # note: default value for percentage is assigned as [-100, 200] based on threshold
     if "cpm" in df_param.columns:
 
         if constraint_type == "median":
@@ -50,6 +54,10 @@ def dimension_bound(df_param, dimension_data, constraint_type, is_group_dimensio
                 200,
                 round(d_param[dim]["cpm"], 2),
              ]
+            
+    # calculation of dimension level bounds if impressions is not selected
+    # bounds calculation is based on median/mean selection, spend value and threshold
+    # note: default value for percentage is assigned as [-100, 200] based on threshold
     else:
         for dim in d_param.keys():
 
@@ -66,6 +74,7 @@ def dimension_bound(df_param, dimension_data, constraint_type, is_group_dimensio
                 200
             ]
 
+    # calculation of group dimension level bounds based on dimension level bounds
     if is_group_dimension_selected == True:
         grp_dim_list = dimension_data[list(dimension_data.keys())[0]]
         for grp_dim in grp_dim_list:
@@ -82,7 +91,9 @@ def dimension_bound(df_param, dimension_data, constraint_type, is_group_dimensio
 
 
 def investment_range(dim_bound, group_constraint, isolate_dim_list, selected_lst_dim):
-    """investment range for optimizer
+    """investment range for optimizer, takes output of dimension_bound function as input
+        this range is displayed in the frontend for optimization
+        note: number of days/date range and discard dimension computation is handled in frontend itself
 
     Returns:
         list: [lower bound for investment range, upper bound for investment range]
@@ -90,18 +101,22 @@ def investment_range(dim_bound, group_constraint, isolate_dim_list, selected_lst
     dim_lower_bnds = 0
     dim_upper_bnds= 0
 
+    # if no dimension is selected, returns [0, 0]
     if not selected_lst_dim:
         return [dim_lower_bnds, dim_upper_bnds]
     else:
+        # if group level dimension is not selected
         if group_constraint==None:
             for dim in dim_bound:
                     dim_lower_bnds = dim_lower_bnds + dim_bound[dim][0]
                     dim_upper_bnds = dim_upper_bnds + dim_bound[dim][1]
+        # if group level dimension is selected
         else:
             for dim in group_constraint:
                 dim_lower_bnds = dim_lower_bnds + group_constraint[dim]['constraints'][0]
                 dim_upper_bnds = dim_upper_bnds + group_constraint[dim]['constraints'][1]
 
+            # if some dimensions are not part of any group level dimensions, they are considered seprately
             if isolate_dim_list!=None:       
                 for dim in isolate_dim_list:
                     dim_lower_bnds = dim_lower_bnds + dim_bound[dim][0]
@@ -125,6 +140,7 @@ class optimizer_iterative:
         self.constraint_type = constraint_type.lower()
         self.target_type = target_type.lower()
 
+        # Setting constraint variable based on median/mean and spend/impression selection
         if "cpm" in df_param.columns:
             self.use_impression = True
             self.metric = 'impression'
@@ -158,6 +174,8 @@ class optimizer_iterative:
     def s_curve_hill_inv(self, Y, a, b, c):
         """This method performs the inverse of scurve function on param, target and
         Returns the outcome as investment"""
+        
+        # Check for Y is tending to max/saturation value of a dimension and adjusting it to avoid inf error
         Y = (Y-(self.precision/100)) if(Y==c) else Y
         if (Y<=0):
             return 0
@@ -167,14 +185,17 @@ class optimizer_iterative:
     
     def dimension_bound_max_check(self, dimension_bound):
         """Restricting dimensions budget to max conversion budget if enetered budget is greater for any dimension
+        This process is performed to avoid allocating any extra amount to any dimension in the optimization process
         
         Returns:
-            Dictionary: dimension_bound
+            Dictionary: dimension_bound (with updated max bound value)
         """
         for dim in dimension_bound:
             
             # Max conversion possible
             conv=round(self.d_param[dim]["param c"])
+
+            # Check if conv value is greater than max possible value and then adjusting it avoid inf error
             if conv>self.d_param[dim]["param c"]:
                 dim_max_poss_conversion=(np.trunc(self.d_param[dim]["param c"]*10)/10)
             elif conv<=self.d_param[dim]["param c"]:
@@ -183,7 +204,7 @@ class optimizer_iterative:
             # Max budget entered by user
             dim_max_inp_budget=dimension_bound[dim][1]
             
-            # Geting budget for Max conversion possible and conversion for Max budget entered by user
+            # Geting budget for Max conversion possible and conversion for Max bound budget entered by user
             if self.use_impression:
                 dim_max_inp_imp=(dim_max_inp_budget * 1000) / dimension_bound[dim][2]
                 dim_max_inp_conversion=self.s_curve_hill(dim_max_inp_imp, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
@@ -193,7 +214,7 @@ class optimizer_iterative:
                 dim_max_inp_conversion=self.s_curve_hill(dim_max_inp_budget, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])
                 dim_max_poss_budget=int(self.s_curve_hill_inv(dim_max_poss_conversion, self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"]))
             
-            # Comparing max conversion/budget possible and max budget/conversion entered by user
+            # Comparing max possible conversion/budget and max input conversion/budget entered by user
             if (dim_max_inp_budget>dim_max_poss_budget):
                 dim_max_budget=dim_max_poss_budget
             elif (dim_max_inp_conversion==dim_max_poss_conversion):
@@ -201,7 +222,7 @@ class optimizer_iterative:
             else:
                 dim_max_budget=dim_max_inp_budget
                 
-            # Comparing max and min budget
+            # Comparing max and min budget in case max budget  is less than min input lower bound
             if(dim_max_budget<dimension_bound[dim][0]):
                 dim_max_budget=dimension_bound[dim][0]
             
@@ -211,6 +232,7 @@ class optimizer_iterative:
 
     def transform_grouped_dimension_bound(self, dimension_bound, group_constraint, isolate_dim_list):
         """Transforming grouped dimension dictionary to use for constarints for optimization
+        Allocating each sub-dimension's group-level constraint and peer sub-dimensions for code optimization (reduce one level of dictionary)
 
         Returns:
             Dictionary: grp_dim_bound
@@ -218,13 +240,15 @@ class optimizer_iterative:
 
         grp_dim_bound = {}
 
+        # dimensions which are part of any group level dimension
         for dim in group_constraint:
             sub_dim_list = group_constraint[dim]['sub_dimension']
             sub_dim_constraint = group_constraint[dim]['constraints'][1]
             for dim_ in sub_dim_list:
                 grp_dim_bound[dim_] = {'dimension' : sub_dim_list,
                                     'constraints':sub_dim_constraint}
-                
+
+        # dimensions which are not part of any group level dimension (unselected by the user in frontend)       
         for dim_ in isolate_dim_list:
             grp_dim_bound[dim_] = {'dimension' : [dim_],
                                     'constraints':dimension_bound[dim_][1]}
@@ -233,7 +257,8 @@ class optimizer_iterative:
     
     
     def ini_start_value(self, df_grp, dimension_bound, increment, grouped_dimension_bound):
-        """initialization of initial metric (spend or impression) to overcome the local minima for each dimension
+        """ This function is not used anymore due to logic update
+        initialization of initial metric (spend or impression) to overcome the local minima for each dimension
         
         Returns:
             Array - float value:
@@ -311,20 +336,19 @@ class optimizer_iterative:
     
     def increment_factor(self, df_grp):
         """Increment value for each iteration
-        
+            50% of the median or mean (based on user selection) historic budget of the dimension having the minimum value is considered
+
         Returns:
             Float value: Increment factor - always based on spend (irrespective of metric chosen)
         """
-        # inc_factor =  df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby('date').agg({'spend':'sum','target':'sum'})['spend'].median()
-        # increment = round(inc_budget*0.075)
-        # increment = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':'median'})['spend'].median())
         inc_factor = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':self.constraint_type})['spend'].min())
         increment = round(inc_factor*0.50)
         return increment
     
     
     def initial_conversion(self, oldMetricVec):
-        """initialization of initial conversions for each dimension for initail slected metric (spend or impression)
+        """ This function is not used anymore due to logic update
+        initialization of initial conversions for each dimension for initail slected metric (spend or impression)
         
         Returns:
             Array - float value:
@@ -341,15 +365,18 @@ class optimizer_iterative:
     
 
     def get_grouped_dimension_constraint(self, grouped_dimension_bound, dim, newSpendVec):
-        """Function to get allocated spend to sub-dimensions under a group and the group dimension's spend constarint
+        """Function to get aggregated allocated spend to sub-dimensions under a group (based on optimization) and the group dimension's spend constarint (based on user input)
         Returns:
             Spend variable - 
                 subDimSpend: Aggregated allocated spend to each dimension
                 grp_dim_const: Group dimension spend constraint         
         """
         subDimSpend = 0
+        # list of sub-dimensions under a group
         sub_dim_list = grouped_dimension_bound[dim]['dimension']
+        # group-level constraint (based on user input)
         grp_dim_const = grouped_dimension_bound[dim]['constraints']
+        # aggregated spend allocation based on sub-dimensions under a group
         for sub_dim in sub_dim_list:
             subDimSpend = subDimSpend + newSpendVec[sub_dim]
         return subDimSpend, grp_dim_const
@@ -357,11 +384,13 @@ class optimizer_iterative:
 
     def get_conversion_dimension(self, newSpendVec, dimension_bound, increment, grouped_dimension_bound, newImpVec):
         """Function to get dimension and their conversion for increment budget - to derive dimension having maximum conversion
+        Dimension level: i) Check conversions at dimension level bounds, ii) adjust incrmental budget for dimension whose budget is about to over (if it's less than incremental budget)
+        Group level (if selected by user): i) Check conversions for sub-dimensions at group level constraints, ii) adjust incrmental budget for group constraints whose budget is about to over (if it's less than incremental budget)
         
         Returns:
             Dictionay - 
-                newSpendVec: Budget allocated to each dimension
-                totalReturn: Conversion for allocated budget for each dimension          
+                incReturns: Incremental Conversion for for each dimension   
+                incBudget: Incremental Budget allocated to each dimension
         """
         incReturns = {}
         incBudget = {}
@@ -454,7 +483,13 @@ class optimizer_iterative:
     
 
     def get_s_curves(self, dimension_bound, df_grp):
-    
+        """get list of dimensions having shaped curves
+        
+        Returns:
+            Dictionay - 
+                totalReturn: Conversion for allocated budget or impression for each dimension
+                newImpVec: Impression allocated to each dimension if applicable otherwise null value is allocated
+        """
         dimList = list({dim for dim, value in self.d_param.items() if (value['param a']>1.2)})
         
         dimListFiltered_v1 = []
@@ -1079,11 +1114,10 @@ class optimizer_iterative:
         return result_df, resultIter_df, msg
     
 
-    def check_initialization_required(self, increment, df_grp, dimension_bound, dimension_bound_actual, grouped_dimension_bound, budget_per_day):
-        """Initialization to avoid local minima problem-
-                Budget: Minimum non-zero spend based on historic data is intialized
-                Target, impression (if selected): Respective target, impression based on spend is initialized 
-                Note: If sum initailized spend exceeds budget per day then initialization is done based on user constarints
+    def initial_allocation(self, dimension_bound):
+        """Initialization for minimum value entered by the user in the frontend in the dimension level bounds
+                Budget: Minimum value entered by the user
+                Target, impression (if selected): Respective target, impression based on budget is calculated 
             
         Returns:
             Dictionay - 
@@ -1091,44 +1125,13 @@ class optimizer_iterative:
                 totalReturn: Conversion for allocated budget for each dimension
                 newImpVec: Impression allocated to each dimension if applicable otherwise null value is allocated
         """
-        
         if self.use_impression:
-            oldSpendVec_initial, oldImpVec_initial = self.ini_start_value(df_grp, dimension_bound, increment, grouped_dimension_bound)
-            oldReturn_initial = self.initial_conversion(oldImpVec_initial)
-            initial_investment = sum(oldReturn_initial.values())
-            
-            oldSpendVec_input = {dim:value[0] for dim, value in dimension_bound.items()}
-            oldImpVec_input = {dim:((oldSpendVec_input[dim]*1000)/(dimension_bound[dim][2])) for dim in self.dimension_names}
-            oldReturn_input = {dim:(self.s_curve_hill(oldImpVec_input[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])) for dim in self.dimension_names}
-            
-            inflection_spend_dim = {dim:((self.d_param[dim]['param b']*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
-            const_spend_dim = {dim:((self.d_param[dim][self.const_var]*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
-            threshold = np.mean(list({const_spend_dim[dim] for dim in self.dimension_names if inflection_spend_dim[dim] > increment }))              
-            
-            # if((initial_investment<=budget_per_day) and (budget_per_day>threshold)):
-            #     oldSpendVec = copy.deepcopy(oldSpendVec_initial)
-            #     oldImpVec = copy.deepcopy(oldImpVec_initial)
-            #     oldReturn = copy.deepcopy(oldReturn_initial)
-            # else:
-            oldSpendVec = copy.deepcopy(oldSpendVec_input)
-            oldImpVec = copy.deepcopy(oldImpVec_input)
-            oldReturn = copy.deepcopy(oldReturn_input)
-                
+            oldSpendVec = {dim:value[0] for dim, value in dimension_bound.items()}
+            oldImpVec = {dim:((oldSpendVec[dim]*1000)/(dimension_bound[dim][2])) for dim in self.dimension_names}
+            oldReturn = {dim:(self.s_curve_hill(oldImpVec[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])) for dim in self.dimension_names}     
         else:
-            oldSpendVec_initial = self.ini_start_value(df_grp, dimension_bound, increment, grouped_dimension_bound)
-            oldReturn_initial = self.initial_conversion(oldSpendVec_initial)
-            initial_investment = sum(oldSpendVec_initial.values())
-            
-            oldSpendVec_input = {dim:value[0] for dim, value in dimension_bound.items()}
-            oldReturn_input = {dim:(self.s_curve_hill(oldSpendVec_input[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])) for dim in self.dimension_names}
-            threshold = np.mean(list({value[self.const_var] for dim, value in self.d_param.items() if value['param b'] > increment }))
-
-            # if((initial_investment<=budget_per_day) and (budget_per_day>threshold)):
-            #     oldSpendVec = copy.deepcopy(oldSpendVec_initial)
-            #     oldReturn = copy.deepcopy(oldReturn_initial)
-            # else:
-            oldSpendVec = copy.deepcopy(oldSpendVec_input)
-            oldReturn = copy.deepcopy(oldReturn_input)
+            oldSpendVec = {dim:value[0] for dim, value in dimension_bound.items()}
+            oldReturn = {dim:(self.s_curve_hill(oldSpendVec[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])) for dim in self.dimension_names}
             oldImpVec = None
             
         return oldSpendVec, oldReturn, oldImpVec
@@ -1265,9 +1268,49 @@ class optimizer_iterative:
             df_res.loc[df_res[i].values != None, i]=df_res.loc[df_res[i].values != None, i].astype(float).round().astype(int)
 
         return df_res, summary_metrics_dic
-                    
+    
+
+    def confidence_score(self, result_df, accuracy_df, df_grp, lst_dim, dimension_bound):
+        """function for calculating optimization confidence score
+        calculation is based on independent accuracy of each dimension (calculated using their SMAPE), % budget allocation over historic max and budget distribution across dimension based on optimization
+        % budget allocation over historic max is utlized for penalizing dimensions whose recommended budget is beyond their historic maximum value (with weightage 20%)
+        
+        Returns:
+            Value: Optimization confidence score
+        """
+        penalty_weightage = 0.20
+        # Dimension level accuracy calculation using SMAPE (error in the model)
+        accuracy_df['Accuracy'] = 1 - accuracy_df['SMAPE']
+        # Maximum historic spend at dimension level
+        if self.use_impression:
+            max_dim_df = df_grp.groupby('dimension').agg(max_impression=('impression', 'max')).round().reset_index()
+            cpm_df=pd.DataFrame([(dim, dimension_bound[dim][2]) for dim in dimension_bound], columns=['dimension', 'cpm'])
+            max_dim_df = pd.merge(cpm_df, max_dim_df, on='dimension', how='left')
+            max_dim_df['max_spend'] = (max_dim_df['max_impression']*max_dim_df['cpm'])/1000
+            max_dim_df = max_dim_df[['dimension', 'max_spend']]
+        else:
+            max_dim_df = df_grp.groupby('dimension').agg(max_spend=('spend', 'max')).round().reset_index()
+        score_df = pd.merge(accuracy_df[['dimension', 'Accuracy']], max_dim_df, on='dimension')
+        score_df = pd.merge(score_df, result_df[['dimension', 'recommended_budget_per_day', 'buget_allocation_new_%']], on='dimension')
+        # Filtering for participating dimensions in optimization (dimensions selected by the user in frontend)
+        score_df = score_df[score_df['dimension'].isin(lst_dim)]
+        score_df['buget_allocation_new_%'] = score_df['buget_allocation_new_%']/100
+
+        # Calculating % budget allocation by optimization over maximum historic spend for penalising such dimensions
+        score_df['budget_allocated_over_max_%'] = np.where(score_df['recommended_budget_per_day']>score_df['max_spend'],
+                                                           ((score_df['recommended_budget_per_day']-score_df['max_spend'])/score_df['max_spend']), 0)
+        
+        # Adjusting accuracy based on above step
+        # Formula used: ((Accuracy x 100%) - (% Budget Allocation over Max Spend x Penalization Weightage)) x % Recommended Budget Allocation
+        score_df['score'] = (score_df['Accuracy'] - (score_df['budget_allocated_over_max_%']*penalty_weightage)) * score_df['buget_allocation_new_%']
+
+        # Final optimization confidence score based on weighted average
+        conf_score = round((sum(score_df['score'])/sum(score_df['buget_allocation_new_%']))*100, 1)
+
+        return conf_score
+    
                 
-    def execute(self, df_grp, budget, days, df_spend_dis, discard_json, dimension_bound, group_constraint, isolate_dim_list, lst_dim):
+    def execute(self, df_grp, budget, days, df_spend_dis, discard_json, dimension_bound, group_constraint, isolate_dim_list, lst_dim, df_score_final):
         """main function for calculating target conversion
         
         Returns:
@@ -1318,10 +1361,10 @@ class optimizer_iterative:
         dimScurveList, dimScurveWeights, ScurveElbowDim = self.get_s_curves(dimension_bound, df_grp)
 
         """optimization process-
-            Initialization if required
+            Initialization of minimum bounds or constraint entered by the user for each dimension
             Optimzation on budget and constarints
         """
-        oldSpendVec, oldReturn, oldImpVec = self.check_initialization_required(increment, df_grp, dimension_bound, dimension_bound_actual, grouped_dimension_bound, budget_per_day)
+        oldSpendVec, oldReturn, oldImpVec = self.initial_allocation(dimension_bound)
         if self.use_impression:
             result_df, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, dimScurveList, dimScurveWeights, ScurveElbowDim, oldImpVec)
             result_df=result_df[['dimension', 'spend', 'impression', 'return']]
@@ -1338,12 +1381,15 @@ class optimizer_iterative:
         # Df for iterative steps, not displayed in front end
         result_itr_df=result_itr_df.round(2)
 
-        return result_df, summary_metrics_dic
+        # Optimization confidence score calculation
+        optimization_conf_score = self.confidence_score(result_df, df_score_final, df_grp, lst_dim, dimension_bound)
+
+        return result_df, summary_metrics_dic, optimization_conf_score
 
 
 class optimizer_iterative_seasonality:
     
-    def __init__(self, df_param, constraint_type, target_type):
+    def __init__(self, df_param, constraint_type, target_type, is_weekly_selected):
         """initialization
 
         Args:
@@ -1356,6 +1402,7 @@ class optimizer_iterative_seasonality:
 
         self.constraint_type = constraint_type.lower()
         self.target_type = target_type.lower()
+        self.is_weekly_selected = is_weekly_selected
 
         if "cpm" in df_param.columns:
             self.use_impression = True
@@ -2393,11 +2440,10 @@ class optimizer_iterative_seasonality:
         return result_df, resultIter_df, msg
     
 
-    def check_initialization_required(self, increment, df_grp, dimension_bound, dimension_bound_actual, grouped_dimension_bound, budget_per_day):
-        """Initialization to avoid local minima problem-
-                Budget: Minimum non-zero spend based on historic data is intialized
-                Target, impression (if selected): Respective target, impression based on spend is initialized 
-                Note: If sum initailized spend exceeds budget per day then initialization is done based on user constarints
+    def initial_allocation(self, dimension_bound):
+        """Initialization for minimum value entered by the user in the frontend in the dimension level bounds
+                Budget: Minimum value entered by the user
+                Target, impression (if selected): Respective target, impression based on budget is calculated 
             
         Returns:
             Dictionay - 
@@ -2405,44 +2451,13 @@ class optimizer_iterative_seasonality:
                 totalReturn: Conversion for allocated budget for each dimension
                 newImpVec: Impression allocated to each dimension if applicable otherwise null value is allocated
         """
-        
         if self.use_impression:
-            oldSpendVec_initial, oldImpVec_initial = self.ini_start_value(df_grp, dimension_bound, increment, grouped_dimension_bound)
-            oldReturn_initial = self.initial_conversion(oldImpVec_initial)
-            initial_investment = sum(oldReturn_initial.values())
-            
-            oldSpendVec_input = {dim:value[0] for dim, value in dimension_bound.items()}
-            oldImpVec_input = {dim:((oldSpendVec_input[dim]*1000)/(dimension_bound[dim][2])) for dim in self.dimension_names}
-            oldReturn_input = {dim:(self.s_curve_hill(oldImpVec_input[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])) for dim in self.dimension_names}
-            
-            inflection_spend_dim = {dim:((self.d_param[dim]['param b']*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
-            const_spend_dim = {dim:((self.d_param[dim][self.const_var]*dimension_bound[dim][2])/1000) for dim in self.dimension_names}
-            threshold = np.mean(list({const_spend_dim[dim] for dim in self.dimension_names if inflection_spend_dim[dim] > increment }))              
-            
-            # if((initial_investment<=budget_per_day) and (budget_per_day>threshold)):
-            #     oldSpendVec = copy.deepcopy(oldSpendVec_initial)
-            #     oldImpVec = copy.deepcopy(oldImpVec_initial)
-            #     oldReturn = copy.deepcopy(oldReturn_initial)
-            # else:
-            oldSpendVec = copy.deepcopy(oldSpendVec_input)
-            oldImpVec = copy.deepcopy(oldImpVec_input)
-            oldReturn = copy.deepcopy(oldReturn_input)
-                
+            oldSpendVec = {dim:value[0] for dim, value in dimension_bound.items()}
+            oldImpVec = {dim:((oldSpendVec[dim]*1000)/(dimension_bound[dim][2])) for dim in self.dimension_names}
+            oldReturn = {dim:(self.s_curve_hill(oldImpVec[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])) for dim in self.dimension_names}     
         else:
-            oldSpendVec_initial = self.ini_start_value(df_grp, dimension_bound, increment, grouped_dimension_bound)
-            oldReturn_initial = self.initial_conversion(oldSpendVec_initial)
-            initial_investment = sum(oldSpendVec_initial.values())
-            
-            oldSpendVec_input = {dim:value[0] for dim, value in dimension_bound.items()}
-            oldReturn_input = {dim:(self.s_curve_hill(oldSpendVec_input[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])) for dim in self.dimension_names}
-            threshold = np.mean(list({value[self.const_var] for dim, value in self.d_param.items() if value['param b'] > increment }))
-
-            # if((initial_investment<=budget_per_day) and (budget_per_day>threshold)):
-            #     oldSpendVec = copy.deepcopy(oldSpendVec_initial)
-            #     oldReturn = copy.deepcopy(oldReturn_initial)
-            # else:
-            oldSpendVec = copy.deepcopy(oldSpendVec_input)
-            oldReturn = copy.deepcopy(oldReturn_input)
+            oldSpendVec = {dim:value[0] for dim, value in dimension_bound.items()}
+            oldReturn = {dim:(self.s_curve_hill(oldSpendVec[dim], self.d_param[dim]["param a"], self.d_param[dim]["param b"], self.d_param[dim]["param c"])) for dim in self.dimension_names}
             oldImpVec = None
             
         return oldSpendVec, oldReturn, oldImpVec
@@ -2474,7 +2489,7 @@ class optimizer_iterative_seasonality:
         return result_df
     
     
-    def optimizer_result_adjust(self, discard_json, df_res, df_spend_dis, dimension_bound, budget_per_day, days, d_weekday, d_month, date_range):
+    def optimizer_result_adjust(self, discard_json, df_res, df_spend_dis, dimension_bound, budget_per_day, days, d_weekday, d_month, date_range, freq_type):
         """re-calculation of result based on discarded dimension budget
 
         Args:
@@ -2533,7 +2548,7 @@ class optimizer_iterative_seasonality:
             else:
                 metric_projections = spend_projections
             target_projection = 0
-            for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both"):
+            for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both", freq=freq_type):
                 day_month = str(day_.weekday())+"_"+str(day_.month)
                 init_weekday = d_weekday[day_month]
                 init_month = d_month[day_month]
@@ -2632,7 +2647,47 @@ class optimizer_iterative_seasonality:
         return result_df
 
 
-    def execute(self, df_grp, budget, date_range, df_spend_dis, discard_json, dimension_bound, group_constraint, isolate_dim_list, lst_dim):
+    def confidence_score(self, result_df, accuracy_df, df_grp, lst_dim, dimension_bound):
+        """function for calculating optimization confidence score
+        calculation is based on independent accuracy of each dimension (calculated using their SMAPE), % budget allocation over historic max and budget distribution across dimension based on optimization
+        % budget allocation over historic max is utlized for penalizing dimensions whose recommended budget is beyond their historic maximum value (with weightage 20%)
+        
+        Returns:
+            Value: Optimization confidence score
+        """
+        penalty_weightage = 0.20
+        # Dimension level accuracy calculation using SMAPE (error in the model)
+        accuracy_df['Accuracy'] = 1 - accuracy_df['SMAPE']
+        # Maximum historic spend at dimension level
+        if self.use_impression:
+            max_dim_df = df_grp.groupby('dimension').agg(max_impression=('impression', 'max')).round().reset_index()
+            cpm_df=pd.DataFrame([(dim, dimension_bound[dim][2]) for dim in dimension_bound], columns=['dimension', 'cpm'])
+            max_dim_df = pd.merge(cpm_df, max_dim_df, on='dimension', how='left')
+            max_dim_df['max_spend'] = (max_dim_df['max_impression']*max_dim_df['cpm'])/1000
+            max_dim_df = max_dim_df[['dimension', 'max_spend']]
+        else:
+            max_dim_df = df_grp.groupby('dimension').agg(max_spend=('spend', 'max')).round().reset_index()
+        score_df = pd.merge(accuracy_df[['dimension', 'Accuracy']], max_dim_df, on='dimension')
+        score_df = pd.merge(score_df, result_df[['dimension', 'recommended_budget_per_day', 'buget_allocation_new_%']], on='dimension')
+        # Filtering for participating dimensions in optimization (dimensions selected by the user in frontend)
+        score_df = score_df[score_df['dimension'].isin(lst_dim)]
+        score_df['buget_allocation_new_%'] = score_df['buget_allocation_new_%']/100
+
+        # Calculating % budget allocation by optimization over maximum historic spend for penalising such dimensions
+        score_df['budget_allocated_over_max_%'] = np.where(score_df['recommended_budget_per_day']>score_df['max_spend'],
+                                                           ((score_df['recommended_budget_per_day']-score_df['max_spend'])/score_df['max_spend']), 0)
+        
+        # Adjusting accuracy based on above step
+        # Formula used: ((Accuracy x 100%) - (% Budget Allocation over Max Spend x Penalization Weightage)) x % Recommended Budget Allocation
+        score_df['score'] = (score_df['Accuracy'] - (score_df['budget_allocated_over_max_%']*penalty_weightage)) * score_df['buget_allocation_new_%']
+
+        # Final optimization confidence score based on weighted average
+        conf_score = round((sum(score_df['score'])/sum(score_df['buget_allocation_new_%']))*100, 1)
+
+        return conf_score
+
+
+    def execute(self, df_grp, budget, date_range, df_spend_dis, discard_json, dimension_bound, group_constraint, isolate_dim_list, lst_dim, df_score_final):
         """main function for calculating target conversion
         
         Returns:
@@ -2661,6 +2716,12 @@ class optimizer_iterative_seasonality:
         dimension_bound = self.dimension_bound_max_check(dimension_bound)
 
         days = (pd.to_datetime(date_range[1]) - pd.to_datetime(date_range[0])).days + 1
+        if self.is_weekly_selected == True:
+            days = int(days/7)
+            day_name = pd.to_datetime(date_range[0]).day_name()[0:3]
+            freq_type = "W-"+day_name
+        else:
+            freq_type = "D"
         
         # Considering budget per day till 2 decimal points: truncting (and not rounding-off)
         budget_per_day = budget/days
@@ -2699,11 +2760,11 @@ class optimizer_iterative_seasonality:
         dimScurveList, dimScurveWeights, ScurveElbowDim = self.get_s_curves(dimension_bound, df_grp)
 
         """optimization process-
-            Initialization if required
+            Initialization of minimum bounds or constraint entered by the user for each dimension
             Optimzation on budget and constarints
             """
         
-        oldSpendVec, oldReturn, oldImpVec = self.check_initialization_required(increment, df_grp, dimension_bound, dimension_bound_actual, grouped_dimension_bound, budget_per_day)
+        oldSpendVec, oldReturn, oldImpVec = self.initial_allocation(dimension_bound)
         if self.use_impression:
             result_df_, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, dimScurveList, dimScurveWeights, ScurveElbowDim, oldImpVec)
             result_df_=result_df_[['dimension', 'spend', 'impression', 'return']]
@@ -2718,7 +2779,7 @@ class optimizer_iterative_seasonality:
 
         # Checking distinct combination of daily and monthly for seasonality
         seasonality_combination = []
-        for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both"):
+        for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both", freq=freq_type):
             seasonality_combination = seasonality_combination + [str(day_.weekday())+"_"+str(day_.month)]
         seasonality_combination = set(seasonality_combination)
         # print()
@@ -2763,7 +2824,7 @@ class optimizer_iterative_seasonality:
         else:
             result_df = pd.DataFrame(columns=['spend', 'return'], index=self.dimension_names).fillna(0)
 
-        for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both"):
+        for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both", freq=freq_type):
             day_month = str(day_.weekday())+"_"+str(day_.month)
             temp_df = pd.DataFrame(sol[day_month]).T
             result_df = result_df.add(temp_df, fill_value=0)
@@ -2771,9 +2832,12 @@ class optimizer_iterative_seasonality:
         
         # Calculating other variables for optimization plan for front end
         result_df=self.lift_cal(result_df, budget_per_day, df_spend_dis, days, dimension_bound)
-        result_df, summary_metrics_dic=self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound_actual, budget_per_day, days, d_weekday, d_month, date_range)
+        result_df, summary_metrics_dic=self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound_actual, budget_per_day, days, d_weekday, d_month, date_range, freq_type)
         
         # Df for iterative steps, not displayed in front end
         result_itr_df=result_itr_df.round(2)
 
-        return result_df, summary_metrics_dic
+        # Optimization confidence score calculation
+        optimization_conf_score = self.confidence_score(result_df, df_score_final, df_grp, lst_dim, dimension_bound)
+
+        return result_df, summary_metrics_dic, optimization_conf_score

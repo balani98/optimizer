@@ -108,7 +108,7 @@ def get_seasonality_conversions(d_param, init_weekday, init_month):
 
         return seasonality_conversion
 
-def conversion_bound(df_param, df_grp, df_bounds, lst_dim, is_seasonality, date_range):
+def conversion_bound(df_param, df_grp, df_bounds, lst_dim, is_seasonality, date_range, is_weekly_selected):
 
     """bounds for conversion optimizer
 
@@ -132,26 +132,15 @@ def conversion_bound(df_param, df_grp, df_bounds, lst_dim, is_seasonality, date_
     
     for dim in d_param.keys():
         if "cpm" in df_param.columns:
-            # dim_ini_imp=df_grp[(df_grp['dimension']==dim) & (np.floor(df_grp['impression'])!=0)]['impression'].min()
-            # dim_ini_budget=(dim_ini_imp * df_bounds[dim][2]) / 1000
             
             dim_min_inp_budget=int(df_bounds[dim][0])
             dim_max_inp_budget=int(df_bounds[dim][1])
             dim_min_budget=dim_min_inp_budget
-            
-            # Getting minimum conversions
-            # if (dim_min_inp_budget>dim_ini_budget):
-            #     dim_min_budget=dim_min_inp_budget
-            # elif (dim_max_inp_budget<dim_ini_budget):
-            #     dim_min_budget=dim_min_inp_budget
-            # else:
-            #     dim_min_budget=dim_ini_budget
 
             dim_min_imp=(dim_min_budget * 1000) / df_bounds[dim][2]
             dim_min_conversion=s_curve_hill(dim_min_imp, d_param[dim]["param a"], d_param[dim]["param b"], d_param[dim]["param c"])
             
             # Getting maximum conversions
-            # dim_max_poss_conversion=np.floor(d_param[dim]["param c"]*0.95)
             dim_max_poss_conversion=int(d_param[dim]["param c"])
             dim_max_inp_imp = (dim_max_inp_budget * 1000) / df_bounds[dim][2]
             dim_max_inp_conversion=s_curve_hill(dim_max_inp_imp, d_param[dim]["param a"], d_param[dim]["param b"], d_param[dim]["param c"])
@@ -160,25 +149,14 @@ def conversion_bound(df_param, df_grp, df_bounds, lst_dim, is_seasonality, date_
             else:
                 dim_max_conversion=dim_max_inp_conversion
             
-        else:
-            # dim_ini_budget=df_grp[(df_grp['dimension']==dim) & (np.floor(df_grp['spend'])!=0)]['spend'].min()
-        
+        else:        
             dim_min_inp_budget=int(df_bounds[dim][0])
             dim_max_inp_budget=int(df_bounds[dim][1])
             dim_min_budget=dim_min_inp_budget
-            
-            # Getting minimum conversions
-            # if (dim_min_inp_budget>dim_ini_budget):
-            #     dim_min_budget=dim_min_inp_budget
-            # elif (dim_max_inp_budget<dim_ini_budget):
-            #     dim_min_budget=dim_min_inp_budget
-            # else:
-            #     dim_min_budget=dim_ini_budget
 
             dim_min_conversion=s_curve_hill(dim_min_budget, d_param[dim]["param a"], d_param[dim]["param b"], d_param[dim]["param c"])
             
             # Getting maximum conversions
-            # dim_max_poss_conversion=np.floor(d_param[dim]["param c"]*0.95)
             dim_max_poss_conversion=int(d_param[dim]["param c"])
             dim_max_inp_conversion=s_curve_hill(dim_max_inp_budget, d_param[dim]["param a"], d_param[dim]["param b"], d_param[dim]["param c"])
             if (dim_max_inp_conversion>=dim_max_poss_conversion):
@@ -192,9 +170,15 @@ def conversion_bound(df_param, df_grp, df_bounds, lst_dim, is_seasonality, date_
 
     if is_seasonality == True:
         days = (pd.to_datetime(date_range[1]) - pd.to_datetime(date_range[0])).days + 1
+        if is_weekly_selected == True:
+            days = int(days/7)
+            day_name = pd.to_datetime(date_range[0]).day_name()[0:3]
+            freq_type = "W-"+day_name
+        else:
+            freq_type = "D"
         seasonality_combination = []
         seasonality_count = {}
-        for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both"):
+        for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both", freq=freq_type):
             day_counter = str(day_.weekday())+"_"+str(day_.month)
             seasonality_combination = seasonality_combination + [day_counter]
             if day_counter in seasonality_count.keys():
@@ -228,7 +212,7 @@ def conversion_bound(df_param, df_grp, df_bounds, lst_dim, is_seasonality, date_
         return [int(np.ceil(min_conversion)*days), int(np.floor(max_conversion)*days)]
 
 class optimizer_conversion:
-    def __init__(self, df_param, constraint_type):
+    def __init__(self, df_param, constraint_type, target_type):
         """initialization
 
         Args:
@@ -240,7 +224,6 @@ class optimizer_conversion:
         self.d_param = df_param_opt.iloc[1:, :].to_dict()
 
         self.constraint_type = constraint_type.lower()
-        target_type = "acquisition"
         self.target_type = target_type.lower()
 
         if "cpm" in df_param.columns:
@@ -847,8 +830,49 @@ class optimizer_conversion:
             
             dimension_bound[dim][1]=dim_max_budget
         return dimension_bound
+    
+
+    def confidence_score(self, result_df, accuracy_df, df_grp, lst_dim, dimension_bound):
+        """function for calculating optimization confidence score
+        calculation is based on independent accuracy of each dimension (calculated using their SMAPE), % budget allocation over historic max and budget distribution across dimension based on optimization
+        % budget allocation over historic max is utlized for penalizing dimensions whose recommended budget is beyond their historic maximum value (with weightage 20%)
+        
+        Returns:
+            Value: Optimization confidence score
+        """
+        penalty_weightage = 0.20
+        # Dimension level accuracy calculation using SMAPE (error in the model)
+        accuracy_df['Accuracy'] = 1 - accuracy_df['SMAPE']
+        # Maximum historic spend at dimension level
+        if self.use_impression:
+            max_dim_df = df_grp.groupby('dimension').agg(max_impression=('impression', 'max')).round().reset_index()
+            cpm_df=pd.DataFrame([(dim, dimension_bound[dim][2]) for dim in dimension_bound], columns=['dimension', 'cpm'])
+            max_dim_df = pd.merge(cpm_df, max_dim_df, on='dimension', how='left')
+            max_dim_df['max_spend'] = (max_dim_df['max_impression']*max_dim_df['cpm'])/1000
+            max_dim_df = max_dim_df[['dimension', 'max_spend']]
+        else:
+            max_dim_df = df_grp.groupby('dimension').agg(max_spend=('spend', 'max')).round().reset_index()
+        score_df = pd.merge(accuracy_df[['dimension', 'Accuracy']], max_dim_df, on='dimension')
+        score_df = pd.merge(score_df, result_df[['dimension', 'recommended_budget_per_day', 'buget_allocation_new_%']], on='dimension')
+        # Filtering for participating dimensions in optimization (dimensions selected by the user in frontend)
+        score_df = score_df[score_df['dimension'].isin(lst_dim)]
+        score_df['buget_allocation_new_%'] = score_df['buget_allocation_new_%']/100
+
+        # Calculating % budget allocation by optimization over maximum historic spend for penalising such dimensions
+        score_df['budget_allocated_over_max_%'] = np.where(score_df['recommended_budget_per_day']>score_df['max_spend'],
+                                                           ((score_df['recommended_budget_per_day']-score_df['max_spend'])/score_df['max_spend']), 0)
+        
+        # Adjusting accuracy based on above step
+        # Formula used: ((Accuracy x 100%) - (% Budget Allocation over Max Spend x Penalization Weightage)) x % Recommended Budget Allocation
+        score_df['score'] = (score_df['Accuracy'] - (score_df['budget_allocated_over_max_%']*penalty_weightage)) * score_df['buget_allocation_new_%']
+
+        # Final optimization confidence score based on weighted average
+        conf_score = round((sum(score_df['score'])/sum(score_df['buget_allocation_new_%']))*100, 1)
+
+        return conf_score
+
                 
-    def execute(self, df_grp, conv_goal, days, df_spend_dis, discard_json, dimension_bound, lst_dim):
+    def execute(self, df_grp, conv_goal, days, df_spend_dis, discard_json, dimension_bound, lst_dim, df_score_final):
         """main function for calculating target conversion
         
         Returns:
@@ -896,10 +920,13 @@ class optimizer_conversion:
         result_df, summary_metrics_dic = self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound, conv_goal, days)        
         result_itr_df=result_itr_df.round(2)
 
-        return result_df, summary_metrics_dic
+        # Optimization confidence score calculation
+        optimization_conf_score = self.confidence_score(result_df, df_score_final, df_grp, lst_dim, dimension_bound)
+
+        return result_df, summary_metrics_dic, optimization_conf_score
 
 class optimizer_conversion_seasonality:
-    def __init__(self, df_param, constraint_type):
+    def __init__(self, df_param, constraint_type, target_type, is_weekly_selected):
         """initialization
 
         Args:
@@ -911,8 +938,8 @@ class optimizer_conversion_seasonality:
         self.d_param = df_param_opt.iloc[1:, :].to_dict()
 
         self.constraint_type = constraint_type.lower()
-        target_type = "acquisition"
         self.target_type = target_type.lower()
+        self.is_weekly_selected = is_weekly_selected
 
         if "cpm" in df_param.columns:
             self.use_impression = True
@@ -1446,7 +1473,8 @@ class optimizer_conversion_seasonality:
         result_df['recommended_budget_for_n_days'] = result_df['recommended_budget_for_n_days'].round().astype(int)
         result_df['estimated_return_for_n_days'] = result_df['estimated_return_for_n_days'].round().astype(int)
         result_df['recommended_budget_per_day']=(result_df['recommended_budget_for_n_days']/days).round().astype(int)
-        result_df['estimated_return_per_day']=(result_df['estimated_return_for_n_days']/days).round().astype(int)
+        result_df['estimated_return_per_day']=(result_df['estimated_return_for_n_days']/days)
+        result_df['estimated_return_per_day']=(result_df['estimated_return_for_n_days']/days).round()
         result_df['buget_allocation_new_%'] = (result_df['recommended_budget_for_n_days']/sum(result_df['recommended_budget_for_n_days'])).round(1)
         result_df['estimated_return_%'] = ((result_df['estimated_return_for_n_days']/sum(result_df['estimated_return_for_n_days']))*100).round(1)
         
@@ -1455,7 +1483,7 @@ class optimizer_conversion_seasonality:
         return result_df
     
 
-    def optimizer_result_adjust(self, discard_json, df_res, df_spend_dis, dimension_bound, conv_goal, days, d_weekday, d_month, date_range):
+    def optimizer_result_adjust(self, discard_json, df_res, df_spend_dis, dimension_bound, conv_goal, days, d_weekday, d_month, date_range, freq_type):
         """re-calculation of result based on discarded dimension budget
 
         Args:
@@ -1515,7 +1543,7 @@ class optimizer_conversion_seasonality:
             else:
                 metric_projections = spend_projections
             target_projection = 0
-            for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both"):
+            for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both", freq=freq_type):
                 day_month = str(day_.weekday())+"_"+str(day_.month)
                 init_weekday = d_weekday[day_month]
                 init_month = d_month[day_month]
@@ -1669,8 +1697,49 @@ class optimizer_conversion_seasonality:
             result_df.loc[result_df['dimension']==dim, 'return'] = self.total_return_seasonality(Spend, dimension_bound, dim, init_weekday, init_month)
         
         return result_df
+    
+
+    def confidence_score(self, result_df, accuracy_df, df_grp, lst_dim, dimension_bound):
+        """function for calculating optimization confidence score
+        calculation is based on independent accuracy of each dimension (calculated using their SMAPE), % budget allocation over historic max and budget distribution across dimension based on optimization
+        % budget allocation over historic max is utlized for penalizing dimensions whose recommended budget is beyond their historic maximum value (with weightage 20%)
+        
+        Returns:
+            Value: Optimization confidence score
+        """
+        penalty_weightage = 0.20
+        # Dimension level accuracy calculation using SMAPE (error in the model)
+        accuracy_df['Accuracy'] = 1 - accuracy_df['SMAPE']
+        # Maximum historic spend at dimension level
+        if self.use_impression:
+            max_dim_df = df_grp.groupby('dimension').agg(max_impression=('impression', 'max')).round().reset_index()
+            cpm_df=pd.DataFrame([(dim, dimension_bound[dim][2]) for dim in dimension_bound], columns=['dimension', 'cpm'])
+            max_dim_df = pd.merge(cpm_df, max_dim_df, on='dimension', how='left')
+            max_dim_df['max_spend'] = (max_dim_df['max_impression']*max_dim_df['cpm'])/1000
+            max_dim_df = max_dim_df[['dimension', 'max_spend']]
+        else:
+            max_dim_df = df_grp.groupby('dimension').agg(max_spend=('spend', 'max')).round().reset_index()
+        score_df = pd.merge(accuracy_df[['dimension', 'Accuracy']], max_dim_df, on='dimension')
+        score_df = pd.merge(score_df, result_df[['dimension', 'recommended_budget_per_day', 'buget_allocation_new_%']], on='dimension')
+        # Filtering for participating dimensions in optimization (dimensions selected by the user in frontend)
+        score_df = score_df[score_df['dimension'].isin(lst_dim)]
+        score_df['buget_allocation_new_%'] = score_df['buget_allocation_new_%']/100
+
+        # Calculating % budget allocation by optimization over maximum historic spend for penalising such dimensions
+        score_df['budget_allocated_over_max_%'] = np.where(score_df['recommended_budget_per_day']>score_df['max_spend'],
+                                                           ((score_df['recommended_budget_per_day']-score_df['max_spend'])/score_df['max_spend']), 0)
+        
+        # Adjusting accuracy based on above step
+        # Formula used: ((Accuracy x 100%) - (% Budget Allocation over Max Spend x Penalization Weightage)) x % Recommended Budget Allocation
+        score_df['score'] = (score_df['Accuracy'] - (score_df['budget_allocated_over_max_%']*penalty_weightage)) * score_df['buget_allocation_new_%']
+
+        # Final optimization confidence score based on weighted average
+        conf_score = round((sum(score_df['score'])/sum(score_df['buget_allocation_new_%']))*100, 1)
+
+        return conf_score
+
                 
-    def execute(self, df_grp, conv_goal, date_range, df_spend_dis, discard_json, dimension_bound, lst_dim):
+    def execute(self, df_grp, conv_goal, date_range, df_spend_dis, discard_json, dimension_bound, lst_dim, df_score_final):
         """main function for calculating target conversion
         
         Returns:
@@ -1697,6 +1766,12 @@ class optimizer_conversion_seasonality:
         dimension_bound = self.dimension_bound_max_check(dimension_bound)
 
         days = (pd.to_datetime(date_range[1]) - pd.to_datetime(date_range[0])).days + 1
+        if self.is_weekly_selected == True:
+            days = int(days/7)
+            day_name = pd.to_datetime(date_range[0]).day_name()[0:3]
+            freq_type = "W-"+day_name
+        else:
+            freq_type = "D"
 
         init_weekday = [0, 0, 0, 0, 0, 0]
         init_month = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -1708,7 +1783,7 @@ class optimizer_conversion_seasonality:
         seasonality_combination = []
         seasonality_count = {}
 
-        for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both"):
+        for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both", freq=freq_type):
             day_counter = str(day_.weekday())+"_"+str(day_.month)
             seasonality_combination = seasonality_combination + [day_counter]
             if day_counter in seasonality_count.keys():
@@ -1787,14 +1862,17 @@ class optimizer_conversion_seasonality:
         else:
             result_df = pd.DataFrame(columns=['spend', 'return'], index=self.dimension_names).fillna(0)
 
-        for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both"):
+        for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both", freq=freq_type):
             day_month = str(day_.weekday())+"_"+str(day_.month)
             temp_df = pd.DataFrame(sol[day_month]).T
             result_df = result_df.add(temp_df, fill_value=0)
         result_df = result_df.rename_axis('dimension').reset_index()
 
         result_df = self.lift_cal(result_df, conv_goal, df_spend_dis, days, dimension_bound)
-        result_df, summary_metrics_dic = self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound, conv_goal, days, d_weekday, d_month, date_range)        
+        result_df, summary_metrics_dic = self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound, conv_goal, days, d_weekday, d_month, date_range, freq_type)        
         result_itr_df=result_itr_df.round(2)
 
-        return result_df, summary_metrics_dic
+        # Optimization confidence score calculation
+        optimization_conf_score = self.confidence_score(result_df, df_score_final, df_grp, lst_dim, dimension_bound)
+
+        return result_df, summary_metrics_dic, optimization_conf_score

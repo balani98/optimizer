@@ -429,6 +429,8 @@ def predictor_ajax_left_panel_submit(request):
         multi_line_chart_data = create_pdf_for_multiple_plots(multi_line_chart_json, seasonality, cpm_checked)
         global global_multi_line_chart_data
         global_multi_line_chart_data = multi_line_chart_data
+        # setting the session for df_Score_final to be used in optimizer
+        request.session["df_score_final"] = df_score_final.to_dict()
         plot_curve(multi_line_chart_data, seasonality, cpm_checked, df_score_final, weekly_predictions_df, monthly_predictions_df, None, request)
         df_score_final = df_score_final[(df_score_final["dimension"] == default_dim)]
         if seasonality == 1:
