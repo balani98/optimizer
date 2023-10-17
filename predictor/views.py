@@ -271,6 +271,8 @@ def predictor_ajax_left_panel_submit(request):
         cpm_checked = request.session.get("cpm_checked")
         mean_median_selection = body['mean_median_selection']
         target_type = request.session.get('target_type')
+        is_weekly_selected = int(request.session.get("is_weekly_selected"))
+        convert_to_weekly_data = int(request.session.get("convert_to_weekly_data"))
         request.session['mean_median_selection'] = mean_median_selection
         request.session["seasonality"] = seasonality
         print("seasonality", seasonality)
@@ -283,7 +285,11 @@ def predictor_ajax_left_panel_submit(request):
 
         if seasonality == 1:
             print("Running seasonality predictor_with_seasonality")
-            object_predictor_ml = predictor_with_seasonality(agg_data, target_type)
+            if is_weekly_selected == 1:
+                weekly_selected = is_weekly_selected
+            else:
+                weekly_selected = convert_to_weekly_data
+            object_predictor_ml = predictor_with_seasonality(agg_data, target_type, weekly_selected)
         else:
             print("Running seasonality predictor_ml")
             predictor_unique_dimensions_json = json.loads(body["stringified_unique_dimensions_json"])

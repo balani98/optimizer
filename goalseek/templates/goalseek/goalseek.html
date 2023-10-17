@@ -928,6 +928,7 @@
                   <th scope="col">{{targetSelector}} per day</th>
                   <th scope="col">Overall {{targetSelector}}</th>
                   <th scope="col">% of {{targetSelector}}</th>
+                  <th scope="col">Overall Current Projections</th>
                 </tr>
               </thead>
               <tbody style="text-align: center" class="table_body_1_optimizer">
@@ -1271,12 +1272,16 @@
                         children[0].children[0].children[8];
           var table_element2 = document.getElementById('table_1_optimizer').
                         children[0].children[0].children[9];
+          var constraint_type = window.localStorage.getItem('constraint_type')
+          var table_element3 = document.getElementById('table_1_optimizer').
+                        children[0].children[0].children[10];
           if(is_weekly_selected == 1 || convert_to_weekly_data)
             table_element0.innerText = window.localStorage.getItem('target_selector') + " per week";
           else
           table_element0.innerText = window.localStorage.getItem('target_selector') + " per day";
           table_element1.innerText = "Overall " + window.localStorage.getItem('target_selector');
           table_element2.innerText = "% of "  + window.localStorage.getItem('target_selector');
+          table_element3.innerText = window.localStorage.getItem('target_selector') + " at Original " + constraint_type +" Allocation %";
           document.getElementById('conversion_name').innerText = window.localStorage.getItem('target_selector')
           $('#optimizer_date_picker').on("apply.daterangepicker", function (ev, picker) {
             $('#total_conversion').val(null);
@@ -2010,7 +2015,7 @@
               td4.style = "text-align:left";
               td4.innerHTML = ""
             }
-            textNode4 = document.createTextNode(`${confidence_score}`);
+            textNode4 = document.createTextNode(`${confidence_score} %`);
             td4.appendChild(textNode4);
 
              // appending the table row
@@ -2096,6 +2101,14 @@
           textNode10 = document.createTextNode(value["estimated_return_%"] +" %");
           td10.appendChild(textNode10);
         }
+        td11 = document.createElement("td");
+        if(value["current_projections_for_n_days"]){
+          textNode11 = document.createTextNode(`${value["current_projections_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+          td11.appendChild(textNode11);
+        }else{
+          textNode11 = document.createTextNode(`${value["current_projections_for_n_days"]}`);
+          td11.appendChild(textNode11);
+        }
 
         tableRow.appendChild(td1)
         tableRow.appendChild(td2)
@@ -2107,6 +2120,7 @@
         tableRow.appendChild(td8)
         tableRow.appendChild(td9)
         tableRow.appendChild(td10)
+        tableRow.appendChild(td11)
 
         table_body_1_optimizer.appendChild(tableRow)
       }

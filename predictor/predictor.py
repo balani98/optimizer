@@ -431,7 +431,7 @@ class predictor:
 
 
 class predictor_with_seasonality:
-    def __init__(self, df, target_type):
+    def __init__(self, df, target_type, is_weekly_selected):
         """
         intialization of the class
         df (dataframe) : aggregated dataframe
@@ -439,6 +439,7 @@ class predictor_with_seasonality:
         """
 
         self.df = df
+        self.is_weekly_selected = is_weekly_selected
 
         if "impression" in df.columns:
             self.use_impression = True
@@ -533,6 +534,47 @@ class predictor_with_seasonality:
             + X["weekday_4"] * coeff4
             + X["weekday_5"] * coeff5
             + X["weekday_6"] * coeff6
+        )
+    
+    def s_curve_hill_monthly(
+        self,
+        X,
+        a,
+        b,
+        c,
+        coeffm1,
+        coeffm2,
+        coeffm3,
+        coeffm4,
+        coeffm5,
+        coeffm6,
+        coeffm7,
+        coeffm8,
+        coeffm9,
+        coeffm10,
+        coeffm11,
+    ):
+        """This method performs the scurve function on param X and
+        Returns the outcome as a varible called y"""
+
+        if self.use_impression:
+            metric = "impression"
+        else:
+            metric = "spend"
+
+        return (
+            c * (X[metric] ** a / (X[metric] ** a + b**a))
+            + X["month_2"] * coeffm1
+            + X["month_3"] * coeffm2
+            + X["month_4"] * coeffm3
+            + X["month_5"] * coeffm4
+            + X["month_6"] * coeffm5
+            + X["month_7"] * coeffm6
+            + X["month_8"] * coeffm7
+            + X["month_9"] * coeffm8
+            + X["month_10"] * coeffm9
+            + X["month_11"] * coeffm10
+            + X["month_12"] * coeffm11
         )
 
     def s_curve_hill_decomp(
@@ -652,13 +694,16 @@ class predictor_with_seasonality:
         weekly_seas = 0
         monthly_seas = 0
 
-        df_count_week = df_sub["weekday"].value_counts()
+        # check for weekly seasonality
+        if self.is_weekly_selected == False:
+            df_count_week = df_sub["weekday"].value_counts()
 
-        if df_count_week[df_count_week >= 2].shape[0] == 7:
-            weekly_seas = 1
-        else:
-            weekly_seas = 0
+            if df_count_week[df_count_week >= 2].shape[0] == 7:
+                weekly_seas = 1
+            else:
+                weekly_seas = 0
 
+        # check for monthly seasonality
         df_sub["year"] = df_sub["date"].dt.year
 
         l_count = []
@@ -667,7 +712,7 @@ class predictor_with_seasonality:
 
         df_count_month = pd.Series(l_count).value_counts()
 
-        if df_count_month[df_count_month >= 2].shape[0] == 12:
+        if df_count_month[df_count_month >= 1].shape[0] == 12:
             monthly_seas = 1
         else:
             monthly_seas = 0
@@ -699,6 +744,7 @@ class predictor_with_seasonality:
         global progress_var
 
         weekly_seas_flag = [None] * int(len(self.df.dimension.unique()))
+        monthly_seas_flag = [None] * int(len(self.df.dimension.unique()))
 
         for count, dim in enumerate(self.df.dimension.unique()):
 
@@ -707,8 +753,10 @@ class predictor_with_seasonality:
             weekly_seas, monthly_seas = self.seas_check(dim_df)
 
             weekly_seas_flag[count] = weekly_seas
+            monthly_seas_flag[count] = monthly_seas
 
-            if weekly_seas == 0:
+            if (((weekly_seas == 0) and (self.is_weekly_selected == False)) or 
+                ((monthly_seas == 0) and (self.is_weekly_selected == True))):
                 seas_drop.append(dim)
                 continue
 
@@ -764,29 +812,42 @@ class predictor_with_seasonality:
             # Number of parameters for RSE: 3(s-curve) + 6(weekly) + 11(monthly)
             nparam = 20
 
-            if monthly_seas == 0:
-                bounds = (bounds[0][0:9], bounds[1][0:9])
-
-                # Number of parameters for RSE: 3(s-curve) + 6(weekly)
-                nparam = 9
+            if self.is_weekly_selected == False:
+                if monthly_seas == 0:
+                    bounds = (bounds[0][0:9], bounds[1][0:9])
+                    # Number of parameters for RSE: 3(s-curve) + 6(weekly)
+                    nparam = 9
+            else:
+                bounds = ((bounds[0][0:3]+bounds[0][9:]), (bounds[1][0:3]+bounds[1][9:]))
+                # Number of parameters for RSE: 3(s-curve) + 11(monthly)
+                nparam = 14
 
             try:
-                if monthly_seas == 1:
-                    popt, pcov = curve_fit(
-                        f=self.s_curve_hill,
-                        xdata=dim_df,
-                        ydata=dim_df["target"],
-                        bounds=bounds,
-                    )
+                if self.is_weekly_selected == False:
+                    if monthly_seas == 1:
+                        popt, pcov = curve_fit(
+                            f=self.s_curve_hill,
+                            xdata=dim_df,
+                            ydata=dim_df["target"],
+                            bounds=bounds,
+                        )
+                    else:
+                        popt, pcov = curve_fit(
+                            f=self.s_curve_hill_weekly,
+                            xdata=dim_df,
+                            ydata=dim_df["target"],
+                            bounds=bounds,
+                        )
+                        popt = list(popt) + [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                 else:
                     popt, pcov = curve_fit(
-                        f=self.s_curve_hill_weekly,
+                        f=self.s_curve_hill_monthly,
                         xdata=dim_df,
                         ydata=dim_df["target"],
                         bounds=bounds,
                     )
-
-                    popt = list(popt) + [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                    popt = list(popt)
+                    popt = popt[0:3] + [0, 0, 0, 0, 0, 0] + popt[3:]      
 
                 if sum(self.s_curve_hill_spend_comp(dim_df, *popt[0:3])) == 0:
                     drop_dimension.append(dim)
@@ -828,9 +889,10 @@ class predictor_with_seasonality:
 
             print("progress_var ", progress_var)
 
-        if weekly_seas_flag.count(0) == int(len(self.df.dimension.unique())):
+        if (((weekly_seas_flag.count(0) == int(len(self.df.dimension.unique()))) and (self.is_weekly_selected == False)) or 
+            ((monthly_seas_flag.count(0) == int(len(self.df.dimension.unique()))) and (self.is_weekly_selected == True))):
             raise Exception("Seasonality not available in data")
-
+        
         df_score = (
             pd.DataFrame(score)
             .T.reset_index()

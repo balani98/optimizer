@@ -2455,10 +2455,10 @@
           td4 = document.createElement("td");
           td4.style = "text-align:left";
         }else{
-          td4 = summary_metric_table.rows[1].cells[1];
+          td4 = summary_metric_table.rows[3].cells[1];
           td4.innerHTML = ""
         }
-        textNode4 = document.createTextNode(`${confidence_score}`);
+        textNode4 = document.createTextNode(`${confidence_score} %`);
         td4.appendChild(textNode4);
         // appending the table row
         tableRow1.appendChild(td1);

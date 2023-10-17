@@ -2336,8 +2336,8 @@ $(window).on('load',function(){
     let buttons_to_disable = JSON.parse(window.localStorage.getItem('buttons_to_disable'));
     if(Boolean(buttons_to_disable['optimizer']) == true)
       $('#optimizer-btn').addClass('disabled');  
-    get_is_weekly_selected()
-    get_convert_to_weekly_data()
+    //get_is_weekly_selected()
+    //get_convert_to_weekly_data()
     plot_median_dot()
     plot_mean_dot()
    })
