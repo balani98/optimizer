@@ -271,6 +271,7 @@ def left_panel_submit(request):
         df_table_1_data[dynamic_column_for_budget_allocation_perc] = df_table_1_data[dynamic_column_for_budget_allocation_perc]
         df_table_1_data['buget_allocation_new_%'] = df_table_1_data['buget_allocation_new_%']
         df_table_1_data['recommended_budget_for_n_days'] = df_table_1_data['recommended_budget_for_n_days'].round()
+        df_table_1_data['current_projections_for_n_days'] = df_table_1_data['current_projections_for_n_days'].round()
         df_table_1_data = df_table_1_data.append(df_sum_, ignore_index=True)
         df_table_1_data = df_table_1_data
 
