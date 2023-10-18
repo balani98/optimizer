@@ -271,8 +271,12 @@ def predictor_ajax_left_panel_submit(request):
         cpm_checked = request.session.get("cpm_checked")
         mean_median_selection = body['mean_median_selection']
         target_type = request.session.get('target_type')
-        is_weekly_selected = int(request.session.get("is_weekly_selected"))
-        convert_to_weekly_data = int(request.session.get("convert_to_weekly_data"))
+        convert_to_weekly_data = request.session.get("convert_to_weekly_data")
+        is_weekly_selected = request.session.get("is_weekly_selected")
+        if convert_to_weekly_data is not None and int(convert_to_weekly_data) == 1:
+            convert_to_weekly_data = int(convert_to_weekly_data)
+        if request.session.get("is_weekly_selected") is not None and int(is_weekly_selected) == 1:
+            is_weekly_selected = int(is_weekly_selected)
         request.session['mean_median_selection'] = mean_median_selection
         request.session["seasonality"] = seasonality
         print("seasonality", seasonality)
