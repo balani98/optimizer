@@ -389,7 +389,7 @@
           </div>
           <div class="form-check" id= "median_dot_div" style="margin-bottom:10px;display:flex;align-items:center">
             <input class="form-check-input" type="checkbox" value="" id="median_check_box"
-              onclick="showPoints()">
+              onclick="showPoints(`{{target_type}}`,`{{cpm_message}}`)">
             <label class="form-check-label" style="color: #000;font-size:1rem" for="median_check_box">
               Median Points
               <canvas id="median_dot" width="20" height="25">
@@ -397,7 +397,7 @@
           </div>
           <div class="form-check" id="mean_dot_div" style="margin-bottom:10px;display:flex;align-items:center">
             <input class="form-check-input" type="checkbox" value="" id="mean_check_box"
-              onclick="showPoints()">
+              onclick="showPoints(`{{target_type}}`,`{{cpm_message}}`)">
             
             <label class="form-check-label" style="color: #000;font-size:1rem" for="mean_check_box">
               Mean Points
@@ -726,10 +726,8 @@
     $('#spinner-optimizer').css('display','none');
   }
   // function to display both mean and median points 
-  function showPoints(){
+  function showPoints(target_type, cpm_message){
     plotting_data = multi_line_chart_data2;
-    target_type = 'volume';
-    cpm_message = 'Cpm selected';
     subsetted_data = remove_data_unchecked_dimensions(plotting_data, original_mean_median_plotting_array, global_unchecked_dimensions)
     last_plotting_data = subsetted_data.last_plotting_data;
     last_mean_median_plotting_data = subsetted_data.last_mean_median_plotting_data
