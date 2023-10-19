@@ -413,7 +413,6 @@ def dimension_min_max(request):
 
 
         print("json_table_1_data", json_table_1_data)
-        # print("json_donut_chart_data", json_donut_chart_data)
         print("dict_donut_chart_data", dict_donut_chart_data)
         print("dict_line_chart_data", dict_line_chart_data)
         # Table1
