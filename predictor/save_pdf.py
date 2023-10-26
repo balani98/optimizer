@@ -79,7 +79,10 @@ def plot_curve(multi_chart_data, seasonality, cpm_checked, df_score_final, weekl
         ax1.set_ylabel('predictions')
         # giving a title to my graph[0]
         #ax = plt.gca()
-        ax1.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
+        if cpm_checked == 'True':
+            ax1.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:,.0f}'.format(x)))
+        else:
+            ax1.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
         ax1.set_title(key)
         # saving the plot
         ax2.axis('tight')
