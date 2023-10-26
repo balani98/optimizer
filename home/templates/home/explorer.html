@@ -414,7 +414,21 @@
       // code to write to dimension grouping selector on load 
       $('#dimensionGroupingSelector').val(dimension_grouping_selector)
     }
-    var file = window.localStorage.getItem('file')
+    // enabling and disabling weekly selection inputs
+    var convert_to_weekly_data = window.localStorage.getItem('convert_to_weekly_data')
+    var is_weekly_selected = window.localStorage.getItem('is_weekly_selected');
+    if(convert_to_weekly_data == 1){
+      document.getElementById('exp__is_weekly_selected_input').disabled = true
+      document.getElementById('exp__convert_to_weekly_data').checked = true
+    }else
+      document.getElementById('exp__is_weekly_selected_input').disabled = false
+    
+    if(is_weekly_selected == 1){
+      document.getElementById('exp__convert_to_weekly_data').disabled = true;
+      document.getElementById('exp__is_weekly_selected_input').checked = true
+    }else 
+      document.getElementById('exp__convert_to_weekly_data').disabled = false
+      var file = window.localStorage.getItem('file')
     if(file)
       $('#filename_to_put').attr('hidden',false).text("Uploaded File : " + file )
     // run on load submit charts 
@@ -480,6 +494,10 @@
             // get rid of all divs related to grouping dimensions
             document.getElementById("dimension_grouping_checkbox").style.display = 'none';
             document.getElementById("dimension-grouping-selector").style.display = 'none';
+            window.localStorage.setItem('dimension_grouping_check', false);
+            document.getElementById('flexCheckDefaultDimensionGrouping').checked = false;
+            // calling the dimension grouping check function to have false value
+            dimensionGroupingCheck("0");
           }
           $('#dimensionGroupingSelector').children().remove().end()
           .append('<option selected value="0">No Dimension Grouping Selected</option>') ;
@@ -514,6 +532,7 @@
     $("body").css("background-color", "#cecece");
     $('#spinner-optimizer').css('display','block');
     is_weekly_selected = this_value.checked ? 1 : 0;
+    window.localStorage.setItem('is_weekly_selected',is_weekly_selected);
     // disabling the aggreagation functionality upon user selection for weekly data
     if(is_weekly_selected == 1)
       document.getElementById('exp__convert_to_weekly_data').disabled = true 
@@ -548,6 +567,7 @@
        // displaying the spinner
       displaySpinner()
     convert_to_weekly_data = this_value.checked ? 1 : 0;
+    window.localStorage.setItem('convert_to_weekly_data',convert_to_weekly_data);
     // disabling or enabling functionality weekly selection data on basis of aggregation selected by user 
     if(convert_to_weekly_data == 1)
       document.getElementById('exp__is_weekly_selected_input').disabled = true
