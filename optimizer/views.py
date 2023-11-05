@@ -317,9 +317,8 @@ def dimension_min_max(request):
                 "buget_allocation_new_%",
                 "recommended_budget_for_n_days",
                 'estimated_return_per_day',
-                'current_projections_%', 
-                'estimated_return_%',
                 'estimated_return_for_n_days',
+                'estimated_return_%',
                 'current_projections_for_n_days'
             ]
         ]
@@ -346,8 +345,7 @@ def dimension_min_max(request):
      
         convert_to_weekly_data = request.session.get("convert_to_weekly_data")
         df_table_for_csv = pd.DataFrame()
-       
-        if is_weekly_selected or convert_to_weekly_data:
+        if int(is_weekly_selected) == 1 or int(convert_to_weekly_data) == 1:
             dynamic_column_for_original_budget_per_week = 'Original Median Budget per Week' if constraint_type == 'median' else 'Original Mean Budget Per Week'
             dynamic_column_for_budget_allocation_perc_for_csv = 'Original Median Budget Allocation %' if constraint_type == 'median' else 'Original Mean Budget Allocation %'
             dynamic_column_for_overall_projections = target_selector +'at Original Median Allocation %' if constraint_type == 'median' else target_selector + ' at Original Mean Allocation %'
@@ -357,7 +355,7 @@ def dimension_min_max(request):
                                             'total_buget_allocation_old_%':'Original Total Budget Allocation %',
                                             dynamic_column_for_budget_allocation_perc:dynamic_column_for_budget_allocation_perc_for_csv,
                                             'buget_allocation_new_%':'Recommended Budget Allocation %',
-                                           'recommended_budget_for_n_days':'Total Recommended Budget Allocation',
+                                           'recommended_budget_for_n_days':'Recommended Total Budget Allocation',
                                             'estimated_return_per_day': target_selector + ' Per Week',
                                             'estimated_return_for_n_days':'Overall ' + target_selector,
                                             'estimated_return_%':'% of ' + target_selector,
