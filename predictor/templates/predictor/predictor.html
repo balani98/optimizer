@@ -826,7 +826,10 @@
           if(y_label != 'predictions')
             last_plotting_data = filter_plotting_data(last_plotting_data)
           arr = changexydomain(last_plotting_data, data.cpm_message, y_label)
-          plot_multi_line_chart_checkboxes(multi_line_chart_data2, original_mean_median_plotting_array ,data.cpm_message, arr[0], arr[1], y_label, target_type)    
+          console.log('deeps',original_mean_median_plotting_array)
+          plot_median = document.getElementById("median_check_box").checked;
+          plot_mean = document.getElementById("mean_check_box").checked; 
+          plot_multi_line_chart_checkboxes(multi_line_chart_data2, original_mean_median_plotting_array ,data.cpm_message, arr[0], arr[1], y_label, target_type, [], true, plot_median, plot_mean)    
         }
         console.log(
           `\n scatterplot_data, ${scatterplot_data} 

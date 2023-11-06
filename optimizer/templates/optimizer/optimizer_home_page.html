@@ -230,6 +230,11 @@
         margin-bottom:2rem;
       }
     }  
+    .card-deck {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+    }
 </style>
 
 <div class="container-fluid" id="container">
@@ -808,7 +813,7 @@
             <div class="col-lg-7 col-sm-12">
               <h4 class="text-center add-margin-for-lg-screen">Summary Metrics</h4>
               <div class="row">
-                <div class="col-lg-6">
+                <div class="col-lg-6 card-deck">
                   <div class="card card-stats mb-4 mb-xl-4">
                     <div class="card-body">
                       <div class="row">
@@ -829,7 +834,7 @@
                     </div>
                   </div>
                 </div>
-                <div class="col-lg-6">
+                <div class="col-lg-6 card-deck">
                   <div class="card card-stats mb-4 mb-xl-4">
                     <div class="card-body">
                       <div class="row">
@@ -852,15 +857,15 @@
                 </div>
               </div>
               <div class="row">
-                <div class="col-lg-6">
+                <div class="col-lg-6 card-deck">
                   <div class="card card-stats mb-4 mb-xl-4">
                     <div class="card-body">
                       <div class="row">
                         <div class="col" id ="roi_cpa_metric">
                           {% if target_type == 'volume' %}
-                            <h5 class="card-title  mb-0">Cost Per {{targetSelector}}</h5>
+                            <h5 class="card-title  mb-0"  style="font-size:19px">Cost Per {{targetSelector}}</h5>
                           {% elif target_type == 'revenue' %}
-                            <h5 class="card-title  mb-0">Return On Investment</h5>
+                            <h5 class="card-title  mb-0"  style="font-size:19px">Return On Investment</h5>
                           {% endif %}
                           <span class="h2 font-weight-bold mb-0"></span>
                         </div>
@@ -876,7 +881,7 @@
                     </div>
                   </div>
                 </div>
-                <div class="col-lg-6">
+                <div class="col-lg-6 card-deck">
                   <div class="card card-stats mb-4 mb-xl-4">
                     <div class="card-body">
                       <div class="row">
@@ -2377,7 +2382,7 @@
               ctx.fillText(`$ ${Math.round(summary_metric_json["Current Projection CPA/ROI"])}`, x.getPixelForValue(0) - 80, chart.getDatasetMeta(0).data[0].y+14)
               ctx.fillText(`$ ${Math.round(summary_metric_json["Optimized CPA/ROI"])}`, x.getPixelForValue(0) + 80, chart.getDatasetMeta(1).data[0].y+14)
             }else{
-              ctx.fillText(`${Math.round(summary_metric_json["Current Projection CPA/ROI"])}`, x.getPixelForValue(0) + 80, chart.getDatasetMeta(0).data[0].y+14)
+              ctx.fillText(`${Math.round(summary_metric_json["Current Projection CPA/ROI"])}`,  x.getPixelForValue(0) - 80, chart.getDatasetMeta(0).data[0].y+14)
               ctx.fillText(`${Math.round(summary_metric_json["Optimized CPA/ROI"])}`, x.getPixelForValue(0) + 80, chart.getDatasetMeta(1).data[0].y+14)
             }
             }

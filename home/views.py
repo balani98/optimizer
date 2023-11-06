@@ -361,8 +361,15 @@ def chart_filter(request):
             eo.is_group_dimension_selected = request.session.get("dimension_grouping_check")
             if convert_to_weekly_data is not None and int(convert_to_weekly_data) == 1:
                 eo.convert_to_weekly = True
+            elif convert_to_weekly_data is None:
+                eo.convert_to_weekly = False
+                request.session['convert_to_weekly_data'] = 0
+            
             if is_weekly_selected is not None and int(is_weekly_selected) == 1:
                 eo.is_weekly_selected = True
+            elif is_weekly_selected is None:
+                eo.is_weekly_selected = False
+                request.session['is_weekly_selected'] = 0
             
             if request.session.get("cpm_checked") == "True":
                 eo.use_impression = True
