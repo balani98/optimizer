@@ -222,14 +222,14 @@
       .sidebar-right {padding-top: 15px;}
       .sidebar-right a {font-size: 18px;}
     }
-    @media only screen   
-    and (min-width: 1370px)  
-    and (max-width: 1620px)   
-    { 
+    @media only screen
+    and (min-width: 1370px)
+    and (max-width: 1620px)
+    {
       .add-margin-for-lg-screen{
         margin-bottom:2rem;
       }
-    }  
+    }
     .card-deck {
       display: flex;
       flex-wrap: wrap;
@@ -246,8 +246,9 @@
       style="width: 15rem"
     >
       <div
-        class="position-sticky pt-3 scrollbar  hide_scroller y_scroll" style="height:100%"
-        style="padding-right:7px;"
+        class="position-sticky pt-3 scrollbar hide_scroller y_scroll"
+        style="height: 100%"
+        style="padding-right: 7px"
       >
         <a class="explorer-nav-link xm-logo"
           ><img
@@ -345,7 +346,7 @@
             >
             {% endif %}
           </div>
-          <div class="mb-3 pt-2 pb-2 searchbox_div"style="width:13.9rem">
+          <div class="mb-3 pt-2 pb-2 searchbox_div" style="width: 13.9rem">
             <i class="fa fa-search" style="color: #fff; font-size: 1.2rem"></i>
             <input
               type="text"
@@ -356,7 +357,7 @@
             />
           </div>
 
-          <div class="custom-control custom-switch mb-2" style="width:13.9rem">
+          <div class="custom-control custom-switch mb-2" style="width: 13.9rem">
             <input
               type="checkbox"
               class="custom-control-input"
@@ -477,7 +478,12 @@
           <div
             id="outer_div_multiple_inputs_percentages"
             class="mb-4 hide_scroller"
-            style="display: none; overflow-y: scroll; height: 15rem;width:13.9rem"
+            style="
+              display: none;
+              overflow-y: scroll;
+              height: 15rem;
+              width: 13.9rem;
+            "
           >
             <div
               id="multiple_inputs"
@@ -614,7 +620,7 @@
           <div
             id="outer_div_multiple_inputs"
             class="mb-4 hide_scroller"
-            style="overflow-y: scroll; height: 15rem;width:13.9rem"
+            style="overflow-y: scroll; height: 15rem; width: 13.9rem"
           >
             <div
               id="multiple_inputs"
@@ -809,9 +815,11 @@
             box-shadow: rgb(0 0 0 / 24%) 0px 10px 20px;
           "
         >
-          <div class="row"style="display:flex;align-items:center">
+          <div class="row" style="display: flex; align-items: center">
             <div class="col-lg-7 col-sm-12">
-              <h4 class="text-center add-margin-for-lg-screen">Summary Metrics</h4>
+              <h4 class="text-center add-margin-for-lg-screen">
+                Summary Metrics
+              </h4>
               <div class="row">
                 <div class="col-lg-6 card-deck">
                   <div class="card card-stats mb-4 mb-xl-4">
@@ -823,11 +831,16 @@
                         </div>
                         <div class="col-auto">
                           <div>
-                            {% comment %} <i class="fa fa-bar-chart" style="color:#9a3334;font-size:1.5rem" ></i> {% endcomment %}
+                            {% comment %}
+                            <i
+                              class="fa fa-bar-chart"
+                              style="color: #9a3334; font-size: 1.5rem"
+                            ></i>
+                            {% endcomment %}
                             <img
                               src="{% static '/assets/sales.png' %}"
                               alt="budget"
-                              />
+                            />
                           </div>
                         </div>
                       </div>
@@ -839,15 +852,22 @@
                     <div class="card-body">
                       <div class="row">
                         <div class="col" id="total_target_metric">
-                          <h5 class="card-title mb-0">Total {{targetSelector}}</h5>
+                          <h5 class="card-title mb-0">
+                            Total {{targetSelector}}
+                          </h5>
                           <span class="h2 font-weight-bold mb-0"></span>
                         </div>
                         <div class="col-auto">
                           <div>
-                            {% comment %} <i class="fa fa-line-chart" style="color:#9a3334;font-size:1.5rem"></i> {% endcomment %}
+                            {% comment %}
+                            <i
+                              class="fa fa-line-chart"
+                              style="color: #9a3334; font-size: 1.5rem"
+                            ></i>
+                            {% endcomment %}
                             <img
-                            src="{% static '/assets/growth-graph.png' %}"
-                            alt="target" 
+                              src="{% static '/assets/growth-graph.png' %}"
+                              alt="target"
                             />
                           </div>
                         </div>
@@ -861,19 +881,23 @@
                   <div class="card card-stats mb-4 mb-xl-4">
                     <div class="card-body">
                       <div class="row">
-                        <div class="col" id ="roi_cpa_metric">
+                        <div class="col" id="roi_cpa_metric">
                           {% if target_type == 'volume' %}
-                            <h5 class="card-title  mb-0"  style="font-size:19px">Cost Per {{targetSelector}}</h5>
+                          <h5 class="card-title mb-0" style="font-size: 19px">
+                            Cost Per {{targetSelector}}
+                          </h5>
                           {% elif target_type == 'revenue' %}
-                            <h5 class="card-title  mb-0"  style="font-size:19px">Return On Investment</h5>
+                          <h5 class="card-title mb-0" style="font-size: 19px">
+                            Return On Investment
+                          </h5>
                           {% endif %}
                           <span class="h2 font-weight-bold mb-0"></span>
                         </div>
                         <div class="col-auto">
-                          <div >
+                          <div>
                             <img
-                            src="{% static '/assets/gauge-chart.png' %}"
-                            alt="cpa-roi" 
+                              src="{% static '/assets/gauge-chart.png' %}"
+                              alt="cpa-roi"
                             />
                           </div>
                         </div>
@@ -885,17 +909,22 @@
                   <div class="card card-stats mb-4 mb-xl-4">
                     <div class="card-body">
                       <div class="row">
-                        <div class="col" id ="confidence_metric">
-                          <h5 class="card-title  mb-0">Confidence Score</h5>
+                        <div class="col" id="confidence_metric">
+                          <h5 class="card-title mb-0">Confidence Score</h5>
                           <span class="h2 font-weight-bold mb-0"></span>
                         </div>
                         <div class="col-auto">
                           <div>
-                            {% comment %} <i class="fa fa-percent" style="color:#9a3334;font-size:1.5rem"></i> {% endcomment %}
+                            {% comment %}
+                            <i
+                              class="fa fa-percent"
+                              style="color: #9a3334; font-size: 1.5rem"
+                            ></i>
+                            {% endcomment %}
                             <img
                               src="{% static '/assets/percent.png' %}"
                               alt="percent"
-                              />
+                            />
                           </div>
                         </div>
                       </div>
@@ -905,23 +934,34 @@
               </div>
             </div>
             <div class="col-lg-5 col-sm-12">
-              <div class="tooltip_outer_div"style="position:relative">
-                <div style="display:flex;flex-direction:row;justify-content:right">
+              <div class="tooltip_outer_div" style="position: relative">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: row;
+                    justify-content: right;
+                  "
+                >
                   <div><h6>Initial Plan :&nbsp;</h6></div>
                   <div>
                     <i
-                    class="fa fa-info-circle"
-                    aria-hidden="true"
-                    style="color:#9a3334;font-size:1.5rem"
-                  ></i>
+                      class="fa fa-info-circle"
+                      aria-hidden="true"
+                      style="color: #9a3334; font-size: 1.5rem"
+                    ></i>
                   </div>
                 </div>
-                <span class="tooltiptext" style="top:100%;position:absolute"
-                >Initial Plan calculation is based on Original budget and projected target value. 
-                 Original budget is calculated using Original Median or Mean Budget Allocation %</span
-              >
+                <span class="tooltiptext" style="top: 100%; position: absolute"
+                  >Initial Plan calculation is based on Original budget and
+                  projected target value. Original budget is calculated using
+                  Original Median or Mean Budget Allocation %</span
+                >
               </div>
+              {% if target_type == 'volume' %}
               <h4 class="text-center">Cost per {{targetSelector}}</h4>
+              {% else %}
+              <h4 class="text-center">Return On Investment</h4>
+              {% endif %}
               <div
                 style="
                   display: flex;
@@ -940,7 +980,7 @@
             </div>
           </div>
         </div>
-        
+
         <div
           style="
             background-color: #fff;
@@ -2191,6 +2231,7 @@
       function submit_predictor_left_pannel_chart_inputs() {
         console.log("inputs submitted")
         // Final validation before the submit
+        optimizer_left_panel_total_budget = document.getElementById('total_budget').value.replace(/,/g, '').replace('$','');
         if(!global_seasonality)
           optimizer_left_panel_total_budget = parseInt(optimizer_left_panel_total_budget) -
           global_sum_fixed_budget_values*optimizer_left_panel_number_of_days;
@@ -2428,12 +2469,12 @@
                       }
                       if(target_type == 'volume')
                         label += '$ ' + context.parsed.y ;
-                      else 
-                        label += context.parsed.y ; 
+                      else
+                        label += context.parsed.y ;
                       return label;
                   }
                 }
-              }, 
+              },
             },
             scales: {
               x: {
@@ -2453,7 +2494,7 @@
                   callback: function(value, index) {
                     if(target_type == 'volume')
                       return '$ ' + value;
-                    else 
+                    else
                       return value;
                   },
                   beginAtZero: true,
@@ -2467,7 +2508,7 @@
       }
       // function to populate the summary metrics table
       function populate_table_summary_metric(summary_metric_json,confidence_score){
-        // getting the value out of span 
+        // getting the value out of span
         var total_budget_span_value = $('#total_budget_metric span');
         var total_target_span_value = $('#total_target_metric span');
         var roi_cpa_span_value = $('#roi_cpa_metric span');
@@ -2478,7 +2519,7 @@
         total_target_span_value.text(`${summary_metric_json["Optimized Total Target"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
         if(target_type=='volume')
           roi_cpa_span_value.text("$ " + Math.round(summary_metric_json["Optimized CPA/ROI"]));
-        else 
+        else
         roi_cpa_span_value.text(Math.round(summary_metric_json["Optimized CPA/ROI"]));
         confidence_span_value.text(`${confidence_score} %`) ;
 
@@ -2680,7 +2721,7 @@
               }
             }
           },
-          
+
         },
       }
       global_my_optimizer_target_bar_chart = new Chart(ctx, config);

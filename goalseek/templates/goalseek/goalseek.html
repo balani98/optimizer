@@ -131,14 +131,11 @@
       font-size: 18px;
     }
   }
-  @media only screen   
-  and (min-width: 1370px)  
-  and (max-width: 1620px)   
-  { 
-    .add-margin-for-lg-screen{
-      margin-bottom:2rem;
+  @media only screen and (min-width: 1370px) and (max-width: 1620px) {
+    .add-margin-for-lg-screen {
+      margin-bottom: 2rem;
     }
-  }  
+  }
 
   .card-deck {
     display: flex;
@@ -738,7 +735,7 @@
             box-shadow: rgb(0 0 0 / 24%) 0px 10px 20px;
           "
         >
-          <div class="row"style="display:flex;align-items:center">
+          <div class="row" style="display: flex; align-items: center">
             <div class="col-lg-7 col-sm-12">
               <h4 class="text-center add-margin-for-lg-screen">
                 Summary Metrics
@@ -810,9 +807,7 @@
                             Cost Per {{targetSelector}}
                           </h5>
                           {% elif target_type == 'revenue' %}
-                          <h5 class="card-title mb-0">
-                            Return On Investment
-                          </h5>
+                          <h5 class="card-title mb-0">Return On Investment</h5>
                           {% endif %}
                           <span class="h2 font-weight-bold mb-0"></span>
                         </div>
@@ -880,7 +875,11 @@
                   Original Median or Mean Budget Allocation %</span
                 >
               </div>
+              {% if target_type == 'volume' %}
               <h4 class="text-center">Cost per {{targetSelector}}</h4>
+              {% else %}
+              <h4 class="text-center">Return On Investment</h4>
+              {% endif %}
               <div
                 style="
                   display: flex;
@@ -2289,7 +2288,7 @@
 
           },
         }
-        global_optimizer_cpa_bar_chart = new Chart(ctx, config);
+        global_goalseek_cpa_bar_chart = new Chart(ctx, config);
       }
       {% comment %} End : Populate Table  1 {% endcomment %}
 
