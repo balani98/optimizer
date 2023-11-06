@@ -366,6 +366,8 @@ def predictor_ajax_left_panel_submit(request):
         global_weekly_predictions_df = weekly_predictions_df
         global_monthly_predictions_df = monthly_predictions_df
         global_unique_dim = None
+        global global_drop_dimension_with_user_discarded 
+        global_drop_dimension_with_user_discarded = None
         if cpm_checked == "True":
             sort_multi = ['dimension', 'impression']
             max_spend = multi_line_chart_df.loc[multi_line_chart_df["impression"].idxmax()]["impression"]
