@@ -301,9 +301,6 @@ def cpm_check(request):
         CpmSelector = request.GET.get("cpm_check")
         if CpmSelector != "0":
             request.session["cpm_checked"] = "True"
-            # setting the target type as volume for impressions
-            request.session["target_type"] = "volume"
-            eo.target_type = "volume"
             eo.use_impression = True
             eo.cpm = CpmSelector
             request.session["CpmSelector"] = CpmSelector
