@@ -712,7 +712,7 @@ class predictor_with_seasonality:
 
         df_count_month = pd.Series(l_count).value_counts()
 
-        if df_count_month[df_count_month >= 1].shape[0] == 12:
+        if df_count_month[df_count_month >= 2].shape[0] == 12:
             monthly_seas = 1
         else:
             monthly_seas = 0

@@ -1421,7 +1421,7 @@
         }
         else{
           if (global_is_cpm_checked){
-            cpm_value = this_value.parentElement.nextElementSibling.children[0].value;
+            cpm_value = this_value.nextElementSibling.nextElementSibling.value
             update_user_selected_final_dict(key, min_value, max_value, median_spend, -100, 200, cpm_value)
           }
           else{
@@ -1469,7 +1469,7 @@
           min_value = median_spend + ((min_perc_value/100)* median_spend);
           max_value = median_spend + ((max_perc_value/100) * median_spend);
           if (global_is_cpm_checked){
-            cpm_value = this_value.parentElement.nextElementSibling.children[0].value;
+            cpm_value = this_value.parentElement.parentElement.nextElementSibling.children[0].value;
             update_user_selected_final_dict(key, min_value, max_value, median_spend ,min_perc_value, max_perc_value, cpm_value)
           }
           else{
@@ -1495,7 +1495,7 @@
           min_value = median_spend + ((min_perc_value/100) * median_spend)
           max_value = median_spend + ((max_perc_value/100) * median_spend)
           if (global_is_cpm_checked){
-            cpm_value = this_value.parentElement.nextElementSibling.children[0].value;
+            cpm_value = this_value.parentElement.parentElement.nextElementSibling.children[0].value;
             update_user_selected_final_dict(key, min_value, max_value, median_spend, min_perc_value, max_perc_value, cpm_value)
           }
           else{
