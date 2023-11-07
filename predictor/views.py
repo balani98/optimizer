@@ -984,7 +984,7 @@ def download_predictor_curves_pdf(request):
     try:
         context = {}
          # Get the file path of the PDF file
-        pdf_file = "Predictor_pdf/predictor_" + request.session.get("_uuid") + ".pdf"  
+        pdf_file = PREDICTOR_UPLOAD_FOLDER + "predictor_" + request.session.get("_uuid") + ".pdf"  
         pdf = open(pdf_file, 'rb')
         response = FileResponse(pdf, content_type='application/pdf')
         response['Content-Disposition'] = 'attachment; filename="predictor.pdf"'
