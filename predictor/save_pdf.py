@@ -25,7 +25,7 @@ def plot_curve(multi_chart_data, seasonality, cpm_checked, df_score_final, weekl
         plt.rcParams["figure.figsize"] = [8.50, 14.00]
     else:
         plt.rcParams["figure.figsize"] = [8.50, 6.00]
-    filename = "Predictor_pdf/predictor_" + request.session.get("_uuid") + ".pdf"  
+    filename = PREDICTOR_UPLOAD_FOLDER +"/predictor_" + request.session.get("_uuid") + ".pdf"  
     # first remove this file from system if it already exists 
     if os.path.isfile(filename):
         os.remove(filename)
