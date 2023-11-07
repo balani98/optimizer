@@ -85,7 +85,7 @@
   }
 
   .predictor_cpm_check_status_text,
-  .predictor_select_seasonality_label {
+  .predictor_select_seasonality_label , .mean_median_selection{
     font-size: large;
     color: white;
     text-align: center;
@@ -99,6 +99,11 @@
     color: black;
     text-align: center;
     height:2.5rem;
+  }
+  .dropdown-flexbox{
+    display:flex;
+    flex-direction:row;
+    justify-content:space-between;
   }
   .active {
     animation: progress-bar-stripes 1s linear infinite;
@@ -203,6 +208,7 @@
 .channel-date-range{
   display:flex;
   justify-content:space-between;
+  width:13.7rem;
 }
 </style>
 
@@ -211,11 +217,11 @@
   <div class="row">
     <nav id="sidebarMenu" class="col-md-2 col-lg-2 d-md-block sidebar collapse"
       style="width: 15rem">
-      <div class="position-sticky pt-3  y_scroll hide_scroller" style="max-height:44rem">
+      <div class="position-sticky pt-3 scrollbar" style="height:100%">
         <a class="explorer-nav-link xm-logo"><img src="{% static '/assets/Redboxlogo-black.png' %}" alt="CROSSMEDIA"></a>
         <form method="post" enctype="multipart/form-data">
           {% csrf_token %}
-          <div style="margin-bottom: 10px; width: 100%">
+          <div style="margin-bottom: 10px; width: 13.7rem">
             <p class="predictor_cpm_check_status_text" id="cpm_check">
               {{cpm_message}}
             </p>
@@ -229,7 +235,7 @@
               Data can be subset for non-seasonal models using the date range 
             </span>
           </div>
-          <div class="dropdown" style="margin-bottom: 10px; width: 100%">
+          <div class="dropdown" style="margin-bottom: 10px; width: 13.7rem">
             <p class="predictor_select_seasonality_label" for="cars">
               Include Seasonal Effects ?
             </p>
@@ -240,10 +246,39 @@
               id="select_seasonality"
             >
               <option value="No">No</option>
-              {% if is_weekly_selected != 1 %}
-                <option value="Yes">Yes</option>
-              {% endif %}
+              <option value="Yes">Yes</option>
 
+            </select>
+          </div>
+          <div class="dropdown" style="margin-bottom: 10px; width: 13.7rem">
+            <div style="display:flex;justify-content:space-between">
+                <p class="mean_median_selection" for="select_mean_median">
+                  Select Mean / Median
+                </p>
+                <div class="tooltip_outer_div">
+                  <i
+                    class="fa fa-info-circle fa-2x"
+                    aria-hidden="true"
+                    style="color: white; margin-right: 10px"
+                  ></i>
+                  <span class="tooltiptext"
+                    >In general, median is recommended as it 
+                    controls the effects of the outliers. 
+                    Mean can be used instead based on the user's 
+                    discretion when median doesn't allow to utilize 
+                    the certain level of budget for some dimensions. 
+                    By default, median is selected for constraint setting.</span
+                  >
+                </div>
+              </div>
+            <select
+              name="select_mean_median"
+              class="btn dropdown-toggle explorer-sidebar-dropdown"
+              onchange="selectMeanMedian(this)"
+              id="select_mean_median"
+            >
+              <option value="median">Median</option>
+              <option value="mean">Mean</option>
             </select>
           </div>
           <div id="channel_grouping">
@@ -254,8 +289,8 @@
             <p style="color:white">Enter date range for each channel (optional)</p>
           </button>
             <div id="channel_grouping_with_search_box"style="display:none">
-              <div class="ml-1 searchbox_div">
-                <input type="text" id ="searchBox" placeholder="Search Dimension.."  class="btn predictordate" style="width:100%"name="search" 
+              <div class="searchbox_div">
+                <input type="text" id ="searchBox" placeholder="Search Dimension.."  class="btn predictordate" style="width:13.7rem"name="search" 
                       oninput = "search_dimension_names(this)" >
               </div>
               <div id="channel_grouping_inner_div">
@@ -340,17 +375,58 @@
 
     <div id="right_div" style="display: none; align-items: center">
       <div class="explorer-chart mb-5" id="multi_line_chart_with_checkboxes" style="margin-top:20px;padding:1.5rem;position:relative;background-color:#fff">
-        <div class="piemultiselect">
-          <div class="pieselectBox" id="pieselectBox" onclick="showMenu()">
-            <select class="btn btn-secondary dropdown-toggle explorer-sidebar-dropdown">
-              <option id="pie_selected_value"hidden>Dimension Selector</option>
-            </select>
-            <div class="pieoverSelect"></div>
+        <div class="piemultiselect dropdown-flexbox">
+          <div>
+            <div class="pieselectBox" id="pieselectBox" onclick="showMenu()">
+              <select class="btn btn-secondary dropdown-toggle explorer-sidebar-dropdown">
+                <option id="pie_selected_value"hidden>Dimension Selector</option>
+              </select>
+              <div class="pieoverSelect"></div>
+            </div>
+            <div id="menu" class="mb-3 hide_scroller"
+              style="display:none;flex-direction:row;justify-content:space-between;background-color:#fff;position:absolute;width:12.5rem
+              ;overflow-y:scroll;max-height:20rem"></div>
           </div>
-          <div id="menu" class="mb-3 hide_scroller"
-          style="display:none;flex-direction:row;justify-content:space-between;background-color:#fff;position:absolute;width:12.5rem
-          ;overflow-y:scroll;max-height:20rem"></div>
+          <div class="form-check" id= "median_dot_div" style="margin-bottom:10px;display:flex;align-items:center">
+            <input class="form-check-input" type="checkbox" value="" id="median_check_box"
+              onclick="showPoints(`{{target_type}}`,`{{cpm_message}}`)">
+            <label class="form-check-label" style="color: #000;font-size:1rem" for="median_check_box">
+              Median Points
+              <canvas id="median_dot" width="20" height="25">
+            </label>
           </div>
+          <div class="form-check" id="mean_dot_div" style="margin-bottom:10px;display:flex;align-items:center">
+            <input class="form-check-input" type="checkbox" value="" id="mean_check_box"
+              onclick="showPoints(`{{target_type}}`,`{{cpm_message}}`)">
+            
+            <label class="form-check-label" style="color: #000;font-size:1rem" for="mean_check_box">
+              Mean Points
+              <canvas id="mean_dot" width="20" height="25">
+            </label>
+          </div>
+          <div class="dropdown">
+            <select
+              id="YAxisSelector"
+              name="YAxisSelector"
+              class="btn dropdown-toggle explorer-sidebar-dropdown"
+              style="padding: 10px"
+              onchange="fn_y_axis_selector(this.value)"
+            >
+              <option value="0">Y axis Selector</option>
+              <option value="predictions" selected>Predictions</option>
+              {%if cpm_message == "cpm selected" %}
+                <option value="impression_predictions_rate">Conversion Rate</option>
+              {% else %}
+                {% if target_type == "revenue" %}
+                  <option value="spend_predictions_rate">ROI</option>
+                {% else %}
+                  <option value="spend_predictions_rate">CPA</option>
+                {% endif %}
+              {% endif %}
+              </select>
+             
+          </div>  
+        </div>
       </div>
        
       
@@ -605,9 +681,12 @@
     let global_x_axis  = "Investment per day"
   {% endif %}
   let multi_line_chart_data2 = {}
+  let original_mean_median_plotting_array = []
   let unchecked_dimensions = []
   let expanded = false; 
-  let global_unique_dimensions_json = {}  
+  let global_unique_dimensions_json = {} 
+  let mean_median_selection =  'median'
+  let global_unchecked_dimensions = []
   // Initiaze the datarange picker
   $('input[name="predictordaterange"]').daterangepicker()
   getPredictorStartAndEndDates()
@@ -632,23 +711,43 @@
      $('#seasonality_plots_div').css('display','none')
     }
   }
+  // display the spinner 
+  function displaySpinner(){
+    $('body').css('opacity',0.5);
+    $('#container').css('pointer-events','none');
+    $("body").css("background-color", "#cecece");
+    $('#spinner-optimizer').css('display','block');
+  }
+  // hide the spinner
+  function hideSpinner(){
+    $('body').css('opacity',1);
+    $("body").css("background-color", "#fff");
+    $('#container').css('pointer-events','auto');
+    $('#spinner-optimizer').css('display','none');
+  }
+  // function to display both mean and median points 
+  function showPoints(target_type, cpm_message){
+    plotting_data = multi_line_chart_data2;
+    subsetted_data = remove_data_unchecked_dimensions(plotting_data, original_mean_median_plotting_array, global_unchecked_dimensions)
+    last_plotting_data = subsetted_data.last_plotting_data;
+    last_mean_median_plotting_data = subsetted_data.last_mean_median_plotting_data
+    arr = changexydomain(last_plotting_data, cpm_message, 'predictions')
+    plot_median = document.getElementById("median_check_box").checked;
+    plot_mean = document.getElementById("mean_check_box").checked; 
+    plot_multi_line_chart_checkboxes(last_plotting_data, last_mean_median_plotting_data, cpm_message, arr[0], arr[1], 'predictions', target_type, subsetted_data.unchecked_dimensions, false, plot_median, plot_mean)
+  }
+
   // Fuction to get start and End date
   function getPredictorStartAndEndDates() {
     console.log("addStartAndEndDate");
      // Ajax Call
     // make the sppinner visible
-    $("#container").css("pointer-events", "none");
-    $("#container").css("opacity", 0.5);
-    $("body").css("background-color", "#cecece");
-    $("#spinner-optimizer").css("display", "flex");
+    displaySpinner()
     console.log("inputs submitted"); 
      $.ajax({
       url: "/predictor/ajax/get_predictor_start_and_end_dates/",
       success: function (data) {
-        $("#container").css("pointer-events", "auto");
-        $("#container").css("opacity", 1);
-        $("body").css("background-color", "#fff");
-        $("#spinner-optimizer").css("display", "none");
+        hideSpinner()
         console.log("success in '/predictor/ajax/get_predictor_start_and_end_dates/'");
         unique_dimensions_json = data.unique_dimensions_json;
         global_unique_dimensions_json = unique_dimensions_json
@@ -672,16 +771,30 @@
         );
       },
     });
-    
   }
-  function onChangeHelperFunction() {
+  function onChangeHelperFunction(discard_dimension=false) {
+    // display the spinner
+    displaySpinner()
     console.log("onChangeHelperFunction");
-    let dimensionValueSelector = document.getElementById(
+    // if user discards some dimension , change the dimension to 2nd dimension
+    dimension_to_be_discarded = null
+    if(discard_dimension == true){
+      dimension_to_be_discarded =  dimensionValueSelector = document.getElementById(
+        "dimensionValueSelector"
+      ).value;
+      dimensionValueSelectorToBeDone = document.getElementById(
+        "dimensionValueSelector"
+      ).children[1].value;
+      $('#dimensionValueSelector').val(dimensionValueSelectorToBeDone);
+    }
+    dimensionValueSelector = document.getElementById(
       "dimensionValueSelector"
     ).value;
     data_to_submit = {
       seasonality: global_seasonality_from_session,
       dimension_value_selector: dimensionValueSelector,
+      discard_dimension:discard_dimension, // boolean variable to tell is to discard dimension or chane dimension
+      dimension_to_be_discarded:dimension_to_be_discarded
       // start_date: startDate,
       // end_date: endDate,
     }
@@ -694,17 +807,50 @@
       url: "/predictor/ajax/date_dimension_onchange/",
       data: data_to_submit,
       success: function (data) {
+        // hide the spinner
+        hideSpinner()
         console.log("success in '/predictor/ajax/date_dimension_onchange/'");
         scatterplot_data = data.scatterplot_data;
+        dimension_value_selector = data.dimension_value_selector
+        default_dimension = data.default_dimension
         weekly_predictions_json = data.weekly_predictions_json;
         monthly_predictions_json = data.monthly_predictions_json;
         predictor_table_data = data.predictor_table_data[0];
         enter_cpm = data.enter_cpm;
+        if(discard_dimension == true){
+          multi_line_chart_data2 = data.multi_line_chart_data2;
+          original_mean_median_plotting_array = data.transformed_mean_median_array;
+          last_plotting_data = multi_line_chart_data2;
+          y_label = document.getElementById("YAxisSelector").value;
+          target_type = data.target_type;
+          if(y_label != 'predictions')
+            last_plotting_data = filter_plotting_data(last_plotting_data)
+          arr = changexydomain(last_plotting_data, data.cpm_message, y_label)
+          plot_median = document.getElementById("median_check_box").checked;
+          plot_mean = document.getElementById("mean_check_box").checked; 
+          plot_multi_line_chart_checkboxes(multi_line_chart_data2, original_mean_median_plotting_array ,data.cpm_message, arr[0], arr[1], y_label, target_type, [], true, plot_median, plot_mean)    
+        }
         console.log(
           `\n scatterplot_data, ${scatterplot_data} 
           \n predictor_table_data, ${predictor_table_data} 
           \n enter_cpm, ${enter_cpm}`
         );
+        var option = new Option(
+          default_dimension,
+          default_dimension,
+          true,
+          true
+        );
+        $("#dimensionValueSelector").empty(option);
+        $("#dimensionValueSelector").append(option);
+        // $(".dimensionValueSelectorAutoPopulate").remove();
+        $.each(dimension_value_selector, function (key, valueSelector) {
+          //Use the Option() constructor to create a new HTMLOptionElement.
+          var option = new Option(valueSelector, valueSelector);
+          //Convert the HTMLOptionElement into a JQuery object that can be used with the append method.
+          $(option).html(valueSelector);
+          $("#dimensionValueSelector").append(option);
+        });
         scatter_plot_chart(data);
         if(global_seasonality_from_session){
           plot_weekly_seasonality(weekly_predictions_json)
@@ -721,7 +867,64 @@
       },
     });
   }
-
+  function filter_plotting_data(last_plotting_data){
+    last_plotting_data = last_plotting_data.map((obj)=>{
+      updated_values = obj.values;
+      if(cpm_message == "cpm selected"){
+        updated_values = updated_values.filter((element)=>{
+          return element.impression_predictions_rate != -1;
+        })
+      }else{
+        updated_values = updated_values.filter((element)=>{
+          return element.spend_predictions_rate != -1;
+        })
+      }
+    obj.values = updated_values;
+    return obj;
+    })
+    return last_plotting_data
+  }
+  function fn_y_axis_selector(value){
+    displaySpinner()
+    y_axis_selector_value = value;
+    data_to_submit = {
+      'y_axis_selector_value':y_axis_selector_value
+    }
+    $.ajax({
+      url: "/predictor/ajax/y_axis_onchange/",
+      data: JSON.stringify(data_to_submit),
+      type:'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      contentType: 'application/json; charset=utf-8',
+      success:function(data){
+        hideSpinner()
+        plotting_data = data.multi_line_chart_data2;
+        target_type = data.target_type;
+        cpm_message = data.cpm_message
+        original_mean_median_plotting_array = data.transformed_mean_median_array
+        subsetted_data = remove_data_unchecked_dimensions(plotting_data, original_mean_median_plotting_array,global_unchecked_dimensions)
+        last_plotting_data = subsetted_data.last_plotting_data;
+        last_mean_median_plotting_data = subsetted_data.last_mean_median_plotting_data
+        if(y_axis_selector_value != 'predictions'){
+          last_plotting_data = filter_plotting_data(last_plotting_data)
+          document.getElementById("median_dot_div").style.display = "none";
+          document.getElementById("mean_dot_div").style.display = "none"
+        }else{
+          document.getElementById("median_dot_div").style.display = "flex";
+          document.getElementById("mean_dot_div").style.display = "flex"
+        }
+        arr = changexydomain(last_plotting_data, cpm_message, y_axis_selector_value)
+        plot_median = document.getElementById("median_check_box").checked;
+        plot_mean = document.getElementById("mean_check_box").checked;
+        plot_multi_line_chart_checkboxes(last_plotting_data, last_mean_median_plotting_data, data.cpm_message, arr[0], arr[1], y_axis_selector_value, target_type, subsetted_data.unchecked_dimensions, false, plot_median, plot_mean)
+      },error:function(error){
+          console.log("error" ,error)
+      }
+    })
+    
+  }
   // Function to select Seasonality
   function selectSeasonality(this_object) {
     let value = this_object.value;
@@ -730,6 +933,12 @@
     select_seasonality_userselection
       ? $("#channel_grouping").hide()
       : $("#channel_grouping").show();
+  }
+  // function to perform selection with mean / median
+  function selectMeanMedian(this_object){
+    let value = this_object.value ; 
+    mean_median_selection =  value;
+    window.localStorage.setItem("constraint_type",mean_median_selection) 
   }
 
   // Function to clear the old data on Change and on Submit as well
@@ -830,7 +1039,7 @@
     discarded_items = [];
     // If user presses submit then freeze the screen
     $("#container").css("pointer-events", "none");
-    $("#container").css("opacity", 0.5);
+    $("body").css("opacity", 0.5);
     $("body").css("background-color", "#cecece");
     $("#outer-progressbarDiv").css("display", "flex");
     console.log("inputs submitted"); 
@@ -857,13 +1066,17 @@
     window.localStorage.setItem('predictor_left_hand_dimensions_start_and_end_dates',predictor_left_hand_dimensions_start_and_end_dates) 
     // updating the seasonality on user selection or by session 
     select_seasonality_userselection = document.getElementById('select_seasonality').value == "No" ? 0 : 1;
+    mean_median_selection = document.getElementById("select_mean_median").value
+    window.localStorage.setItem("constraint_type",mean_median_selection) 
     if (select_seasonality_userselection) {
       data = {
+        mean_median_selection:mean_median_selection,
         seasonality: select_seasonality_userselection,
       };
     } else {
       data = {
         seasonality: select_seasonality_userselection,
+        mean_median_selection:mean_median_selection,
         stringified_unique_dimensions_json : JSON.stringify(global_unique_dimensions_json),
       };
     }
@@ -883,19 +1096,23 @@
         clearOldData();
         // set all the properties of screen back and hide the progress bar
         $("#container").css("pointer-events", "auto");
-        $("#container").css("opacity", 1);
+        $("body").css("opacity", 1);
         $("body").css("background-color", "#fff");
         $("#outer-progressbarDiv").css("display", "none");
         document.getElementById("right_div").style.display = "block";
         predictor_table_data = data.predictor_table_data[0];
         enter_cpm = data.enter_cpm;
+        target_type = data.target_type
         drop_dimension = data.drop_dimension;
         default_dimension = data.default_dimension;
         dimension_value_selector = data.dimension_value_selector;
         global_seasonality_from_session = data.seasonality;
         weekly_predictions_json = data.weekly_predictions_json
         multi_line_chart_data2 = data.multi_line_chart_data2;
+        original_mean_median_plotting_array = data.transformed_mean_median_array
         monthly_predictions_json = data.monthly_predictions_json
+        // there should not be any unchecked dimension after time of submit
+        global_unchecked_dimensions = []
         // make progress bar settings as before
         $("#inner-progressbarDiv").animate(
           {
@@ -945,7 +1162,6 @@
         $("#dimensionValueSelector").append(option);
         // $(".dimensionValueSelectorAutoPopulate").remove();
         $.each(dimension_value_selector, function (key, valueSelector) {
-          console.log(valueSelector);
           //Use the Option() constructor to create a new HTMLOptionElement.
           var option = new Option(valueSelector, valueSelector);
           //Convert the HTMLOptionElement into a JQuery object that can be used with the append method.
@@ -960,7 +1176,16 @@
           plot_weekly_seasonality(weekly_predictions_json);
           plot_monthly_seasonality(monthly_predictions_json);
         }
-        plot_multi_line_chart_checkboxes(multi_line_chart_data2, data.cpm_message ,data.max_spend, data.max_predictions)
+        document.getElementById("YAxisSelector").value = 'predictions';
+        constraint_type = document.getElementById("select_mean_median").value
+        if(constraint_type == 'median'){
+          plot_median = document.getElementById("median_check_box").checked = true
+          plot_mean = document.getElementById("mean_check_box").checked = false 
+        }else{ 
+          plot_mean = document.getElementById("mean_check_box").checked = true
+          plot_median = document.getElementById("median_check_box").checked = false 
+        }
+         plot_multi_line_chart_checkboxes(multi_line_chart_data2, original_mean_median_plotting_array, data.cpm_message ,data.max_spend, data.max_predictions,y_label = 'predictions',  target_type, dimension_to_uncheck=[], to_be_checked=true, plot_median, plot_mean)
         if (data.cpm_message == "cpm selected") {
           document.getElementById("predictor_cpm_budget").style.display =
             "block";
@@ -993,6 +1218,14 @@
         );
         // clear the running setInnterval if running
         clearInterval(progInterval);
+        $("#inner-progressbarDiv").animate(
+          {
+            width: 100 * 0.02 + "%",
+          },
+          100
+        );
+        $("#inner-progressbarDiv").text("2%");
+        previousPercentage = 0;
         // set all the properties of screen back and hide the progress bar
         $("#container").css("pointer-events", "auto");
         $("#container").css("opacity", 1);
@@ -1011,6 +1244,8 @@
         success: function (response) {
           total_steps = response["prog_variables"][1];
           ongoing_step = response["prog_variables"][0];
+          if(total_steps == ongoing_step)
+            on_cancel_progress_bar('internal_call')
           console.log(response["prog_variables"]);
           frac_of_req_loaded = ongoing_step / total_steps;
           console.log("diff", frac_of_req_loaded - previousPercentage);
@@ -1042,36 +1277,73 @@
     }, 2000);
   }
   // function gets called when user cancels the progress bar
-  function on_cancel_progress_bar() {
-    // properties to set back
-    // abort the ajax request which is ongoing
-    mainRequest.abort();
-    console.log("request aborted");
-    $("#outer-progressbarDiv").css("display", "none");
-    // clear the interval of ajax requests which is running in backgound
+  function on_cancel_progress_bar(type_of_call = 'external_call') {
+  
     clearInterval(progInterval);
-    $("#container").css("pointer-events", "auto");
-    $("#container").css("opacity", 1);
-    $("body").css("background-color", "#fff");
-    // if user cancels make right div invisible back
-    $("#right_div").css("display", "none");
-    $("#inner-progressbarDiv").text("2%");
-    // setting the progress bar again to 2%
-    $("#inner-progressbarDiv").animate(
-      {
-        width: 100 * 0.02 + "%",
-      },
-      100
-    );
-    previousPercentage = 0;
+    if(type_of_call == 'external_call'){
+      mainRequest.abort();
+      console.log("request aborted");
+      // properties to set back
+      // abort the ajax request which is ongoing
+      // clear the interval of ajax requests which is running in backgound
+      $("#outer-progressbarDiv").css("display", "none");
+      $("#container").css("pointer-events", "auto");
+      $("#container").css("opacity", 1);
+      $("body").css("background-color", "#fff");
+      // if user cancels make right div invisible back
+      $("#right_div").css("display", "none");
+      $("#inner-progressbarDiv").text("2%");
+      // setting the progress bar again to 2%
+      $("#inner-progressbarDiv").animate(
+        {
+          width: 100 * 0.02 + "%",
+        },
+        100
+      );
+      previousPercentage = 0;
+    }
   }
 </script>
 
 {% comment %} scatter plot and multi line hart {% endcomment %}
 <script>
+function plot_median_points(mean_median_plotting_array, svg, x, y){
+  mean_median_plotting_array.forEach((obj)=>{
+    svg
+    .append("g")
+    .selectAll("dot")
+    .data(obj.values)
+    .enter()
+    .append("circle")
+      .attr("cx", function(d) { 
+        return x(d.median_spend_or_impression) } )
+      .attr("cy", function(d) { 
+        return y(d.median_predictions) } )
+      .attr("r", 4)
+      .attr("fill", 'red')
+  })
+}
+function plot_mean_points(mean_median_plotting_array, svg, x, y){
+  mean_median_plotting_array.forEach((obj)=>{
+    svg
+    .append("g")
+    .selectAll("dot")
+    .data(obj.values)
+    .enter()
+    .append("circle")
+      .attr("cx", function(d) { 
+        return x(d.mean_spend_or_impression) } )
+      .attr("cy", function(d) { 
+        return y(d.median_predictions) } )
+      .attr("r", 3)
+      .attr("fill", 'blue')
+  })
+}
 // plot multiple line charts with checkboxes
-function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,max_predictions,dimension_to_uncheck=[],to_be_checked=true){
-    // set the dimensions and margins of the graph
+function plot_multi_line_chart_checkboxes(plotting_data, mean_median_plotting_array, cpm_message, max_spend,max_predictions, y_label = 'predictions', target_type = 'revenue', dimension_to_uncheck=[],to_be_checked=true, plot_median, plot_mean){
+  // Mean median selection 
+  constraint_type = document.getElementById("select_mean_median").value
+  // set the dimensions and margins of the graph
     if (cpm_message == "cpm selected"){
       x_label = 'Impression'
     }else 
@@ -1106,7 +1378,7 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
     var x = d3.scaleLinear()
               .domain( [0,max_spend + 0.1 *max_spend])
               .range([0,width])
-    
+        // adding dollars to x axis
         svg.append("g")
         .attr("transform","translate(0," + height + ")")
         .call(d3.axisBottom(x)
@@ -1117,7 +1389,6 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
                     return d.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
                 })
             )
-      
         // text label for x axis
     svg.append("text")             
       .attr("transform",
@@ -1127,7 +1398,16 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
       .style("fill", "black")
       .text(x_label);
 
-  // text label for the y axis
+  // just for text label for the y axis
+  y_axis_label = ""
+  if(y_label == 'predictions')
+    y_axis_label = 'Predictions';
+  else if(y_label != 'predictions' && target_type == 'revenue' && cpm_message != "cpm selected")
+    y_axis_label = 'ROI';
+  else if(y_label != 'predictions' && target_type == 'volume' && cpm_message != "cpm selected")
+    y_axis_label = 'CPA';
+  else if(y_label != 'predictions' && target_type == 'volume'  &&  cpm_message == "cpm selected")
+    y_axis_label = 'Conversion Rate per 1000 impressions';
   svg.append("text")
       .attr("transform", "rotate(-90)")
       .attr("y", 0 - margin.left)
@@ -1135,13 +1415,20 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
       .attr("dy", "1em")
       .style("text-anchor", "middle")
       .style("fill", "black")
-      .text("predictions");      
+      .text(y_axis_label);      
 
     var y = d3.scaleLinear()
               .domain( [0,max_predictions + 0.1 * max_predictions])
               .range([height,0]);
+    // adding dollars to y axis
         svg.append("g")
-            .call(d3.axisLeft(y))
+            .call(d3.axisLeft(y)
+            .tickFormat(function(d){
+               if(y_label != 'predictions' && target_type == 'volume')
+                return "＄" + d.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+               else 
+                return d.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+            }))
     
     var line = d3.line()
                  .x(function(d){ 
@@ -1150,7 +1437,12 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
                 else 
                   return x(d.spend) 
                 }).y(function(d){
+                if (y_label == 'predictions')
                   return y(d.predictions)
+                else if(y_label == 'impression_predictions_rate'  && cpm_message == "cpm selected")
+                  return y(d.impression_predictions_rate)
+                else if(y_label == 'spend_predictions_rate')
+                  return y(d.spend_predictions_rate)
                 })
       svg.selectAll("myLines")
           .data(plotting_data)
@@ -1187,10 +1479,17 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
             };
           })
           .attr("transform",function(d){
-            if (cpm_message == "cpm selected")
-              return "translate(" + x(d.value.impression) + "," + y(d.value.predictions) + ")"; // put the text at the position of last point
-            else 
-              return "translate(" + x(d.value.spend) + "," + y(d.value.predictions) + ")";
+              if (cpm_message == "cpm selected"){
+                if(y_label == 'predictions')
+                  return "translate(" + x(d.value.impression) + "," + y(d.value.predictions) + ")"; // put the text at the position of last point
+                else 
+                  return "translate(" + x(d.value.impression) + "," + y(d.value.impression_predictions_rate) + ")";
+                }else{
+                  if(y_label == 'predictions') 
+                    return "translate(" + x(d.value.spend) + "," + y(d.value.predictions) + ")";
+                  else
+                    return "translate(" + x(d.value.spend) + "," + y(d.value.spend_predictions_rate) + ")";
+              }
             })
           .attr("x", 12) // shift the text a bit more right 
           .text(function(d){
@@ -1200,6 +1499,10 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
               return myColor(d.name)
           })
           .style("font-size", 15)
+          if(plot_median == true && y_label=='predictions')
+            plot_median_points(mean_median_plotting_array, svg, x, y)
+          if(plot_mean == true && y_label=='predictions')
+            plot_mean_points(mean_median_plotting_array, svg, x, y)
       // creating the searchbox
       var searchBox = document.createElement('input');
       searchBox.type = 'text';
@@ -1241,21 +1544,22 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
 			divcheckSelectAll.appendChild(labelSelectAll);
 			document.getElementById("menu").appendChild(divcheckSelectAll);
       selectAllCheckbox.addEventListener("click",function(){
-          var last_plotting_data = []
-              if(this.checked == true){
-                last_plotting_data = [...multi_line_chart_data2]
-                unchecked_dimensions = []
-                }else{
-                last_plotting_data = [];
-                unchecked_dimensions = [...dimension_groups];
-               }
-               arr = changexydomain(last_plotting_data, cpm_message)
+               var last_plotting_data = []
+               subsetted_data_select_unselect_all = subset_data_select_unselect_all(multi_line_chart_data2 ,mean_median_plotting_array,this.checked);
+               last_plotting_data = subsetted_data_select_unselect_all.last_plotting_data
+               last_mean_median_plotting_data = subsetted_data_select_unselect_all.last_mean_median_plotting_data
+               y_label = document.getElementById("YAxisSelector").value;
+               if(y_label != 'predictions')
+                last_plotting_data = filter_plotting_data(last_plotting_data)
+               arr = changexydomain(last_plotting_data, cpm_message, y_label)
                d3.select("#multi_line_chart_with_checkboxes").select("svg").remove();
                const element = document.getElementById('menu');
                while (element.firstChild) {
                 element.removeChild(element.firstChild);
               }
-              plot_multi_line_chart_checkboxes(last_plotting_data, cpm_message, arr[0],arr[1],unchecked_dimensions,this.checked)
+              plot_median = document.getElementById("median_check_box").checked;
+              plot_mean = document.getElementById("mean_check_box").checked;
+              plot_multi_line_chart_checkboxes(last_plotting_data, last_mean_median_plotting_data, cpm_message, arr[0],arr[1], y_label, target_type, subsetted_data_select_unselect_all.unchecked_dimensions,this.checked, plot_median, plot_mean)
       })
       for(let i = 0 ; i < dimension_groups.length ; i++){
           var tick = document.createElement('input');
@@ -1282,22 +1586,21 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
               var svgline = d3.select('#line-' + lineSelected.replace(/\s/g, '').replace(/[^\w\s]/gi, '').replace("/",""));
 					    var textline = d3.select('#text-' + lineSelected.replace(/\s/g, '').replace(/[^\w\s]/gi, '').replace("/",""));
               var last_plotting_data = []
-              if(this.checked==true){
-                last_plotting_data = [...plotting_data]
-                filtered_array = multi_line_chart_data2.filter(a => a.name == this.value)
-                last_plotting_data.push(...filtered_array)
-                unchecked_dimensions.splice(unchecked_dimensions.indexOf(this.value),1)
-                }else{
-                last_plotting_data = plotting_data.filter(a => a.name != this.value);
-                unchecked_dimensions.push(this.value)
-               }
-               arr = changexydomain(last_plotting_data, cpm_message)
-               d3.select("#multi_line_chart_with_checkboxes").select("svg").remove();
-               const element = document.getElementById('menu');
-               while (element.firstChild) {
+              y_label = document.getElementById("YAxisSelector").value;
+              subsetted_data = subset_data(plotting_data , mean_median_plotting_array, dimension_to_uncheck, this.checked, this.value);
+              last_plotting_data = subsetted_data.last_plotting_data;
+              last_mean_median_plotting_data = subsetted_data.last_mean_median_plotting_data;
+              if(y_label != 'predictions')
+                last_plotting_data = filter_plotting_data(last_plotting_data)
+              arr = changexydomain(last_plotting_data, cpm_message, y_label)
+              d3.select("#multi_line_chart_with_checkboxes").select("svg").remove();
+              const element = document.getElementById('menu');
+              while (element.firstChild) {
                 element.removeChild(element.firstChild);
               }
-              plot_multi_line_chart_checkboxes(last_plotting_data,cpm_message, arr[0], arr[1], unchecked_dimensions,false)
+              plot_median = document.getElementById("median_check_box").checked;
+              plot_mean = document.getElementById("mean_check_box").checked;
+              plot_multi_line_chart_checkboxes(last_plotting_data ,last_mean_median_plotting_data, cpm_message, arr[0], arr[1], y_label, target_type, subsetted_data.unchecked_dimensions,false, plot_median, plot_mean)
           })
     var x_range = d3.scaleLinear().range([0, width]);
     var y_range = d3.scaleLinear().range([height, 0]);
@@ -1318,10 +1621,67 @@ function plot_multi_line_chart_checkboxes(plotting_data, cpm_message, max_spend,
       )
     }
 }
-
+// subset the data for selection / unselection all dimensions 
+function remove_data_unchecked_dimensions(plotting_data, mean_median_plotting_data, dimensions_to_uncheck = []){
+  plotting_data = plotting_data.filter( a => dimensions_to_uncheck.indexOf(a.name) == -1);
+  mean_median_plotting_data = mean_median_plotting_data.filter(a => dimensions_to_uncheck.indexOf(a.name) == -1)
+  var subsetted_data = {
+    last_plotting_data:plotting_data,
+    last_mean_median_plotting_data:mean_median_plotting_data,
+    unchecked_dimensions:dimensions_to_uncheck
+  }
+  return subsetted_data
+}
+// subset the data for selection / unselection all dimensions 
+function subset_data_select_unselect_all(plotting_data, mean_median_plotting_data ,select_all_checked){
+  const dimension_groups = plotting_data.map((obj)=>{
+    return obj.name
+  })
+  if(select_all_checked == true){
+    last_plotting_data = [...multi_line_chart_data2]
+    last_mean_median_plotting_data = [...original_mean_median_plotting_array]
+    unchecked_dimensions = []
+    global_unchecked_dimensions = []
+    }else{
+    last_plotting_data = [];
+    last_mean_median_plotting_data = []
+    unchecked_dimensions = [...dimension_groups];
+    global_unchecked_dimensions = [...dimension_groups];
+  }
+  var subsetted_data = {
+    last_plotting_data:last_plotting_data,
+    unchecked_dimensions:unchecked_dimensions,
+    last_mean_median_plotting_data:last_mean_median_plotting_data
+  }
+  return subsetted_data
+}
+// subset the data for selection / unselection 
+function subset_data(plotting_data, mean_median_plotting_data, unchecked_dimensions, is_dimension_checked, dimension_name){
+  if(is_dimension_checked==true){
+    last_plotting_data = [...plotting_data]
+    last_mean_median_plotting_data = [...mean_median_plotting_data]
+    filtered_array = multi_line_chart_data2.filter(a => a.name == dimension_name)
+    filtered_mean_median_array =  original_mean_median_plotting_array.filter(a => a.name == dimension_name)
+    last_plotting_data.push(...filtered_array)
+    last_mean_median_plotting_data.push(...filtered_mean_median_array)
+    unchecked_dimensions.splice(unchecked_dimensions.indexOf(dimension_name),1)
+    global_unchecked_dimensions = [...unchecked_dimensions]
+    }else{
+    last_plotting_data = plotting_data.filter(a => a.name != dimension_name);
+    last_mean_median_plotting_data = mean_median_plotting_data.filter(a => a.name != dimension_name);
+    unchecked_dimensions.push(dimension_name)
+    global_unchecked_dimensions = [...unchecked_dimensions]
+   }
+   var subsetted_data = {
+     last_plotting_data:last_plotting_data,
+     unchecked_dimensions:unchecked_dimensions,
+     last_mean_median_plotting_data:last_mean_median_plotting_data
+   }
+   return subsetted_data;
+}
 
 // change xy domain
-function changexydomain(plotting_data,cpm_message){
+function changexydomain(plotting_data, cpm_message,  y_label){
     let max_spend = 0;
     let max_predictions = 0;
     x_label = cpm_message == "cpm selected" ? 'impression' : 'spend';
@@ -1333,8 +1693,8 @@ function changexydomain(plotting_data,cpm_message){
         plotting_data[index]['values'].forEach((obj)=>{
             if(obj[x_label] > max_spend)
                 max_spend = obj[x_label]
-            if(obj['predictions'] > max_predictions )
-              max_predictions = obj['predictions']
+            if(obj[y_label] > max_predictions )
+              max_predictions = obj[y_label]
           })
       })
     arr = [max_spend,max_predictions]
@@ -1727,6 +2087,14 @@ function scatter_plot_chart(data) {
 
 
   function discard_plan(value) {
+      // display the spinner
+      $('#spinner-optimizer').css('display','block');
+      $('#container').css('opacity',0.5);
+      $("body").css("background-color", "#cecece");
+      $('#container').css('pointer-events','none');
+      children_dimension_value_selector = document.getElementById("dimensionValueSelector").children;
+      if(children_dimension_value_selector.length <=1)
+        alert("There Atleast be a one dimension")
       dimension_value_selected_by_user = document.getElementById("dimensionValueSelector").value
       console.log(`discard_plan : dimension_value_selected_by_user : ${dimension_value_selected_by_user}`)
 
@@ -1739,14 +2107,20 @@ function scatter_plot_chart(data) {
       }
 
       console.log("discarded_items",discarded_items)
-
+         // set all the properties of screen back and hide the progress bar
+   
       $.ajax({
           url: '/predictor/ajax/predictor_discard/',
           data: {
               'discarded_items': discarded_items.toString(),
           },
           success: function (data) {
-              // Start : Updating Drop dimension
+              $('#spinner-optimizer').css('display','none');
+              $('#container').css('opacity',1);
+              $("body").css("background-color", "#fff");
+              $('#container').css('pointer-events','auto');
+              onChangeHelperFunction(true)
+                             // Start : Updating Drop dimension
               drop_dimension_from_session = data.drop_dimension_from_session
               if (drop_dimension_from_session) {
                 $("#drop_dimension_outer_div").css("display", "flex");
@@ -1794,8 +2168,10 @@ function scatter_plot_chart(data) {
         drop_dimension = data.drop_dimension
         seasonality = data.seasonality
         multi_line_chart_data2 = data.multi_line_chart_data2
+        original_mean_median_plotting_array = data.transformed_mean_median_array
         weekly_predictions_json = data.weekly_predictions_json
         monthly_predictions_json = data.monthly_predictions_json
+        target_type = data.target_type
         console.log(
           `\n scatterplot_data, ${scatterplot_data} 
           \n predictor_table_data, ${predictor_table_data} 
@@ -1813,6 +2189,9 @@ function scatter_plot_chart(data) {
         getPredictorStartAndEndDates()
         //addOnApplyFuncnalityToDataRangePicker()
         setnewDateRangerDates()
+        // get the mean / median selection from local storage 
+        constraint_type = window.localStorage.getItem('constraint_type')
+        document.getElementById('select_mean_median').value = constraint_type
         if (seasonality) {
           $("#predictor_predict_section_daterange").show();
           $("#predictor_predict_section_total_days").hide();
@@ -1860,7 +2239,14 @@ function scatter_plot_chart(data) {
           plot_weekly_seasonality(weekly_predictions_json)
           plot_monthly_seasonality(monthly_predictions_json);
         }
-        plot_multi_line_chart_checkboxes(multi_line_chart_data2, data.cpm_message ,data.max_spend, data.max_predictions);
+        if(constraint_type == 'median'){
+          plot_median = document.getElementById("median_check_box").checked = true
+          plot_mean = document.getElementById("mean_check_box").checked = false 
+        }else{ 
+          plot_mean = document.getElementById("mean_check_box").checked = true
+          plot_median = document.getElementById("median_check_box").checked = false 
+        }
+         plot_multi_line_chart_checkboxes(multi_line_chart_data2, original_mean_median_plotting_array, data.cpm_message ,data.max_spend, data.max_predictions,y_label = 'predictions',  target_type, dimension_to_uncheck=[], to_be_checked=true, plot_median, plot_mean)
         scatter_plot_chart(data);
         addDataToTable(predictor_table_data);
         enter_cpm ? addDataToCPMSelector(enter_cpm) : null;
@@ -1922,6 +2308,24 @@ function scatter_plot_chart(data) {
   })
 
   }
+function plot_median_dot(){
+  let c = document.getElementById("median_dot");
+  let ctx = c.getContext("2d");
+  ctx.beginPath();
+  ctx.arc(10, 17, 5, 0, 2 * Math.PI);
+  ctx.fillStyle = "red"
+  ctx.fill()
+  //ctx.stroke();
+}
+function plot_mean_dot(){
+  let c = document.getElementById("mean_dot");
+  let ctx = c.getContext("2d");
+  ctx.beginPath();
+  ctx.arc(10, 17, 5, 0, 2 * Math.PI);
+  ctx.fillStyle = "blue"
+  ctx.fill()
+  //ctx.stroke();
+}
 $(window).on('load',function(){
     get_seasonality_from_session()
     getPredictorStartAndEndDates() 
@@ -1930,8 +2334,10 @@ $(window).on('load',function(){
     let buttons_to_disable = JSON.parse(window.localStorage.getItem('buttons_to_disable'));
     if(Boolean(buttons_to_disable['optimizer']) == true)
       $('#optimizer-btn').addClass('disabled');  
-    get_is_weekly_selected()
-    get_convert_to_weekly_data()
+    //get_is_weekly_selected()
+    //get_convert_to_weekly_data()
+    plot_median_dot()
+    plot_mean_dot()
    })
   {% if run_wondow_onload %}
     window.onload = predictor_window_on_load_front_end;

@@ -13,7 +13,7 @@ class UserRegisterForm(UserCreationForm):
         data = self.cleaned_data['email']
         if User.objects.filter(email=data).exists():
             raise forms.ValidationError("This email already used")
-        elif "@xmedia.com" not in data:
+        elif "@xmedia.com" not in data:   
             if "@crossmedia.com" in data:
                 return data
             elif "@crossmedia.de" in data:

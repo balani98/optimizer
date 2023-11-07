@@ -12,13 +12,11 @@ progress_var = [0, 0]
 
 
 class predictor:
-    def __init__(self, df, date_range):
+    def __init__(self, df, date_range, target_type):
         """
         intialization of the class
-
         df (dataframe) : aggregated dataframe
         date_range (array) : start and end date
-
         """
 
         self.df = df
@@ -28,6 +26,7 @@ class predictor:
             self.use_impression = True
         else:
             self.use_impression = False
+            self.target_type = target_type.lower()
 
         self.df_param = None
 
@@ -41,11 +40,9 @@ class predictor:
 
     def mape(self, actual, pred):
         """calculating mape
-
         Args:
             actual (series): target
             pred (series): predicted target
-
         Returns:
             float: mape
         """
@@ -53,11 +50,9 @@ class predictor:
 
     def SMAPE(self, actual, pred):
         """calculating Std. Error of Residual
-
         Args:
             actual (series): target
             pred (series): predicted target
-
         Returns:
             float: SMAPE
         """
@@ -68,12 +63,10 @@ class predictor:
 
     def RSE(self, actual, pred, nparam):
         """calculating Std. Error of Residual
-
         Args:
             actual (series): target
             pred (series): predicted target
             nparam: Number of parameters for calculating degrees of freedom
-
         Returns:
             float: RSE
         """
@@ -85,10 +78,8 @@ class predictor:
         
     def fit_curve(self, drop_dimension):
         """function to fit the model and find their optimal parameters
-
         Args:
             drop_dimension (list): dimensions with very less data
-
         Returns:
             df_param(dataframe) : model parameter
             df_score(dataframe) : mape,r2,drop points
@@ -139,7 +130,7 @@ class predictor:
                 )
                 pred = self.s_curve_hill(dim_df[metric], *popt)
                 pred = np.where(pred <= 0, 0, pred)
-                params[dim] = list(popt) + [dim_df[metric].median()]
+                params[dim] = list(popt) + [dim_df[metric].median()] + [dim_df[metric].mean()]
 
                 score[dim] = []
                 #score[dim].append(r2_score(dim_df["target"], pred))
@@ -185,6 +176,7 @@ class predictor:
                     1: "param b",
                     2: "param c",
                     3: "median spend",
+                    4: "mean spend"
                 }
             )
         )
@@ -217,12 +209,10 @@ class predictor:
     def predict_dimesion(self, dimension, date_range, budget, cpm=None):
 
         """function to predict target
-
          Args:
             dimension (string): dimensions for which predict run
             date_range (array) : start and end date
             budget(int) : budget
-
         Returns:
             float: target
         """
@@ -243,11 +233,34 @@ class predictor:
                 x_var, param["param a"][0], param["param b"][0], param["param c"][0]
             )
         )
+    
+    def roi_cpa_outlier_treatment(self, df):
+
+        if self.use_impression:
+            col = 'impression_predictions_rate'
+            metric = 'impression'
+        else:
+            col = 'spend_predictions_rate'
+            metric = 'spend'
+
+        df_ = pd.DataFrame()
+        
+        for dim in df['dimension'].unique():
+            df_temp = df[df["dimension"] == dim].reset_index(drop=True)
+            df_temp_filter=df_temp[df_temp[col]!=-1]
+            mean = np.mean(df_temp_filter[col])
+            std = np.std(df_temp_filter[col])
+            df_temp_filter[col] = np.where((abs((df_temp_filter[col] - mean) / std) > 3), -1, df_temp_filter[col])
+            df_temp.drop(columns=[col], inplace=True)
+            df_temp = df_temp.merge(df_temp_filter[['date', col]], on='date', how='left').sort_values(by='date').reset_index(drop=True)
+            df_ = df_.append(df_temp, ignore_index=True).reset_index(drop=True)
+            df_=df_.fillna(-1)
+
+        return df_
 
     def execute(self):
 
         """execute function
-
         Returns:
            df_param(dataframe) : parameter of the model
            df_score_final(dataframe) : quality metric of the curve
@@ -270,23 +283,31 @@ class predictor:
         # df_spend_dis.rename({'sum': 'spend', 'median': 'median spend'}, axis=1, inplace=True)
 
         if self.use_impression:
-            df_spend_dis = self.df.groupby('dimension').agg(spend=('spend', 'sum'), impression=('impression', 'sum'), median_impression=('impression', 'median'), return_conv=('target', 'sum')).reset_index()
+            df_spend_dis = self.df.groupby('dimension').agg(spend=('spend', 'sum'),
+                                                            impression=('impression', 'sum'),
+                                                            median_impression=('impression', 'median'),
+                                                            mean_impression=('impression', 'mean'),
+                                                            return_conv=('target', 'sum')).reset_index()
             df_spend_dis['cpm'] = df_spend_dis["spend"] * 1000 / df_spend_dis["impression"]
             df_spend_dis['median spend'] = (df_spend_dis["median_impression"] * df_spend_dis["cpm"]) / 1000
-            df_spend_dis=df_spend_dis[['dimension', 'spend', 'median spend', 'return_conv']]
+            df_spend_dis['mean spend'] = (df_spend_dis["mean_impression"] * df_spend_dis["cpm"]) / 1000
+            df_spend_dis=df_spend_dis[['dimension', 'spend', 'median spend', 'mean spend', 'return_conv']]
             
             for i in list(set(dimension_val) - set(df_spend_dis['dimension'])):
         
-                df_spend_dis.loc[-1] = [i,0,0,0]
+                df_spend_dis.loc[-1] = [i,0,0,0,0]
 
                 df_spend_dis.index = df_spend_dis.index + 1
         else:
-            df_spend_dis = self.df.groupby('dimension').agg(spend=('spend', 'sum'), median_spend=('spend', 'median'), return_conv=('target', 'sum')).reset_index()
-            df_spend_dis.rename({'median_spend': 'median spend'}, axis=1, inplace=True)
+            df_spend_dis = self.df.groupby('dimension').agg(spend=('spend', 'sum'),
+                                                            median_spend=('spend', 'median'),
+                                                            mean_spend=('spend', 'mean'),
+                                                            return_conv=('target', 'sum')).reset_index()
+            df_spend_dis.rename({'median_spend': 'median spend', 'mean_spend': 'mean spend'}, axis=1, inplace=True)
             
             for i in list(set(dimension_val) - set(df_spend_dis['dimension'])):
         
-                df_spend_dis.loc[-1] = [i,0,0,0]
+                df_spend_dis.loc[-1] = [i,0,0,0,0]
 
                 df_spend_dis.index = df_spend_dis.index + 1
 
@@ -341,50 +362,90 @@ class predictor:
         scatter_plot_df = scatter_plot_df[
             ~scatter_plot_df["dimension"].isin(drop_dimension)
         ].reset_index(drop=True)
+
         self.df_param = df_param
-        # df_score_final.drop(columns=["MAPE"], inplace=True)
+        # df_score_final.drop(columns=["MAPE"], inplace=True)       
 
         if self.use_impression:
+            scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["predictions"]/(scatter_plot_df["impression"]/1000)).round(decimals=2)
+            scatter_plot_df["impression_predictions_rate"] = scatter_plot_df["impression_predictions_rate"].replace([np.inf, -np.inf, np.nan], -1)
+            scatter_plot_df = self.roi_cpa_outlier_treatment(scatter_plot_df)
+            
+            self.df_param = df_param
 
             df_cpm = (
                 self.df.groupby("dimension").agg(
-                    {"spend": "sum", "impression": [np.sum, np.median]}
+                    {"spend": "sum", "impression": [np.sum, np.median, np.mean]}
                 )
             ).reset_index()
 
-            df_cpm.columns = ["dimension", "spend", "impression", "impression_median"]
+            df_cpm.columns = ["dimension", "spend", "impression", "impression_median", "impression_mean"]
 
             df_cpm["cpm"] = df_cpm["spend"] * 1000 / df_cpm["impression"]
 
             d_cpm = df_cpm[["dimension", "cpm"]].set_index("dimension").to_dict()["cpm"]
 
             df_param = df_param.merge(
-                df_cpm[["dimension", "cpm", "impression_median"]],
+                df_cpm[["dimension", "cpm", "impression_median", "impression_mean"]],
                 on=["dimension"],
-                how="left",
-            )
-
-            return df_param, df_score_final, scatter_plot_df, drop_dimension, d_cpm, df_spend_dis
+                how="left"
+                )  
         else:
-            return df_param, df_score_final, scatter_plot_df, drop_dimension, df_spend_dis
+            if self.target_type == "revenue":
+                scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["spend"]).round(decimals=2)
+            else:
+                scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["spend"]/scatter_plot_df["predictions"]).round(decimals=2)
+            scatter_plot_df["spend_predictions_rate"] = scatter_plot_df["spend_predictions_rate"].replace([np.inf, -np.inf, np.nan], -1)
+            scatter_plot_df = self.roi_cpa_outlier_treatment(scatter_plot_df)
+
+        self.df_param = df_param
+
+        median_mean_dic = {}
+        for dim in self.df_param['dimension'].unique():
+            if self.use_impression:
+                median_var = 'impression_median'
+                mean_var = 'impression_mean'
+            else:
+                median_var = 'median spend'
+                mean_var = 'mean spend'
+            param_ = self.df_param[self.df_param["dimension"] == dim]
+            metric_median = self.df_param[self.df_param['dimension']==dim][median_var].values[0]
+            metric_mean = self.df_param[self.df_param['dimension']==dim][mean_var].values[0]
+            median_mean_dic[dim] = {'median': [round(metric_median, 2), 
+                                                round(self.s_curve_hill(
+                                                    metric_median, 
+                                                    param_["param a"].values[0], 
+                                                    param_["param b"].values[0], 
+                                                    param_["param c"].values[0]), 2)],
+                                    'mean': [round(metric_mean, 2), 
+                                                round(self.s_curve_hill(
+                                                    metric_mean, 
+                                                    param_["param a"].values[0], 
+                                                    param_["param b"].values[0], 
+                                                    param_["param c"].values[0]), 2)]}
+
+        if self.use_impression:
+            return df_param, df_score_final, scatter_plot_df, drop_dimension, d_cpm, df_spend_dis, median_mean_dic
+        else:
+            return df_param, df_score_final, scatter_plot_df, drop_dimension, df_spend_dis, median_mean_dic
 
 
 class predictor_with_seasonality:
-    def __init__(self, df):
+    def __init__(self, df, target_type, is_weekly_selected):
         """
         intialization of the class
-
         df (dataframe) : aggregated dataframe
         date_range (array) : start and end date
-
         """
 
         self.df = df
+        self.is_weekly_selected = is_weekly_selected
 
         if "impression" in df.columns:
             self.use_impression = True
         else:
             self.use_impression = False
+            self.target_type = target_type.lower()
 
         self.df_param = None
 
@@ -474,6 +535,47 @@ class predictor_with_seasonality:
             + X["weekday_5"] * coeff5
             + X["weekday_6"] * coeff6
         )
+    
+    def s_curve_hill_monthly(
+        self,
+        X,
+        a,
+        b,
+        c,
+        coeffm1,
+        coeffm2,
+        coeffm3,
+        coeffm4,
+        coeffm5,
+        coeffm6,
+        coeffm7,
+        coeffm8,
+        coeffm9,
+        coeffm10,
+        coeffm11,
+    ):
+        """This method performs the scurve function on param X and
+        Returns the outcome as a varible called y"""
+
+        if self.use_impression:
+            metric = "impression"
+        else:
+            metric = "spend"
+
+        return (
+            c * (X[metric] ** a / (X[metric] ** a + b**a))
+            + X["month_2"] * coeffm1
+            + X["month_3"] * coeffm2
+            + X["month_4"] * coeffm3
+            + X["month_5"] * coeffm4
+            + X["month_6"] * coeffm5
+            + X["month_7"] * coeffm6
+            + X["month_8"] * coeffm7
+            + X["month_9"] * coeffm8
+            + X["month_10"] * coeffm9
+            + X["month_11"] * coeffm10
+            + X["month_12"] * coeffm11
+        )
 
     def s_curve_hill_decomp(
         self,
@@ -540,13 +642,16 @@ class predictor_with_seasonality:
 
         return c * (X[metric] ** a / (X[metric] ** a + b**a))
 
+    def s_curve_hill_spend_imp(self, X, a, b, c):
+        """This method performs the scurve function on param X and
+        Returns the outcome as a varible called y"""
+        return c * (X ** a / (X ** a + b ** a))
+
     def mape(self, actual, pred):
         """calculating mape
-
         Args:
             actual (series): target
             pred (series): predicted target
-
         Returns:
             float: mape
         """
@@ -554,12 +659,10 @@ class predictor_with_seasonality:
     
     def RSE(self, actual, pred, nparam):
         """calculating Std. Error of Residual
-
         Args:
             actual (series): target
             pred (series): predicted target
             nparam: Number of parameters for calculating degrees of freedom
-
         Returns:
             float: RSE
         """
@@ -571,11 +674,9 @@ class predictor_with_seasonality:
 
     def SMAPE(self, actual, pred):
         """calculating Std. Error of Residual
-
         Args:
             actual (series): target
             pred (series): predicted target
-
         Returns:
             float: SMAPE
         """
@@ -587,20 +688,22 @@ class predictor_with_seasonality:
     def seas_check(self, df_sub):
 
         """to check weekly or monthly seasonality is applicable
-
         Returns:
             boolean: 0/1
         """
         weekly_seas = 0
         monthly_seas = 0
 
-        df_count_week = df_sub["weekday"].value_counts()
+        # check for weekly seasonality
+        if self.is_weekly_selected == False:
+            df_count_week = df_sub["weekday"].value_counts()
 
-        if df_count_week[df_count_week >= 2].shape[0] == 7:
-            weekly_seas = 1
-        else:
-            weekly_seas = 0
+            if df_count_week[df_count_week >= 2].shape[0] == 7:
+                weekly_seas = 1
+            else:
+                weekly_seas = 0
 
+        # check for monthly seasonality
         df_sub["year"] = df_sub["date"].dt.year
 
         l_count = []
@@ -618,10 +721,8 @@ class predictor_with_seasonality:
 
     def fit_curve(self, drop_dimension):
         """function to fit the model and find their optimal parameters
-
         Args:
             drop_dimension (list): dimensions with very less data
-
         Returns:
             df_param(dataframe) : model parameter
             df_score(dataframe) : mape,r2,drop points
@@ -643,6 +744,7 @@ class predictor_with_seasonality:
         global progress_var
 
         weekly_seas_flag = [None] * int(len(self.df.dimension.unique()))
+        monthly_seas_flag = [None] * int(len(self.df.dimension.unique()))
 
         for count, dim in enumerate(self.df.dimension.unique()):
 
@@ -651,8 +753,10 @@ class predictor_with_seasonality:
             weekly_seas, monthly_seas = self.seas_check(dim_df)
 
             weekly_seas_flag[count] = weekly_seas
+            monthly_seas_flag[count] = monthly_seas
 
-            if weekly_seas == 0:
+            if (((weekly_seas == 0) and (self.is_weekly_selected == False)) or 
+                ((monthly_seas == 0) and (self.is_weekly_selected == True))):
                 seas_drop.append(dim)
                 continue
 
@@ -662,7 +766,7 @@ class predictor_with_seasonality:
                 [
                     0.5,
                     dim_df[metric].quantile(0.3),
-                    0,
+                    -np.inf,
                     0,
                     0,
                     0,
@@ -708,36 +812,49 @@ class predictor_with_seasonality:
             # Number of parameters for RSE: 3(s-curve) + 6(weekly) + 11(monthly)
             nparam = 20
 
-            if monthly_seas == 0:
-                bounds = (bounds[0][0:9], bounds[1][0:9])
-
-                # Number of parameters for RSE: 3(s-curve) + 6(weekly)
-                nparam = 9
+            if self.is_weekly_selected == False:
+                if monthly_seas == 0:
+                    bounds = (bounds[0][0:9], bounds[1][0:9])
+                    # Number of parameters for RSE: 3(s-curve) + 6(weekly)
+                    nparam = 9
+            else:
+                bounds = ((bounds[0][0:3]+bounds[0][9:]), (bounds[1][0:3]+bounds[1][9:]))
+                # Number of parameters for RSE: 3(s-curve) + 11(monthly)
+                nparam = 14
 
             try:
-                if monthly_seas == 1:
-                    popt, pcov = curve_fit(
-                        f=self.s_curve_hill,
-                        xdata=dim_df,
-                        ydata=dim_df["target"],
-                        bounds=bounds,
-                    )
+                if self.is_weekly_selected == False:
+                    if monthly_seas == 1:
+                        popt, pcov = curve_fit(
+                            f=self.s_curve_hill,
+                            xdata=dim_df,
+                            ydata=dim_df["target"],
+                            bounds=bounds,
+                        )
+                    else:
+                        popt, pcov = curve_fit(
+                            f=self.s_curve_hill_weekly,
+                            xdata=dim_df,
+                            ydata=dim_df["target"],
+                            bounds=bounds,
+                        )
+                        popt = list(popt) + [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                 else:
                     popt, pcov = curve_fit(
-                        f=self.s_curve_hill_weekly,
+                        f=self.s_curve_hill_monthly,
                         xdata=dim_df,
                         ydata=dim_df["target"],
                         bounds=bounds,
                     )
-
-                    popt = list(popt) + [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                    popt = list(popt)
+                    popt = popt[0:3] + [0, 0, 0, 0, 0, 0] + popt[3:]      
 
                 if sum(self.s_curve_hill_spend_comp(dim_df, *popt[0:3])) == 0:
                     drop_dimension.append(dim)
                 
                 spend_pred,weekday_pred,monthly_pred = self.s_curve_hill_decomp(dim_df, *popt)
                 pred = self.s_curve_hill(dim_df, *popt)
-                params[dim] = list(popt) + [dim_df[metric].median()]
+                params[dim] = list(popt) + [dim_df[metric].median()] + [dim_df[metric].mean()]
 
                 score[dim] = []
                 # score[dim].append(r2_score(dim_df["target"], pred))
@@ -772,9 +889,10 @@ class predictor_with_seasonality:
 
             print("progress_var ", progress_var)
 
-        if weekly_seas_flag.count(0) == int(len(self.df.dimension.unique())):
+        if (((weekly_seas_flag.count(0) == int(len(self.df.dimension.unique()))) and (self.is_weekly_selected == False)) or 
+            ((monthly_seas_flag.count(0) == int(len(self.df.dimension.unique()))) and (self.is_weekly_selected == True))):
             raise Exception("Seasonality not available in data")
-
+        
         df_score = (
             pd.DataFrame(score)
             .T.reset_index()
@@ -814,6 +932,7 @@ class predictor_with_seasonality:
                     18: "month 11",
                     19: "month 12",
                     20: "median spend",
+                    21: "mean spend"
                 }
             )
         )
@@ -836,7 +955,6 @@ class predictor_with_seasonality:
     def param_adjust(self, df_param):
 
         """adjust parameter of seasonality
-
         Returns:
             df_param(dataframe) : model parameter
         """
@@ -864,11 +982,34 @@ class predictor_with_seasonality:
                     df_param.loc[dim, month] = 0
 
         return df_param.reset_index()
+    
+    def roi_cpa_outlier_treatment(self, df):
+
+        if self.use_impression:
+            col = 'impression_predictions_rate'
+            metric = 'impression'
+        else:
+            col = 'spend_predictions_rate'
+            metric = 'spend'
+
+        df_ = pd.DataFrame()
+        
+        for dim in df['dimension'].unique():
+            df_temp = df[df["dimension"] == dim].reset_index(drop=True)
+            df_temp_filter=df_temp[df_temp[col]!=-1]
+            mean = np.mean(df_temp_filter[col])
+            std = np.std(df_temp_filter[col])
+            df_temp_filter[col] = np.where((abs((df_temp_filter[col] - mean) / std) > 3), -1, df_temp_filter[col])
+            df_temp.drop(columns=[col], inplace=True)
+            df_temp = df_temp.merge(df_temp_filter[['date', col]], on='date', how='left').sort_values(by='date').reset_index(drop=True)
+            df_ = df_.append(df_temp, ignore_index=True).reset_index(drop=True)
+            df_=df_.fillna(-1)
+
+        return df_
 
     def execute(self):
 
         """execute function
-
         Returns:
            df_param(dataframe) : parameter of the model
            df_score_final(dataframe) : quality metric of the curve
@@ -891,23 +1032,31 @@ class predictor_with_seasonality:
         # df_spend_dis.rename({'sum': 'spend', 'median': 'median spend'}, axis=1, inplace=True)
 
         if self.use_impression:
-            df_spend_dis = self.df.groupby('dimension').agg(spend=('spend', 'sum'), impression=('impression', 'sum'), median_impression=('impression', 'median'), return_conv=('target', 'sum')).reset_index()
+            df_spend_dis = self.df.groupby('dimension').agg(spend=('spend', 'sum'),
+                                                            impression=('impression', 'sum'),
+                                                            median_impression=('impression', 'median'),
+                                                            mean_impression=('impression', 'mean'),
+                                                            return_conv=('target', 'sum')).reset_index()
             df_spend_dis['cpm'] = df_spend_dis["spend"] * 1000 / df_spend_dis["impression"]
             df_spend_dis['median spend'] = (df_spend_dis["median_impression"] * df_spend_dis["cpm"]) / 1000
-            df_spend_dis=df_spend_dis[['dimension', 'spend', 'median spend', 'return_conv']]
+            df_spend_dis['mean spend'] = (df_spend_dis["mean_impression"] * df_spend_dis["cpm"]) / 1000
+            df_spend_dis=df_spend_dis[['dimension', 'spend', 'median spend', 'mean spend', 'return_conv']]
             
             for i in list(set(dimension_val) - set(df_spend_dis['dimension'])):
         
-                df_spend_dis.loc[-1] = [i,0,0,0]
+                df_spend_dis.loc[-1] = [i,0,0,0,0]
 
                 df_spend_dis.index = df_spend_dis.index + 1
         else:
-            df_spend_dis = self.df.groupby('dimension').agg(spend=('spend', 'sum'), median_spend=('spend', 'median'), return_conv=('target', 'sum')).reset_index()
-            df_spend_dis.rename({'median_spend': 'median spend'}, axis=1, inplace=True)
+            df_spend_dis = self.df.groupby('dimension').agg(spend=('spend', 'sum'),
+                                                            median_spend=('spend', 'median'),
+                                                            mean_spend=('spend', 'mean'),
+                                                            return_conv=('target', 'sum')).reset_index()
+            df_spend_dis.rename({'median_spend': 'median spend', 'mean_spend': 'mean spend'}, axis=1, inplace=True)
             
             for i in list(set(dimension_val) - set(df_spend_dis['dimension'])):
         
-                df_spend_dis.loc[-1] = [i,0,0,0]
+                df_spend_dis.loc[-1] = [i,0,0,0,0]
 
                 df_spend_dis.index = df_spend_dis.index + 1
 
@@ -1007,51 +1156,116 @@ class predictor_with_seasonality:
             ~scatter_plot_df["dimension"].isin(drop_dimension)
         ].reset_index(drop=True)
 
+        if self.use_impression == False:
+            if self.target_type == "revenue":
+                scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["spend"]).round(decimals=2)
+            else:
+                scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["spend"]/scatter_plot_df["predictions"]).round(decimals=2)
+            scatter_plot_df["spend_predictions_rate"] = scatter_plot_df["spend_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
+
         self.df_param = df_param
 
         # df_score_final.drop(columns=["MAPE"], inplace=True)
 
         if self.use_impression:
-
+            scatter_plot_df["impression_predictions_rate"] = (scatter_plot_df["predictions"]/(scatter_plot_df["impression"]/1000)).round(decimals=2)
+            scatter_plot_df["impression_predictions_rate"] = scatter_plot_df["impression_predictions_rate"].replace([np.inf, -np.inf, np.nan], -1)
+            scatter_plot_df = self.roi_cpa_outlier_treatment(scatter_plot_df)
+            
             scatter_plot_df = scatter_plot_df[['date', 'spend', 'impression', 'target', 'dimension', 'weekday_',
                             'month_', 'spend_prediction', 'weekly_prediction', 'monthly_prediction',
-                            'predictions']]
+                            'predictions', 'impression_predictions_rate']]
 
             df_cpm = (
                 self.df.groupby("dimension").agg(
-                    {"spend": "sum", "impression": [np.sum, np.median]}
+                    {"spend": "sum", "impression": [np.sum, np.median, np.mean]}
                 )
             ).reset_index()
 
-            df_cpm.columns = ["dimension", "spend", "impression", "impression_median"]
+            df_cpm.columns = ["dimension", "spend", "impression", "impression_median", "impression_mean"]
 
             df_cpm["cpm"] = df_cpm["spend"] * 1000 / df_cpm["impression"]
 
             d_cpm = df_cpm[["dimension", "cpm"]].set_index("dimension").to_dict()["cpm"]
 
             df_param = df_param.merge(
-                df_cpm[["dimension", "cpm", "impression_median"]],
+                df_cpm[["dimension", "cpm", "impression_median", "impression_mean"]],
                 on=["dimension"],
                 how="left",
             )
 
-            df_param = self.param_adjust(df_param)
+        else:
+            if self.target_type == "revenue":
+                scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["predictions"]/scatter_plot_df["spend"]).round(decimals=2)
+            else:
+                scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["spend"]/scatter_plot_df["predictions"]).round(decimals=2)
+            scatter_plot_df["spend_predictions_rate"] = scatter_plot_df["spend_predictions_rate"].replace([np.inf, -np.inf, np.nan], -1)
+            scatter_plot_df = self.roi_cpa_outlier_treatment(scatter_plot_df)
 
+            scatter_plot_df = scatter_plot_df[['date', 'spend', 'target', 'dimension', 'weekday_',
+                            'month_', 'spend_prediction', 'weekly_prediction', 'monthly_prediction',
+                            'predictions', 'spend_predictions_rate']]
+
+        df_param = self.param_adjust(df_param)
+        self.df_param = df_param
+
+        median_mean_dic     = {}
+        for dim in self.df_param['dimension'].unique():
+            if self.use_impression:
+                median_var = 'impression_median'
+                mean_var = 'impression_mean'
+            else:
+                median_var = 'median spend'
+                mean_var = 'mean spend'
+            param_ = self.df_param[self.df_param["dimension"] == dim]
+            weekday_ = [0, param_["weekday 1"].values[0],
+                        param_["weekday 2"].values[0],
+                        param_["weekday 3"].values[0],
+                        param_["weekday 4"].values[0],
+                        param_["weekday 5"].values[0],
+                        param_["weekday 6"].values[0]]
+            month_ = [0, param_["month 2"].values[0],
+                        param_["month 3"].values[0],
+                        param_["month 4"].values[0],
+                        param_["month 5"].values[0],
+                        param_["month 6"].values[0],
+                        param_["month 7"].values[0],
+                        param_["month 8"].values[0],
+                        param_["month 9"].values[0],
+                        param_["month 10"].values[0],
+                        param_["month 11"].values[0],
+                        param_["month 12"].values[0]]
+            metric_median = self.df_param[self.df_param['dimension']==dim][median_var].values[0]
+            metric_mean = self.df_param[self.df_param['dimension']==dim][mean_var].values[0]
+            median_mean_dic[dim] = {'median': [round(metric_median, 2),
+                                                round(self.s_curve_hill_spend_imp(
+                                                    metric_median, 
+                                                    param_["param a"].values[0], 
+                                                    param_["param b"].values[0], 
+                                                    param_["param c"].values[0])
+                                                    + np.median(weekday_)
+                                                    + np.median(month_), 2)],
+                                    'mean': [round(metric_mean, 2), 
+                                                round(self.s_curve_hill_spend_imp(
+                                                    metric_mean, 
+                                                    param_["param a"].values[0], 
+                                                    param_["param b"].values[0], 
+                                                    param_["param c"].values[0])
+                                                    + np.mean(weekday_) 
+                                                    + np.mean(month_), 2)]}
+            
+        if self.use_impression:
             return (
                 df_param,
                 df_score_final,
                 scatter_plot_df,
                 drop_dimension,
-                d_cpm,df_spend_dis
+                d_cpm,
+                df_spend_dis,
+                median_mean_dic
             )
         else:
-
-            scatter_plot_df = scatter_plot_df[['date', 'spend', 'target', 'dimension', 'weekday_',
-                            'month_', 'spend_prediction', 'weekly_prediction', 'monthly_prediction',
-                            'predictions']]
-
-            df_param = self.param_adjust(df_param)
-            return df_param, df_score_final, scatter_plot_df, drop_dimension, df_spend_dis
+            return df_param, df_score_final, scatter_plot_df, drop_dimension, df_spend_dis, median_mean_dic
 
 # Isolated Functions
 def s_curve_hill(X, a, b, c):
@@ -1063,14 +1277,12 @@ def s_curve_hill(X, a, b, c):
 def predict_dimesion(df_param, dimension, total_days, budget, cpm=None):
 
     """function to predict target
-
      Args:
         df_param (dataframe) : model param dataframe
         dimension (string): dimensions for which predict run
         total_days (int) : number of days
         budget(int) : budget
         cpm (float) : when use impression is true
-
     Returns:
         float: target
     """
@@ -1150,14 +1362,12 @@ def predict_dimesion_with_seasonality(
 ):
 
     """function to predict target
-
      Args:
         df_param (dataframe) : model param dataframe
         dimension (string): dimensions for which predict run
         date_range (array) : start and end date
         budget(int) : budget
         cpm (float) : when use impression is true
-
     Returns:
         float: target
     """

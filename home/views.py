@@ -21,7 +21,7 @@ ERROR_DICT = {
     "5003": "Type Error",
     "5004": "Incorrect Date Format",
 }
-ENVIRONMENT = os.getenv('ENVIRONMENT')
+ENVIRONMENT = os.getenv('ENVIRONMENT')  or 'test'
 # for production environment
 if ENVIRONMENT == 'production':
     UPLOAD_FOLDER = 'var/www/optimizer/data/'
@@ -191,6 +191,34 @@ def date_check(request):
 
     except Exception as exp_date_check:
         return JsonResponse({"error": ERROR_DICT[str(exp_date_check)]}, status=403)
+    
+
+def dimension_grouping_check(request):
+    try:
+        data = pd.read_pickle(UPLOAD_FOLDER+"{}.pkl".format(request.session.get("_uuid")))
+        # data = pd.DataFrame.from_dict(request.session.get('data'))
+        # print(data)
+        eo = explorer(data)
+        print("submitted")
+        dimension_grouping_selector = request.GET.get('dimension_grouping_selector')
+        dimension_grouping_check = request.GET.get('dimension_grouping_check')
+        dimensionSelector = request.session.get("DimensionSelector")
+        if dimension_grouping_selector != "0":
+            eo.group_dimension = dimension_grouping_selector if(len(dimensionSelector) > 1) else dimensionSelector[0]
+            dimension_grouping_check = True if dimension_grouping_check == "true" else False
+            eo.is_group_dimension_selected = dimension_grouping_check
+            request.session["dimension_grouping_selector"] = dimension_grouping_selector
+            request.session["dimension_grouping_check"] = dimension_grouping_check
+            print("dimension grouping check validated")
+        else:
+            eo.group_dimension = dimensionSelector[0]
+            dimension_grouping_check = False
+            request.session["dimension_grouping_selector"] = dimension_grouping_selector
+            request.session["dimension_grouping_check"] = dimension_grouping_check
+        return JsonResponse({"message": "Successfully published"}, status=200)
+
+    except Exception as exp_date_check:
+        return JsonResponse({"error": ERROR_DICT[str(exp_date_check)]}, status=403)
 
 
 def dimension_check(request):
@@ -210,7 +238,8 @@ def dimension_check(request):
         request.session["DimensionSelector"] = DimensionSelector
         print("DimensionSelector", request.session.get("DimensionSelector"))
         print("dimension validated")
-        return JsonResponse({"message": "Successfully published"}, status=200)
+        return JsonResponse({"message": "Successfully published",
+                             "dimensionSelector": DimensionSelector}, status=200)
 
     except Exception as exp_date_check:
         return JsonResponse({"error": ERROR_DICT[str(exp_date_check)]}, status=403)
@@ -232,7 +261,17 @@ def spent_check(request):
 
     except Exception as exp_date_check:
         return JsonResponse({"error": ERROR_DICT[str(exp_date_check)]}, status=403)
-
+def target_type_check(request):
+    try:
+        data = pd.read_pickle(UPLOAD_FOLDER+"{}.pkl".format(request.session.get("_uuid")))
+        eo = explorer(data)
+        print("submitted")
+        TargetTypeSelector = request.GET.get("target_type_check")
+        eo.target_type = TargetTypeSelector
+        request.session["target_type"] = TargetTypeSelector
+        return JsonResponse({"message": "Successfully published"}, status=200)
+    except Exception as exp_target_type_check:
+        return JsonResponse({"error": ERROR_DICT[str(exp_target_type_check)]}, status=403)
 
 def target_check(request):
     try:
@@ -313,17 +352,28 @@ def chart_filter(request):
             eo.dimension = request.session.get("DimensionSelector")
             eo.spend = request.session.get("SpentSelector")
             eo.target = request.session.get("TargetSelector")
+            eo.target_type = request.session.get("target_type")
             eo.cpm = request.session.get("CpmSelector")
-            if convert_to_weekly_data != None and int(convert_to_weekly_data) == 1:
-                eo.convert_to_weekly = True 
-            if is_weekly_selected != None and int(is_weekly_selected) == 1:
-                eo.is_weekly_selected = True 
+            eo.group_dimension = request.session.get("dimension_grouping_selector")
+            eo.is_group_dimension_selected = request.session.get("dimension_grouping_check")
+            if convert_to_weekly_data is not None and int(convert_to_weekly_data) == 1:
+                eo.convert_to_weekly = True
+            elif convert_to_weekly_data is None:
+                eo.convert_to_weekly = False
+                request.session['convert_to_weekly_data'] = 0
+            
+            if is_weekly_selected is not None and int(is_weekly_selected) == 1:
+                eo.is_weekly_selected = True
+            elif is_weekly_selected is None:
+                eo.is_weekly_selected = False
+                request.session['is_weekly_selected'] = 0
             
             if request.session.get("cpm_checked") == "True":
                 eo.use_impression = True
                 print("use impressions true")
             # aggregation function
-            agg_data = eo.data_aggregation()
+            (agg_data, dimension_data ) = eo.data_aggregation()
+            request.session['dimension_data'] = dimension_data
             agg_data["date"] = pd.to_datetime(agg_data["date"])
             # print(agg_data.head(20))
 

@@ -90,9 +90,9 @@
 <div id='container'class="container-fluid">
   <div class="bg"></div>
   <div class="row">
-    <nav id="sidebarMenu" class="col-md-2 col-lg-2 d-md-block sidebar collapse hide_scroller"
+    <nav id="sidebarMenu" class="col-md-2 col-lg-2 d-md-block sidebar collapse"
       style="width: 15rem">
-      <div class="position-sticky pt-3 hide_scroller" style="max-height:44rem;overflow-y:auto">
+      <div class="position-sticky pt-3 scrollbar" style="height:100%;padding-right:12px">
         <a class="explorer-nav-link xm-logo"><img src="{% static '/assets/Redboxlogo-black.png' %}" alt="CROSSMEDIA"></a>
 
         <form action="{%url 'home'%}" method="post" enctype="multipart/form-data">
@@ -102,9 +102,9 @@
               <input type="file" id="inputGroupFile02" name="excel_file" style ="display:none"accept=".csv">
               <label for="inputGroupFile02" class="btn" 
                  data-toggle="tooltip" data-placement="right" title="only .csv files allowed"  
-                style="color:white; background-color:#fff;border-color:#fff;width:100%;color:black">Select file  <i class="fa fa-refresh fa-spin icon-spin"style="display:none;color:black"></i></label>
+                style="color:white; background-color:#fff;border-color:#fff;width:13.7rem;color:black">Select file  <i class="fa fa-refresh fa-spin icon-spin"style="display:none;color:black"></i></label>
              </div>
-              <p id = "filename_to_put" style = "color:white" hidden = "true"></p>
+              <p id = "filename_to_put" style = "color:white;word-break:break-word;width:13.7rem" hidden = "true"></p>
             <input type="submit" class="btn" style = "display:none"id="explorer__upload_file_submit_div" value="Upload" name="Upload" onclick="fn_explorer_upload_file_submit()">
             <button type="button" class="btn btn-link" id="explorer__download_sample__file" onclick="explorer_download_sample_csv_fn()">
               <i class="fa fa-download" aria-hidden="true" style="color:#fff; margin-right: 10px;"></i>
@@ -148,7 +148,7 @@
           <p class="date_error" style="color: #fff; display: none;"></p>
 
           <div class="dropdown" style="margin-bottom: 10px; width: 100%;">
-              <div class="selectBox " onclick="showCheckboxes()">
+              <div class="selectBox "onclick="showCheckboxes()">
                 <select class="btn btn-secondary explorer-sidebar-dropdown .hide_scroller" id="dimension_value">
                   <option value="hi">Dimension Selector</option>
                 </select>
@@ -173,7 +173,6 @@
 
           <p class="dimension_error" style="color: #fff; display: none;"></p>
 
-
           <div class="dropdown" style="margin-bottom: 10px; width: 100%;">
             <select name="spentSelector" class="btn dropdown-toggle explorer-sidebar-dropdown"
               onchange="spentCheck(this.value)" id="spent_value">
@@ -196,7 +195,15 @@
             </select>
           </div>
           <p class="target_error" style="color: #fff; display: none;"></p>
-
+          <div class="dropdown" style="margin-bottom: 10px; width: 100%;">
+            <select name="targetTypeSelector" class="btn dropdown-toggle explorer-sidebar-dropdown"
+              onchange="targetTypeCheck(this.value)" id="target_type_value">
+              <option value="0">Target Type Selector</option>
+              <option value="volume">Volume</option>
+              <option value="revenue">Dollars</option>
+            </select>
+          </div>
+          <p class="target_type_error" style="color: #fff; display: none;"></p>
           <div>
             <div class="form-check" style="margin-bottom:10px;">
               <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault"
@@ -206,7 +213,6 @@
               </label>
             </div>
           </div>
-
           <div class="dropdown" style="margin-bottom: 10px; width: 100%;  display: none;" id="cpm-Selector">
             <select name="cpmSelector" class="btn dropdown-toggle explorer-sidebar-dropdown "
               onchange="cpmCheck(this.value)" id="cpm_value">
@@ -217,6 +223,22 @@
             </select>
           </div>
           <p class="cpm_error" style="color: #fff; display: none;"></p>
+          <div>
+            <div class="form-check" style="margin-bottom:10px;display:none" id="dimension_grouping_checkbox">
+              <input class="form-check-input" type="checkbox" value="" id="flexCheckDefaultDimensionGrouping"
+                onclick="selectorDimensionroupingDisplay()">
+              <label class="form-check-label" style="color: white;" for="flexCheckDefault">
+                Use Dimension Grouping
+              </label>
+            </div>
+          </div>
+
+          <div class="dropdown" style="margin-bottom: 10px; width: 100%;display:none"id="dimension-grouping-selector">
+            <select id = "dimensionGroupingSelector" name="dimensionGroupingSelector" class="btn dropdown-toggle explorer-sidebar-dropdown"
+              onchange="dimensionGroupingCheck(this.value)" id="target_value">
+              <option value="0">No Dimension Grouping Selected</option>
+            </select>
+          </div>
 
           <div style="margin: auto">
             <button type="button" name="Submit" class="btn explorer-sidebar-submit-btn" id="submit_btn"
@@ -336,6 +358,7 @@
       cpm_selector = window.localStorage.getItem('cpm_selector')
       if(cpm_selector != '' && cpm_selector != 'undefined' && cpm_selector != null){
         $('#cpm_value').val(cpm_selector);
+        cpmCheck(cpm_selector);
       }
     }
     date_selector = window.localStorage.getItem('date_selector');
@@ -353,7 +376,14 @@
     $('#target_value').val(target_selector)
     targetCheck(target_selector)
     }
+    target_type = window.localStorage.getItem('target_type')
+    if(target_type != '' && target_type !='undefined' && target_type != null){
+      $('#target_type_value').val(target_type)
+    targetTypeCheck(target_type)
+    }
     dimension_selector = window.localStorage.getItem('dimension_selector')
+    dimension_grouping_selector = window.localStorage.getItem('dimension_grouping_selector')
+    dimension_grouping_check = window.localStorage.getItem('dimension_grouping_check')
     if(dimension_selector){
         dimension_selector = dimension_selector.split(",")
      
@@ -362,8 +392,44 @@
             obj.checked = true
           }
         })
+        if(dimension_selector.length >= 2){
+            document.getElementById("dimension_grouping_checkbox").style.display = 'block';
+            if(dimension_grouping_check == "true" && dimension_grouping_selector != '0')
+              document.getElementById('dimension-grouping-selector').style.display = 'block';
+          }else{
+            document.getElementById("dimension_grouping_checkbox").style.display = 'none';
+            document.getElementById('dimension-grouping-selector').style.display = 'none';
+          }
+          $('#dimensionGroupingSelector').children().remove().end()
+          .append('<option selected value="0">No Dimension Grouping Selected</option>') ;
+          $.each(dimension_selector, (key,value) =>{
+          var option = new Option(value, value)         
+          $(option).html(value);
+            $('#dimensionGroupingSelector').append(option)
+            })
+          $('.dimension_error').css("display", "none");
       }
-    var file = window.localStorage.getItem('file')
+    if(dimension_grouping_check == "true" && dimension_grouping_selector != '0'){
+      $('#flexCheckDefaultDimensionGrouping').prop('checked',true);
+      selectorDimensionroupingDisplay()
+      // code to write to dimension grouping selector on load 
+      $('#dimensionGroupingSelector').val(dimension_grouping_selector)
+    }
+    // enabling and disabling weekly selection inputs
+    var convert_to_weekly_data = window.localStorage.getItem('convert_to_weekly_data')
+    var is_weekly_selected = window.localStorage.getItem('is_weekly_selected');
+    if(convert_to_weekly_data == 1){
+      document.getElementById('exp__is_weekly_selected_input').disabled = true
+      document.getElementById('exp__convert_to_weekly_data').checked = true
+    }else
+      document.getElementById('exp__is_weekly_selected_input').disabled = false
+    
+    if(is_weekly_selected == 1){
+      document.getElementById('exp__convert_to_weekly_data').disabled = true;
+      document.getElementById('exp__is_weekly_selected_input').checked = true
+    }else 
+      document.getElementById('exp__convert_to_weekly_data').disabled = false
+      var file = window.localStorage.getItem('file')
     if(file)
       $('#filename_to_put').attr('hidden',false).text("Uploaded File : " + file )
     // run on load submit charts 
@@ -405,17 +471,49 @@
       }
 
       console.log(dimensionvalueselector, "this is dimension value selectpr")
-      window.localStorage.setItem('dimension_selector',dimensionvalueselector)
+      $('#container').css('opacity',0.5);
+      $('#container').css('pointer-events','none');
+      $('#container').css('z-index',1);
+      $("body").css("background-color", "#cecece");
+      $('#spinner-optimizer').css('display','block');
       $.ajax({
         url: 'ajax/dimension_check/',
         data: {
           'dimension_check[]': dimensionvalueselector,
         },
         success: function (data) {
+          $('#container').css('opacity',1);
+          $("body").css("background-color", "#fff");
+          $('#container').css('pointer-events','auto');
+          $('#spinner-optimizer').css('display','none');
           console.log(data.message);
+          dimensionSelector = data.dimensionSelector
+          window.localStorage.setItem('dimension_selector',dimensionSelector)
+          if(dimensionSelector.length >= 2){
+            document.getElementById("dimension_grouping_checkbox").style.display = 'block';
+          }else{
+            // get rid of all divs related to grouping dimensions
+            document.getElementById("dimension_grouping_checkbox").style.display = 'none';
+            document.getElementById("dimension-grouping-selector").style.display = 'none';
+            window.localStorage.setItem('dimension_grouping_check', false);
+            document.getElementById('flexCheckDefaultDimensionGrouping').checked = false;
+            // calling the dimension grouping check function to have false value
+            dimensionGroupingCheck("0");
+          }
+          $('#dimensionGroupingSelector').children().remove().end()
+          .append('<option selected value="0">No Dimension Grouping Selected</option>') ;
+          $.each(dimensionSelector, (key,value) =>{
+          var option = new Option(value, value)         
+          $(option).html(value);
+            $('#dimensionGroupingSelector').append(option)
+            })
           $('.dimension_error').css("display", "none");
         },
         error: function (data) {
+          $('#container').css('opacity',1);
+          $("body").css("background-color", "#fff");
+          $('#container').css('pointer-events','auto');
+          $('#spinner-optimizer').css('display','none');
           console.log(data.responseJSON.error);
 
           $('.dimension_error').css("display", "block");
@@ -435,6 +533,7 @@
     $("body").css("background-color", "#cecece");
     $('#spinner-optimizer').css('display','block');
     is_weekly_selected = this_value.checked ? 1 : 0;
+    window.localStorage.setItem('is_weekly_selected',is_weekly_selected);
     // disabling the aggreagation functionality upon user selection for weekly data
     if(is_weekly_selected == 1)
       document.getElementById('exp__convert_to_weekly_data').disabled = true 
@@ -467,12 +566,9 @@
   // function to convert daily data to weekly data
   function fn_exp_convert_to_weekly_data(this_value){
        // displaying the spinner
-       $('#container').css('opacity',0.5);
-       $('#container').css('pointer-events','none');
-       $('#container').css('z-index',1);
-       $("body").css("background-color", "#cecece");
-       $('#spinner-optimizer').css('display','block');
+      displaySpinner()
     convert_to_weekly_data = this_value.checked ? 1 : 0;
+    window.localStorage.setItem('convert_to_weekly_data',convert_to_weekly_data);
     // disabling or enabling functionality weekly selection data on basis of aggregation selected by user 
     if(convert_to_weekly_data == 1)
       document.getElementById('exp__is_weekly_selected_input').disabled = true
@@ -486,13 +582,11 @@
         'convert_to_weekly_data': convert_to_weekly_data,
       },
       success: function (data) {
-        $('#container').css('opacity',1);
-        $("body").css("background-color", "#fff");
-        $('#container').css('pointer-events','auto');
-        $('#spinner-optimizer').css('display','none');
+        hideSpinner()
         console.log(`Success in 'ajax/is_convert_to_weekly_data/' : ${data.message}`);
       },
       error: function (data) {
+        hideSpinner()
         console.log(`Success in 'ajax/is_convert_to_weekly_data/' : ${data.responseJSON.error}`);
       }
     });
@@ -696,6 +790,7 @@
     console.log("entered script")
     var checkBox = document.getElementById("flexCheckDefault")
     var selector = document.getElementById("cpm-Selector")
+    var target_type_selector = document.getElementById("target_type_value")
     window.localStorage.setItem('cpm_checkbox',checkBox.checked)
     if (checkBox.checked == true) {
       selector.style.display = "block";
@@ -703,6 +798,18 @@
       selector.style.display = "none";
     }
   }
+  function selectorDimensionroupingDisplay() {
+    console.log("entered script")
+    var checkBox = document.getElementById("flexCheckDefaultDimensionGrouping")
+    var selector = document.getElementById("dimension-grouping-selector")
+    window.localStorage.setItem('dimension_grouping_check',checkBox.checked);
+    if (checkBox.checked == true) {
+      selector.style.display = "block";
+    } else {
+      selector.style.display = "none";
+    }
+  }
+
 </script>
 
 <!-- ajax on submit default dimension value selector for line chart -->
@@ -711,12 +818,14 @@
   function submit_chart_inputs() {
     // start progress
     console.log("inputs submitted");
-    $('#container').css('opacity',0.5);
-    $('#container').css('pointer-events','none');
-    $('#container').css('z-index',1);
-    $("body").css("background-color", "#cecece");
-    $('#spinner-optimizer').css('display','block');
-  
+    displaySpinner()
+    target_type_value = document.getElementById("target_type_value").value;
+    if(target_type_value == "0"){
+      $('.target_type_error').css("display", "block");
+      $('.target_type_error').html("Please select target type"); // add error to the dom
+      hideSpinner()
+      return;
+    }
     //var startDate = $('#date').data('daterangepicker').startDate.format('MM-DD-YY');
     //var endDate = $('#date').data('daterangepicker').endDate.format('MM-DD-YY');
     $.ajax({
@@ -728,11 +837,7 @@
         document.getElementById('right_div').style.display = "block";
         // close
         console.log("this is the selected type");
-        $('#container').css('opacity',1);
-        $("body").css("background-color", "#fff");
-        $('#container').css('pointer-events','auto');
-        $('#spinner-optimizer').css('display','none');
-
+        hideSpinner()
         let start_date = data.start_date
         let end_date = data.end_date
         // let default_dim = data.default_dim
@@ -798,10 +903,7 @@
       },
       error: function (error_object) {
         console.log("From errors submit_chart_inputs", error_object);
-        $('#container').css('opacity',1);
-        $("body").css("background-color", "#fff");
-        $('#container').css('pointer-events','auto');
-        $('#spinner-optimizer').css('display','none');
+        hideSpinner()
         alert("Error in sumission, please verify the inputs")
         document.getElementById('right_div').style.display = "none";
 
@@ -1009,8 +1111,32 @@
 
 {% comment %} spent validation check {% endcomment %}
 <script>
+  // function to send dimensiongrouping selector value to server 
+  function dimensionGroupingCheck(value){
+    displaySpinner()
+    checkbox = document.getElementById('flexCheckDefaultDimensionGrouping')
+    window.localStorage.setItem('dimension_grouping_selector',value);
+    $.ajax({
+      url : 'ajax/dimension_grouping_check',
+      data : {
+        'dimension_grouping_selector':value,
+        'dimension_grouping_check':checkbox.checked
+      },
+      success : function(data){
+        hideSpinner()
+        console.log(data.message)
+
+      },
+      error : function(error){
+        hideSpinner()
+        console.log(error.responseJSON.error);  
+      }
+    })
+  }
+  
   function spentCheck(value) {
     console.log(value)
+    displaySpinner()
     window.localStorage.setItem('investment_selector',value)
     $.ajax({
       url: 'ajax/spent_check/',
@@ -1018,10 +1144,12 @@
         'spent_check': value,
       },
       success: function (data) {
+        hideSpinner()
         console.log(data.message);
         $('.spent_error').css("display", "none");
       },
       error: function (data) {
+        hideSpinner()
         console.log(data.responseJSON.error);
 
         $('.spent_error').css("display", "block");
@@ -1034,8 +1162,39 @@
 
  {% comment %} validation check {% endcomment %}
 <script>
+  function displaySpinner(){
+    $('body').css('opacity',0.5);
+    $('#container').css('pointer-events','none');
+    $("body").css("background-color", "#cecece");
+    $('#spinner-optimizer').css('display','block');
+  }
+  function hideSpinner(){
+    $('body').css('opacity',1);
+    $("body").css("background-color", "#fff");
+    $('#container').css('pointer-events','auto');
+    $('#spinner-optimizer').css('display','none');
+  }
+  function targetTypeCheck(value) {
+    displaySpinner()
+    $.ajax({
+      url: 'ajax/target_type_check/',
+      data: {
+        'target_type_check': value,
+      },
+      success: function (data) {
+        hideSpinner()
+        window.localStorage.setItem("target_type",value)
+        $('.target_type_error').css("display", "none");
+      },
+      error: function (data) {
+        hideSpinner()
+        console.log(data.responseJSON.error);
+      }
+    });
+  }
   function targetCheck(value) {
     console.log(value)
+    displaySpinner()
     window.localStorage.setItem('target_selector',value)
     $.ajax({
       url: 'ajax/target_check/',
@@ -1043,10 +1202,12 @@
         'target_check': value,
       },
       success: function (data) {
+        hideSpinner()
         console.log(data.message);
         $('.target_error').css("display", "none");
       },
       error: function (data) {
+        hideSpinner()
         console.log(data.responseJSON.error);
 
         $('.target_error').css("display", "block");

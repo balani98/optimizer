@@ -1,1234 +1,2683 @@
 {% extends 'home/base.html' %} {%load static%} {%block content%}
-
 <style>
- .bg {
-    /* The image used */
-    background-image: url("{% static '/assets/solid-grey.jpg' %}");
-    /* Full height */
-    height: 100%;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    /* Center and scale the image nicely */
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
-    position: fixed;
-    opacity:0.30
+    .bg {
+      /* The image used */
+      background-image: url("{% static '/assets/solid-grey.jpg' %}");
+      /* Full height */
+      height: 100%;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      /* Center and scale the image nicely */
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      position: fixed;
+      opacity: 0.3;
+    }
+    .hide_scroller {
+      -ms-overflow-style: none; /* Internet Explorer 10+ */
+      scrollbar-width: none; /* Firefox */
+    }
+    .hide_scroller::-webkit-scrollbar {
+      display: none; /* Safari and Chrome */
+    }
+    .multiple_inputs {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .optimiser-date-input {
+      padding: 10px;
+      width: 13.9rem;
+      width: 13.9rem;
+      margin-bottom: 10px;
+      height: 20%;
+      margin-top: -2rem;
+    }
+
+    .tooltip_outer_div {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      margin-bottom: 10px;
+    }
+    #searchBox {
+      width: 89%;
+      height: 2.5rem;
+    }
+    #searchBox-table {
+      width: 70%;
+      height: 2.5rem;
+    }
+    .tooltiptext {
+      width: 15rem;
+      padding: 10px;
+      position: fixed;
+      visibility: hidden;
+      left: 16rem;
+      background-color: #a7a7a6;
+      color: black;
+      text-align: center;
+      padding: 5px 0;
+      z-index: 1100;
+    }
+
+    .tooltip_outer_div:hover .tooltiptext {
+      visibility: visible;
+    }
+
+    .icons {
+      color: red;
+    }
+    #optimizer__left_panel_dimension_name_for_min_max,
+    .label_for_inputs {
+      width: 100%;
+      margin-bottom: 10px;
+      background-color: #fff;
+      border: #fff;
+      padding: 5px;
+      color: black;
+      text-align: center;
+      word-break:break-all
+    }
+
+    #optimizer__sum_outerdiv {
+      display: flex;
+      flex-direction: row;
+    }
+    .y_scroll {
+      overflow-y: auto;
+    }
+    .sidebar {
+      background-color: #9a3334;
+      z-index: 1020;
+    }
+    img {
+      width: 4.8rem;
+      height: 5rem;
+    }
+    .btn-link {
+      color: white;
+    }
+    .label_styling {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      margin-right: 2px;
+      font-size: 0.9em;
+      font-weight: 500;
+      padding: 0;
+      background-color: #eeede7;
+    }
+    .table th {
+      font-weight: bold;
+    }
+    .content-sidebar-right{
+      max-height:44rem;
+    }
+    .sidebar-right {
+      height: 100%;
+      width: 0;
+      position: fixed;
+      z-index: 1021;
+      top: 0;
+      right:0;
+      background-color: #9a3334;
+      color:#fff;
+      overflow-x: hidden;
+      transition: 0.5s;
+    }
+
+    .sidebar-right a {
+      padding: 8px 8px 8px 32px;
+      text-decoration: none;
+      font-size: 25px;
+      color: #fff;
+      display: block;
+      transition: 0.3s;
+    }
+
+    .sidebar-right a:hover {
+      color: #f1f1f1;
+    }
+
+    .sidebar-right .closebtn {
+      position: absolute;
+      top: 0;
+      right: 25px;
+      font-size: 36px;
+      margin-left: 50px;
+      color:#fff;
+    }
+
+    .openbtn {
+      font-size: 20px;
+      cursor: pointer;
+      background-color: #ecedef;
+      padding: 10px 15px;
+      border: none;
+      color:#9a3334;
+      float:right;
+      right:0;
+      position:fixed;
+      top:100px;
+      box-shadow: 2px 2px 3px #999;
+    }
+
+    .openbtn:hover {
+      color: #444;
+    }
+    .group_of_grouped_channels{
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      top:5rem;
+      margin:5px 7px;
+      position:relative;
+      width:15rem;
+    }
+    .grouped_channel{
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      padding:2px 5px;
+      margin:10px 0;
+    }
+    .group_of_individual_channels{
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+    .individual_channel{
+      display:flex;
+      flex-direction:row;
+      align-items:center;
+      padding:5px 5px;
+    }
+    .collapsible {
+      background-color:#9a3334;
+      color: white;
+      cursor: pointer;
+      border: none;
+      outline: none;
+      font-size: 15px;
+      margin-right:8px;
+    }
+  .styled_checkbox {
+      margin-right: 1em;
+      width: 1.5rem;
+      height: 1.5rem;
+      margin-top: -0.5em;
   }
-.hide_scroller {
-    -ms-overflow-style: none;  /* Internet Explorer 10+ */
-    scrollbar-width: none;  /* Firefox */
-}
-.hide_scroller::-webkit-scrollbar { 
-    display: none;  /* Safari and Chrome */
-}
+    {% comment %} #main {
+      transition: margin-left .5s;
+      padding: 16px;
+    } {% endcomment %}
 
-.optimiser-date-input{
-  padding: 10px;
-  width: 100%;
-  margin-bottom: 10px;
-  height: 20%;
-  margin-top:-2rem;
-}
-
-.tooltip_outer_div{
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  margin-bottom: 10px;
-}
-#searchBox{
-  width:89%;
-  height:2.5rem;
-}
-#searchBox-table{
-  width:70%;
-  height:2.5rem;
-}
-.tooltiptext{
-  width: 15rem;
-  padding: 10px;
-  position: fixed;
-  visibility: hidden;
-  left: 16rem;
-  background-color: #a7a7a6;
-  color:black;
-  text-align: center;
-  padding: 5px 0;
-  z-index: 1100;
-}
-
-.tooltip_outer_div:hover .tooltiptext{
-  visibility: visible;
-}
-
-.icons {
-  color: red;
-}
-#optimizer__left_panel_dimension_name_for_min_max, .label_for_inputs{
-  width: 100%;
-  margin-bottom: 10px;
-  background-color: #fff;
-  border:#fff;
-  padding: 5px;
-  color: black;
-  text-align: center;
-}
-
-#optimizer__sum_outerdiv{
-  display: flex;
-  flex-direction: row;
-}
-.y_scroll{
-  overflow-y: auto;
-}
-.sidebar{
-    background-color:#9A3334;
-    z-index:1020;
-  }
-img{
-   width:.4.8rem;
-   height:5rem;
-}
-.btn-link{
-  color:white;
-}
-.label_styling{
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  margin-right:2px;
-  font-size:0.9em;
-  font-weight:500;
-  padding:0;
-  background-color:#eeede7;
-}
-.table th{
-  font-weight:bold;
-}
-</style> 
-
-
+    /* On smaller screens, where height is less than 450px, change the style of the sidenav (less padding and a smaller font size) */
+    @media screen and (max-height: 450px) {
+      .sidebar-right {padding-top: 15px;}
+      .sidebar-right a {font-size: 18px;}
+    }
+    @media only screen
+    and (min-width: 1370px)
+    and (max-width: 1620px)
+    {
+      .add-margin-for-lg-screen{
+        margin-bottom:2rem;
+      }
+    }
+    .card-deck {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+    }
+</style>
 
 <div class="container-fluid" id="container">
   <div class="bg"></div>
   <div class="row">
-    <nav id="sidebarMenu" class="col-md-2 col-lg-2 d-md-block sidebar collapse"
-      style="width: 15rem">
-      <div class="position-sticky pt-3 y_scroll hide_scroller" style="max-height:44rem">
-        <a class="explorer-nav-link xm-logo"><img src="{% static '/assets/Redboxlogo-black.png' %}" alt="CROSSMEDIA"></a>
-        <form method="post" enctype="multipart/form-data" >
+    <nav
+      id="sidebarMenu"
+      class="col-md-2 col-lg-2 d-md-block sidebar collapse"
+      style="width: 15rem"
+    >
+      <div
+        class="position-sticky pt-3 scrollbar hide_scroller y_scroll"
+        style="height: 100%"
+        style="padding-right: 7px"
+      >
+        <a class="explorer-nav-link xm-logo"
+          ><img
+            src="{% static '/assets/Redboxlogo-black.png' %}"
+            alt="CROSSMEDIA"
+        /></a>
+        <form method="post" enctype="multipart/form-data">
           {% csrf_token %}
           <div>
-            <p style="color:#fff;" id="cpm_check">{{cpm_message}}</p>
+            <p style="color: #fff" id="cpm_check">{{cpm_message}}</p>
           </div>
           {% if seasonality %}
-              <div class="tooltip_outer_div">
-                <input class="optimiser-date-input" type="text" name="daterange" id="optimizer_date_picker"
-                   />
-                <span class="tooltiptext">This will populate the total budget range. Select Dates : Start and End date</span>
-               </div>
-          {% else %}
-              <div class="tooltip_outer_div">
-                
-                {% if is_weekly_selected == 1 or convert_to_weekly_data == 1 %}
-                  <input type="number" name="no_days" id="total_days" class="days"
-                  style="padding: 10px; width: 100%; margin-bottom: 10px; margin-top:-2rem;height: 20%;"
-                  placeholder="Total No. of Weeks" onchange="update_number_of_days(this.value)">
-                  <span class="tooltiptext">This will populate the total budget range. Enter total number of weeks for Media Plan</span>
-                {% else %}
-                  <input type="number" name="no_days" id="total_days" class="days"
-                  style="padding: 10px; width: 100%; margin-bottom: 10px; margin-top:-2rem;height: 20%;"
-                  placeholder="Total No. of Days" onchange="update_number_of_days(this.value)">
-                  <span class="tooltiptext">This will populate the total budget range. Enter total number of days for Media Plan</span>
-                {% endif %}
-                
-              </div>
-          {% endif %}  
           <div class="tooltip_outer_div">
-            <i class="fa fa-book fa-lg" aria-hidden="true" style="color: white; margin-right: 10px"></i>
-              <span class="tooltiptext">Please enter a minimum and maximum spend per day/week.
-                The ranges in the placeholders are calculated from the data.
-                Max values are the 3x the median spend per day/week. Application will not accept values beyond the placeholder ranges.
-                Min cannot be equal to max value as the optimizer needs a non-zero search space.
-                This is an optional input. If no input is provided the placeholder ranges are used</span>
-          </div> 
-          <div class="mb-3 pt-2 pb-2 ml-1 searchbox_div">
-            <i class="fa fa-search" style="color:#fff;font-size:1.2rem"></i>
-            <input type="text" id ="searchBox" placeholder="Search Dimension.." name="search" 
-                  oninput = "search_dimension_names(this)" >
+            <input
+              class="optimiser-date-input"
+              type="text"
+              name="daterange"
+              id="optimizer_date_picker"
+            />
+            <span class="tooltiptext"
+              >This will populate the total budget range. Select Dates : Start
+              and End date</span
+            >
           </div>
-            
-		      <div class="custom-control custom-switch mb-2">
-            <input 
-            type="checkbox" 
-            class="custom-control-input" 
-            onchange="change_input_type_to_percentages(this)" 
-            id="customSwitch1">
-            <label 
-              class="custom-control-label" id = "custom-label"
-              for="customSwitch1" style="color:#fff">
-                Toggle to enter input in percentages
+          {% else %}
+          <div class="tooltip_outer_div">
+            {% if is_weekly_selected == 1 or convert_to_weekly_data == 1 %}
+            <input
+              type="number"
+              name="no_days"
+              id="total_days"
+              class="days"
+              style="
+                padding: 10px;
+                width: 13.9rem;
+                margin-bottom: 10px;
+                margin-top: -2rem;
+                height: 20%;
+              "
+              placeholder="Total No. of Weeks"
+              onchange="update_number_of_days(this.value)"
+            />
+            <span class="tooltiptext"
+              >This will populate the total budget range. Enter total number of
+              weeks for Media Plan</span
+            >
+            {% else %}
+            <input
+              type="number"
+              name="no_days"
+              id="total_days"
+              class="days"
+              style="
+                padding: 10px;
+                width: 13.9rem;
+                margin-bottom: 10px;
+                margin-top: -2rem;
+                height: 20%;
+              "
+              placeholder="Total No. of Days"
+              onchange="update_number_of_days(this.value)"
+            />
+            <span class="tooltiptext"
+              >This will populate the total budget range. Enter total number of
+              days for Media Plan</span
+            >
+            {% endif %}
+          </div>
+          {% endif %}
+          <div class="tooltip_outer_div">
+            <i
+              class="fa fa-book fa-lg"
+              aria-hidden="true"
+              style="color: white; margin-right: 10px"
+            ></i>
+            {% if constraint_type == 'median' %}
+            <span class="tooltiptext"
+              >Please enter a minimum and maximum spend per day/week. The ranges
+              in the placeholders are calculated from data. Max values are the
+              3x the median spend per day/week. Application will not accept
+              values beyond the placeholder ranges. Min cannot be equal to max
+              value as the optimizer needs a non-zero search space. This is an
+              optional input. If no input is provided the placeholder ranges are
+              used</span
+            >
+            {% else %}
+            <span class="tooltiptext"
+              >Please enter a minimum and maximum spend per day/week. The ranges
+              in the placeholders are calculated from data. Max values are the
+              3x the mean spend per day/week. Application will not accept values
+              beyond the placeholder ranges. Min cannot be equal to max value as
+              the optimizer needs a non-zero search space. This is an optional
+              input. If no input is provided the placeholder ranges are
+              used</span
+            >
+            {% endif %}
+          </div>
+          <div class="mb-3 pt-2 pb-2 searchbox_div" style="width: 13.9rem">
+            <i class="fa fa-search" style="color: #fff; font-size: 1.2rem"></i>
+            <input
+              type="text"
+              id="searchBox"
+              placeholder="Search Dimension.."
+              name="search"
+              oninput="search_dimension_names(this)"
+            />
+          </div>
+
+          <div class="custom-control custom-switch mb-2" style="width: 13.9rem">
+            <input
+              type="checkbox"
+              class="custom-control-input"
+              onchange="change_input_type_to_percentages(this)"
+              id="customSwitch1"
+            />
+            <label
+              class="custom-control-label"
+              id="custom-label"
+              for="customSwitch1"
+              style="color: #fff"
+            >
+              Toggle to enter input in percentages
             </label>
           </div>
-          <div id ="labels_div_percentages"
-            style="display: none; flex-direction:row; justify-content:space-between; margin-bottom: 10px;">
-            <p  class="label_for_inputs label_styling">% less than median</p>
-            <p  class="label_for_inputs label_styling">Median Spend</p>
-            <p  class="label_for_inputs label_styling">% more than median</p>
+          <div
+            id="labels_div_percentages"
+            style="
+              display: none;
+              flex-direction: row;
+              justify-content: space-between;
+              margin-bottom: 10px;
+              width: 11.8rem;
+              margin-left: 2.1rem;
+            "
+          >
+            {% if constraint_type == 'median' %}
+            <p class="label_for_inputs label_styling">% less than median</p>
+            <p class="label_for_inputs label_styling">Median Spend</p>
+            <p class="label_for_inputs label_styling">% more than median</p>
+            {% else %}
+            <p class="label_for_inputs label_styling">% less than mean</p>
+            <p class="label_for_inputs label_styling">Mean Spend</p>
+            <p class="label_for_inputs label_styling">% more than mean</p>
+            {% endif %}
           </div>
-          <div id ="labels_div_absolute"
-            style="display: flex; flex-direction:row; justify-content:space-between; margin-bottom: 10px;">
+          <div
+            id="labels_div_absolute"
+            style="
+              display: flex;
+              flex-direction: row;
+              justify-content: space-between;
+              margin-bottom: 10px;
+              width: 11.8rem;
+              margin-left: 2.1rem;
+            "
+          >
             <p class="label_for_inputs label_styling">Min</p>
             <p class="label_for_inputs label_styling">Max</p>
-            {% if cpm_checked %}  
+            {% if cpm_checked %}
             <p class="label_for_inputs label_styling">CPM</p>
             {% endif %}
           </div>
           <!--User can enter value here to populate all percentage values at a time-->
-          <div id="to_populate_multiple_inputs"
-          style="display: none; flex-direction:row; justify-content:space-between; margin-bottom: 10px;">
-          <div style="width:30%;margin-right:2px;display:inline;background-color:#fff;outline:none;border:none">
-            <input id = "min_all_value" type="text" value = "-100"  onblur = "change_all_min_perc_values(event,this)" onkeydown = "change_all_min_perc_values(event,this)"
-              style="width:50%;outline:none;border:none">
+          <div
+            id="to_populate_multiple_inputs"
+            style="
+              display: none;
+              flex-direction: row;
+              justify-content: space-between;
+              margin-bottom: 10px;
+              width: 11.8rem;
+              margin-left: 2.1rem;
+            "
+          >
+            <div
+              style="
+                width: 30%;
+                margin-right: 2px;
+                display: inline;
+                background-color: #fff;
+                outline: none;
+                border: none;
+              "
+            >
+              <input
+                id="min_all_value"
+                type="text"
+                value="-100"
+                onblur="change_all_min_perc_values(event,this)"
+                onkeydown="change_all_min_perc_values(event,this)"
+                style="width: 50%; outline: none; border: none"
+              />
               <span class="bg-grey float-right mr-2">%</span>
+            </div>
+            <div class="tooltip_outer_div">
+              <i
+                class="fa fa-info-circle fa-lg"
+                aria-hidden="true"
+                style="color: white; margin-right: 10px"
+              ></i>
+              <span class="tooltiptext"
+                >Update min and max % constraints for all dimensions
+                simultaneously</span
+              >
+            </div>
+            <div
+              style="
+                width: 30%;
+                margin-left: 2px;
+                display: inline;
+                background-color: #fff;
+                outline: none;
+                border: none;
+              "
+            >
+              <input
+                id="max_all_value"
+                type="text"
+                value="200"
+                onblur="change_all_max_perc_values(event,this)"
+                onkeydown="change_all_max_perc_values(event,this)"
+                style="width: 50%; outline: none; border: none"
+              />
+              <span class="bg-grey float-right mr-2" aria-hidden="true">%</span>
+            </div>
+          </div>
+          <div
+            id="outer_div_multiple_inputs_percentages"
+            class="mb-4 hide_scroller"
+            style="
+              display: none;
+              overflow-y: scroll;
+              height: 15rem;
+              width: 13.9rem;
+            "
+          >
+            <div
+              id="multiple_inputs"
+              class="get_all_the_key_value multiple_inputs"
+              key="{{key}}"
+            >
+              <input
+                type="checkbox"
+                name="selectAll"
+                class="styled_checkbox"
+                id="selectAll_perc"
+                value="selectAll"
+                checked
+              />
+              <div
+                id="optimizer__left_panel_dimension_name_for_min_max"
+                class="optimizer_left_panel_dimension_name selectAll"
+              >
+                Select All
+              </div>
+            </div>
+            {% for key, value in optimizer_left_pannel_data.items %}
+            <div
+              id="multiple_inputs"
+              class="get_all_the_key_value multiple_inputs"
+              key="{{key}}"
+            >
+              <input
+                type="checkbox"
+                class="styled_checkbox input_checkbox_perc"
+                name="{{key}}"
+                value="{{key}}"
+                checked
+              />
+
+              <div
+                id="optimizer__left_panel_dimension_name_for_min_max"
+                class="optimizer_left_panel_dimension_name_perc"
+                data-toggle="tooltip"
+                data-placement="right"
+                title="{{key}}"
+              >
+                {{key}}
+              </div>
+            </div>
+            <div
+              id="percentage_div"
+              style="
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                margin-bottom: 10px;
+                width: 84%;
+                margin-left: 16%;
+              "
+            >
+              <div
+                style="
+                  width: 30%;
+                  margin-right: 2px;
+                  display: inline;
+                  background-color: #fff;
+                  outline: none;
+                  border: none;
+                "
+              >
+                <input
+                  value="{{value.3}}"
+                  id="min_perc_input"
+                  placeholder="{{value.3}}"
+                  type="text"
+                  class="min_perc_value"
+                  style="width: 50%; outline: none; border: none"
+                  onblur="check_keys_min_max_value(this)"
+                  onchange="update_total_limits_min_value_perc('{{key}}', this)"
+                />
+                <span class="bg-grey float-right mr-2">%</span>
+              </div>
+              <input
+                value="{{value.2}}"
+                id="median_spend"
+                placeholder="{{value.2}}"
+                type="text"
+                style="width: 40%"
+                class="median_spend_value"
+                disabled
+              />
+              <div
+                style="
+                  width: 30%;
+                  margin-left: 2px;
+                  display: inline;
+                  background-color: #fff;
+                  outline: none;
+                  border: none;
+                "
+              >
+                <input
+                  value="{{value.4}}"
+                  id="max_perc_input"
+                  placeholder="{{value.4}}"
+                  type="text"
+                  class="max_perc_value"
+                  style="width: 50%; outline: none; border: none"
+                  onblur="check_keys_min_max_value(this)"
+                  onchange="update_total_limits_max_value_perc('{{key}}', this)"
+                />
+                <span class="bg-grey float-right mr-2" aria-hidden="true"
+                  >%</span
+                >
+              </div>
+            </div>
+            {% if cpm_checked %}
+            <div
+              style="
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                margin-bottom: 10px;
+              "
+            >
+              <input
+                value="{{value.5}}"
+                placeholder="CPM"
+                id="cpm_input_with_min_max"
+                style="width: 84%; margin-left: 16%"
+                type="number"
+                class="cpm_perc_value"
+                onchange="update_cpm_value_with_min_max('{{key}}', this)"
+              />
+            </div>
+            {% endif %} {% endfor %}
+          </div>
+          <div
+            id="outer_div_multiple_inputs"
+            class="mb-4 hide_scroller"
+            style="overflow-y: scroll; height: 15rem; width: 13.9rem"
+          >
+            <div
+              id="multiple_inputs"
+              class="get_all_the_key_value multiple_inputs"
+              key="{{key}}"
+            >
+              <input
+                type="checkbox"
+                name="selectAll"
+                class="styled_checkbox"
+                id="selectAll"
+                value="selectAll"
+                checked
+              />
+              <div
+                id="optimizer__left_panel_dimension_name_for_min_max"
+                class="optimizer_left_panel_dimension_name selectAll"
+              >
+                Select All
+              </div>
+            </div>
+            {% for key, value in optimizer_left_pannel_data.items %}
+            <div
+              id="multiple_inputs"
+              class="get_all_the_key_value multiple_inputs"
+              key="{{key}}"
+            >
+              <input
+                type="checkbox"
+                class="styled_checkbox input_checkbox"
+                name="{{key}}"
+                value="{{key}}"
+                checked
+              />
+              <div
+                id="optimizer__left_panel_dimension_name_for_min_max"
+                class="optimizer_left_panel_dimension_name"
+                data-toggle="tooltip"
+                data-placement="right"
+                title="{{key}}"
+              >
+                {{key}}
+              </div>
+            </div>
+            <div
+              id="min_max_div"
+              style="
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                margin-bottom: 10px;
+                width: 84%;
+                margin-left: 16%;
+              "
+            >
+              <input
+                value="{{value.0}}"
+                id="min_input"
+                placeholder="{{value.0}}"
+                type="text"
+                class="min_value"
+                style="width: 50%"
+                min="{{value.0}}"
+                max="{{value.1}}"
+                onkeyup="add_commas_min_max_value(this)"
+                oninput="check_keys_min_max_value(this)"
+                onblur="add_commas_min_max_value(this)"
+                onchange="update_total_limits_min_value('{{key}}', this)"
+              />
+              <input
+                value="{{value.1}}"
+                id="max_input"
+                placeholder="{{value.1}}"
+                type="text"
+                class="max_value"
+                style="width: 50%"
+                min="{{value.1}}"
+                onkeyup="add_commas_min_max_value(this)"
+                oninput="check_keys_min_max_value(this)"
+                onblur="add_commas_min_max_value(this)"
+                onchange="update_total_limits_max_value('{{key}}', this)"
+              />
+              {% if cpm_checked %}
+              <input
+                value="{{value.5}}"
+                placeholder="CPM"
+                id="cpm_input_with_min_max"
+                style="width: 50%"
+                type="number"
+                class="cpm_value"
+                onchange="update_cpm_value_with_min_max('{{key}}', this)"
+              />
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          <!-- Discarded dimensions for predictor -->
+          <button
+            class="btn"
+            style="border: 0; outline: 0"
+            type="button"
+            onclick="show_fixed_budget_div()"
+          >
+            <i
+              id="plus-icon"
+              class="fa fa-plus-square fa-2x"
+              style="color: #fff"
+            ></i>
+            <p style="color: white">Add discarded dimensions</p>
+          </button>
+          <div id="fixed_inputs_div" style="display: none; margin-bottom: 10px">
+            {% for item in drop_dimension_from_session %}
+            <div
+              id="fixed_budget_div"
+              style="display: flex; justify-content: center; margin-bottom: 5px"
+            >
+              <label for="{{item}}" style="color: #fff; width: 50%"
+                >{{item}}</label
+              >
+              <input
+                type="text"
+                name="{{item}}"
+                value="0"
+                class="fixed_budget_input"
+                onkeyup="add_commas_min_max_value(this)"
+                oninput="check_keys_min_max_value(this)"
+                onchange="update_global_optimizer_left_pannel_data()"
+                style="width: 50%"
+              />
+            </div>
+            {% endfor %}
           </div>
           <div class="tooltip_outer_div">
-            <i
-              class="fa fa-info-circle fa-lg"
-              aria-hidden="true"
-              style="color: white; margin-right: 10px"
-            ></i>
-            <span class="tooltiptext"
-              >Update min and max % constraints for all dimensions simultaneously</span
+            <input
+              id="total_budget"
+              placeholder="Total Budget Range"
+              type="text"
+              class="total_budget"
+              onchange="update_budget(this)"
+              style="
+                padding: 10px;
+                width: 13.9rem;
+                margin-bottom: 10px;
+                height: 20%;
+              "
+              onkeyup="add_commas()"
+              oninput="check_keys()"
+            />
+            <span class="tooltiptext" style="bottom: 2rem"
+              >Enter Total Budget. The placeholder range for the total budget is
+              calculated by summing the min and max for each channel.</span
             >
           </div>
-          <div style="width:30%;margin-left:2px;display:inline;background-color:#fff;outline:none;border:none">
-            <input id = "max_all_value" type="text" value ="200" onblur = "change_all_max_perc_values(event,this)" onkeydown = "change_all_max_perc_values(event,this)" 
-            style="width:50%;outline:none;border:none">
-            <span class="bg-grey float-right mr-2" aria-hidden = true>%</span>
-          </div>
-        </div>
-          <div id="outer_div_multiple_inputs_percentages"class="mb-4 hide_scroller" style="display:none;overflow-y: scroll; height: 15rem;">
-            {% for key, value in optimizer_left_pannel_data.items %}   
-            <div id="multiple_inputs" class="get_all_the_key_value" key={{key}}>
-                <div id = "optimizer__left_panel_dimension_name_for_min_max" class="optimizer_left_panel_dimension_name"
-                   data-toggle="tooltip" data-placement="right" title="{{key}}">
-                  {{key}}
-                </div>
-                <div id="percentage_div"
-                  style="display: flex; flex-direction:row; justify-content:space-between; margin-bottom: 10px;">
-                  <div style="width:30%;margin-right:2px;display:inline;background-color:#fff;outline:none;border:none">
-                    <input value = {{value.3}} id="min_perc_input" placeholder={{value.3}} type="text" class="min_perc_value"
-                      style="width:50%;outline:none;border:none"
-                      onblur = "check_keys_min_max_value(this)"
-                      onchange="update_total_limits_min_value_perc('{{key}}', this)">
-                      <span class="bg-grey float-right mr-2">%</span>
-                  </div>
-                    <input value ={{value.2}} id="median_spend" placeholder={{value.2}} type="text"
-                    style="width: 40%;" class="median_spend_value" disabled>
-                  <div style="width:30%;margin-left:2px;display:inline;background-color:#fff;outline:none;border:none">
-                    <input value = {{value.4}} id="max_perc_input" placeholder={{value.4}} type="text" class="max_perc_value"
-                    style="width:50%;outline:none;border:none" 
-                    onblur = "check_keys_min_max_value(this)"
-                    onchange="update_total_limits_max_value_perc('{{key}}', this)">
-                    <span class="bg-grey float-right mr-2" aria-hidden = true>%</span>
-                  </div>
-                </div>
-                 {% if cpm_checked %}  
-                 <div style="display: flex; flex-direction:row; justify-content:space-between; margin-bottom: 10px;">
-                  <input value ={{value.5}} placeholder="CPM" id="cpm_input_with_min_max"  
-                    style="width: 100%;" type ="number" class="cpm_perc_value"
-                    onchange="update_cpm_value_with_min_max('{{key}}', this)">
-                  </div>
-                {% endif %}
-              </div>
-            {% endfor %}
-          </div>
-          <div id = "outer_div_multiple_inputs"class="mb-4 hide_scroller" style="overflow-y: scroll; height: 15rem;">
-            {% for key, value in optimizer_left_pannel_data.items %}   
-            <div id="multiple_inputs" class="get_all_the_key_value" key={{key}}>
-                <div id = "optimizer__left_panel_dimension_name_for_min_max" class="optimizer_left_panel_dimension_name"
-                   data-toggle="tooltip" data-placement="right" title="{{key}}">
-                  {{key}}
-                  
-                </div>
-                <div id="min_max_div"
-                  style="display: flex; flex-direction:row; justify-content:space-between; margin-bottom: 10px;">
-                  <input value ={{value.0}} id="min_input" placeholder={{value.0}} type="text" class="min_value"
-                    style="width: 50%; "  min={{value.0}} max={{value.1}} onkeyup ="add_commas_min_max_value(this)"
-                    oninput = "check_keys_min_max_value(this)" onblur = "add_commas_min_max_value(this)"
-                    onchange="update_total_limits_min_value('{{key}}', this)">
-                  <input value ={{value.1}} id="max_input" placeholder={{value.1}} type="text" class="max_value"
-                    style="width: 50%; " min={{value.1}} onkeyup ="add_commas_min_max_value(this)"
-                    oninput = "check_keys_min_max_value(this)"
-                    onblur = "add_commas_min_max_value(this)"
-                    onchange="update_total_limits_max_value('{{key}}', this)">
-                  {% if cpm_checked %}  
-                  <input value ={{value.5}} placeholder="CPM" id="cpm_input_with_min_max" 
-                    style="width: 50%;" type ="number" class="cpm_value"
-                    onchange="update_cpm_value_with_min_max('{{key}}', this)">
-                  {% endif %}
-                </div>
-            </div>
-            {% endfor %}
-          </div>  
-          <!-- Discarded dimensions for predictor -->
-          <button class="btn" style="border:0;outline:0"
-                  type="button" 
-                  onclick = "show_fixed_budget_div()"> 
-            <i id ="plus-icon"class="fa fa-plus-square fa-2x"style="color:#fff"></i> 
-            <p style="color:white">Add discarded dimensions</p>
-          </button>
-          <div id="fixed_inputs_div" style="display:none;margin-bottom:10px">
-            {% for item in drop_dimension_from_session %}
-            <div id="fixed_budget_div"style="display:flex;justify-content:center;;margin-bottom:5px">
-              <label for='{{item}}' style="color:#fff;width:50%">{{item}}</label>
-              <input type="text" name = '{{item}}' value = "0" class = "fixed_budget_input"
-               onkeyup = "add_commas_min_max_value(this)" 
-               oninput = "check_keys_min_max_value(this)"
-               onchange="update_global_optimizer_left_pannel_data()" 
-               style="width:50%;">  
-            </div>
-            {% endfor %}
-          </div>
-          <div class="tooltip_outer_div">
-            <input id="total_budget" placeholder="Total Budget Range" type="text" class="total_budget" onchange="update_budget(this)"
-              style="padding: 10px; width: 100%; margin-bottom: 10px; height: 20%;"
-              onkeyup ="add_commas()" oninput = "check_keys()"
-              >
-            <span class="tooltiptext" style = "bottom:2rem">Enter Total Budget. The placeholder range for the total budget is calculated by summing the min and max for each channel.</span>  
-          </div>
           <div style="margin: auto">
-            <button type="button" name="Submit" class="btn explorer-sidebar-submit-btn" id="submit_btn"
-              onclick="submit_predictor_left_pannel_chart_inputs()">Submit</button>
-          </div>
-          <div style ="margin-top:10px">
-            <span type="button" name="Submit" class="btn btn-link" id="submit_btn"
-            onclick="onDownload()">Export Configuration</span>
-          </div>
-
-        </form>
-      </div>
-
-  </div>
-  </nav>
-
-  <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4" style="display: block; align-items: center;">
-
-    <!-- <nav class="nav-pills flex-column flex-sm-row" style="padding: 30px 80px; display: none; ">
-      <a class="flex-sm-fill text-sm-center explorer-btn " href="{%url 'home'%}" style="margin-right: 5px;">Explorer</a>
-      <a class="flex-sm-fill text-sm-center explorer-btn " href="{% url 'predictor_home_page' %}"
-        style="margin-right: 5px;">Predictor</a>
-      <a class="flex-sm-fill text-sm-center explorer-btn active" href="{% url 'optimizer_home_page' %}">Optimizer</a>
-    </nav> -->
-   
-    <div id="right_div" style="display: none; align-items: center;">
-
-      <div
-        style="background-color: #fff; padding: 20px; margin-bottom: 10px; margin-top: 20px
-        ;box-shadow:rgb(0 0 0 / 24%) 0px 10px 20px">
-        <h4>
-          Media Investment Plan 
-        </h4>
-        <div style="margin-top: 30px; display: flex; align-items: center; justify-content: center; width: 100%;">
-          <table class="table table-bordered" class="table_1_optimizer" id ="table_1_optimizer">
-            <thead style="text-align: center;">
-              <tr>
-                <th scope="col">
-                  <div class="mb-3 searchbox_div" style="align-items:stretch">
-                    <i class="fa fa-search" style="color:#4b4343;font-size:1rem"></i>
-                    <input type="text" id ="searchBox-table" placeholder="Search ..." name="search" 
-                          oninput = "search_dimensions_table(this)" >
-                  </div>
-                  Dimension
-                </th>
-                {% if is_weekly_selected == 1 or convert_to_weekly_data == 1 %}
-                  <th scope="col">Original Median Budget/week</th>
-                  <th scope="col">Recommended Budget/week</th>
-                {% else %}
-                  <th scope="col">Original Median Budget/day</th>
-                  <th scope="col">Recommended Budget/day</th>
-                {% endif %}
-                <th scope="col">Budget Allocation Original %</th>
-                <th scope="col">Budget Allocation New %</th>
-                <th scope="col">Total Recommended Budget Allocation</th>
-                <th scope="col">Target per day</th>
-                <th scope="col">% of Target</th>
-                <th scope="col">Overall Target</th>
-                <th scope="col">Overall Current Projections</th>
-              </tr>
-            </thead>
-            <tbody style="text-align: center;" class="table_body_1_optimizer">
-              {% comment %} <tr scope="column">
-                <td>A</td>
-                <td>4000</td>
-                <td>20</td>
-              </tr> {% endcomment %}
-
-            </tbody>
-          </table>
-        </div>
-        {% comment %} <div id="optimizer__sum_outerdiv">
-          <div id="optimizer__total_1">
-            <p>Total 1</p> : <p id="optimizer__total_1_value"></p>
-          <div>
-          <div id="optimizer__total_1">
-            <p>Total 1</p> : <p id="optimizer__total_1_value"></p>
-          <div>
-        </div>  {% endcomment %}
-
-        <div style="display: flex; justify-content:flex-end">
-          <div>
-            {% comment %} <input type="hidden" id="or__csv-data" class="or__csv-data" value={{optimizer_download_csv_data}} /> {% endcomment %}
-            <button type="button" name="Submit" class="btn explorer-sidebar-submit-btn"
-                onclick="optimizer_download_csv_fn()"> 
-                <i class="fa fa-download fa-lg" aria-hidden="true" style="color: black; margin-right: 10px;"></i>
-                CSV Download
+            <p id="budget_per_day_text" style="color: #fff"></p>
+            <button
+              type="button"
+              name="Submit"
+              class="btn explorer-sidebar-submit-btn"
+              id="submit_btn"
+              onclick="submit_predictor_left_pannel_chart_inputs()"
+            >
+              Submit
             </button>
           </div>
-        </div>
+          <div style="margin-top: 10px">
+            <span
+              type="button"
+              name="Submit"
+              class="btn btn-link"
+              id="submit_btn"
+              onclick="onDownload()"
+              >Export Configuration</span
+            >
+          </div>
+        </form>
+      </div>
+    </nav>
 
-        {% comment %} pie chart  {% endcomment %}
-        <br>
-        <br>
-        <br>
-        <h4>% Distribution Between Dimensions</h4>
-        <br>
+    <main
+      class="col-md-9 ms-sm-auto col-lg-10 px-md-4"
+      style="display: block; align-items: center; left: 9%; width: 80vw"
+    >
+      <div id="right_div" style="display: none; align-items: center">
         <div
-          style="display: flex; align-items: center; justify-content: center; flex-direction: column; width:100%;margin: auto;">
-          <canvas id="optimizer_bar_chart"></canvas>
-        </div>
-        <br>      
-        <br>
-        <br>
-      </div>
-      <div style="display: flex; flex-direction: row; align-items: center; justify-content: center; margin-bottom: 10px;">
-        <button type="button" name="Submit" class="btn explorer-sidebar-submit-btn" id="submit_btn_saveplan"
-        data-toggle="modal" data-target="#saveplanModal">Save Plan</button>
-      </div>
-
-    </div>
-
-
-  </main>
-  <div class = "only to collect data" style = "display:none">
-    <p id ="id_stringified_optimizer_left_pannel_data">{{stringified_optimizer_left_pannel_data}}</p>
-  </div>
-  <div class="modal fade" id="saveplanModal" tabindex="-1" role="dialog" aria-labelledby="saveplanModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalLabel">Save the Plan</h5>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="plan-name" class="col-form-label"><b>Plan Name</b></label>
-            <input type="text" class="form-control" id="plan_name" onblur = validate_plan_name(this)>
+          class="card"
+          style="
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 10px;
+            margin-top: 20px;
+            box-shadow: rgb(0 0 0 / 24%) 0px 10px 20px;
+          "
+        >
+          <div class="row" style="display: flex; align-items: center">
+            <div class="col-lg-7 col-sm-12">
+              <h4 class="text-center add-margin-for-lg-screen">
+                Summary Metrics
+              </h4>
+              <div class="row">
+                <div class="col-lg-6 card-deck">
+                  <div class="card card-stats mb-4 mb-xl-4">
+                    <div class="card-body">
+                      <div class="row">
+                        <div class="col" id="total_budget_metric">
+                          <h5 class="card-title mb-0">Total Budget</h5>
+                          <span class="h2 font-weight-bold mb-0"></span>
+                        </div>
+                        <div class="col-auto">
+                          <div>
+                            {% comment %}
+                            <i
+                              class="fa fa-bar-chart"
+                              style="color: #9a3334; font-size: 1.5rem"
+                            ></i>
+                            {% endcomment %}
+                            <img
+                              src="{% static '/assets/sales.png' %}"
+                              alt="budget"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-lg-6 card-deck">
+                  <div class="card card-stats mb-4 mb-xl-4">
+                    <div class="card-body">
+                      <div class="row">
+                        <div class="col" id="total_target_metric">
+                          <h5 class="card-title mb-0">
+                            Total {{targetSelector}}
+                          </h5>
+                          <span class="h2 font-weight-bold mb-0"></span>
+                        </div>
+                        <div class="col-auto">
+                          <div>
+                            {% comment %}
+                            <i
+                              class="fa fa-line-chart"
+                              style="color: #9a3334; font-size: 1.5rem"
+                            ></i>
+                            {% endcomment %}
+                            <img
+                              src="{% static '/assets/growth-graph.png' %}"
+                              alt="target"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-6 card-deck">
+                  <div class="card card-stats mb-4 mb-xl-4">
+                    <div class="card-body">
+                      <div class="row">
+                        <div class="col" id="roi_cpa_metric">
+                          {% if target_type == 'volume' %}
+                          <h5 class="card-title mb-0" style="font-size: 19px">
+                            Cost Per {{targetSelector}}
+                          </h5>
+                          {% elif target_type == 'revenue' %}
+                          <h5 class="card-title mb-0" style="font-size: 19px">
+                            Return On Investment
+                          </h5>
+                          {% endif %}
+                          <span class="h2 font-weight-bold mb-0"></span>
+                        </div>
+                        <div class="col-auto">
+                          <div>
+                            <img
+                              src="{% static '/assets/gauge-chart.png' %}"
+                              alt="cpa-roi"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-lg-6 card-deck">
+                  <div class="card card-stats mb-4 mb-xl-4">
+                    <div class="card-body">
+                      <div class="row">
+                        <div class="col" id="confidence_metric">
+                          <h5 class="card-title mb-0">Confidence Score</h5>
+                          <span class="h2 font-weight-bold mb-0"></span>
+                        </div>
+                        <div class="col-auto">
+                          <div>
+                            {% comment %}
+                            <i
+                              class="fa fa-percent"
+                              style="color: #9a3334; font-size: 1.5rem"
+                            ></i>
+                            {% endcomment %}
+                            <img
+                              src="{% static '/assets/percent.png' %}"
+                              alt="percent"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-5 col-sm-12">
+              <div class="tooltip_outer_div" style="position: relative">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: row;
+                    justify-content: right;
+                  "
+                >
+                  <div><h6>Initial Plan :&nbsp;</h6></div>
+                  <div>
+                    <i
+                      class="fa fa-info-circle"
+                      aria-hidden="true"
+                      style="color: #9a3334; font-size: 1.5rem"
+                    ></i>
+                  </div>
+                </div>
+                <span class="tooltiptext" style="top: 100%; position: absolute"
+                  >Initial Plan calculation is based on Original budget and
+                  projected target value. Original budget is calculated using
+                  Original Median or Mean Budget Allocation %</span
+                >
+              </div>
+              {% if target_type == 'volume' %}
+              <h4 class="text-center">Cost per {{targetSelector}}</h4>
+              {% else %}
+              <h4 class="text-center">Return On Investment</h4>
+              {% endif %}
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-direction: column;
+                  width: 100%;
+                  margin: auto;
+                "
+              >
+                <canvas
+                  id="optimizer_CPA_chart"
+                  style="height: 30vh; width: 20vw"
+                ></canvas>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" data-dismiss="modal" style ="background-color:#9A3334;border-color:#9A3334;color:#fff" onclick="optimizer_save_the_plan()">Save Plan</button>
+
+        <div
+          style="
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 10px;
+            margin-top: 20px;
+            box-shadow: rgb(0 0 0 / 24%) 0px 10px 20px;
+          "
+        >
+          {% comment %} pie chart {% endcomment %}
+          <br />
+          <br />
+          <br />
+          <div class="row">
+            <div class="col-lg-6 col-sm-12">
+              <h4 class="text-center">Budget Allocation</h4>
+              <br />
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-direction: column;
+                  width: 100%;
+                  margin: auto;
+                "
+              >
+                <canvas id="optimizer_bar_chart"></canvas>
+              </div>
+            </div>
+            <div class="col-lg-6 col-sm-12">
+              <h4 class="text-center">{{targetSelector}} Projections</h4>
+              <br />
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-direction: column;
+                  width: 100%;
+                  margin: auto;
+                "
+              >
+                <canvas id="optimizer_target_bar_chart"></canvas>
+              </div>
+            </div>
+          </div>
+          <br />
+          <br />
+          <br />
+          <h4 class="text-center">Media Investment Plan</h4>
+          <div
+            style="
+              margin-top: 30px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 100%;
+            "
+          >
+            <table
+              class="table table-bordered table_1_optimizer"
+              id="table_1_optimizer"
+            >
+              <thead style="text-align: center">
+                <tr>
+                  <th scope="col">
+                    <div
+                      class="mb-3 searchbox_div"
+                      style="align-items: stretch"
+                    >
+                      <i
+                        class="fa fa-search"
+                        style="color: #4b4343; font-size: 1rem"
+                      ></i>
+                      <input
+                        type="text"
+                        id="searchBox-table"
+                        placeholder="Search ..."
+                        name="search"
+                        oninput="search_dimensions_table(this)"
+                      />
+                    </div>
+                    Dimension
+                  </th>
+                  {% if is_weekly_selected == 1 or convert_to_weekly_data == 1%}
+                  {% if constraint_type == 'median' %}
+                  <th scope="col">Original Median Budget/week</th>
+                  {% else %}
+                  <th scope="col">Original Mean Budget/week</th>
+                  {% endif %}
+                  <th scope="col">Recommended Budget/week</th>
+                  {% else %} {% if constraint_type == 'median' %}
+                  <th scope="col">Original Median Budget/day</th>
+                  {% else %}
+                  <th scope="col">Original Mean Budget/day</th>
+                  {% endif %}
+                  <th scope="col">Recommended Budget/day</th>
+                  {% endif %}
+                  <th scope="col">Original Total Budget Allocation %</th>
+                  {% if constraint_type == 'median' %}
+                  <th scope="col">Original Median Budget Allocation %</th>
+                  {% else %}
+                  <th scope="col">Original Mean Budget Allocation %</th>
+                  {% endif %}
+                  <th scope="col">Recommended Budget Allocation %</th>
+                  <th scope="col">Recommended Total Budget Allocation</th>
+                  <th scope="col">{{targetSelector}} per day</th>
+                  <th scope="col">Overall {{targetSelector}}</th>
+                  <th scope="col">% of {{targetSelector}}</th>
+                  <th scope="col">Overall Current Projections</th>
+                </tr>
+              </thead>
+              <tbody style="text-align: center" class="table_body_1_optimizer">
+                {% comment %}
+                <tr scope="column">
+                  <td>A</td>
+                  <td>4000</td>
+                  <td>20</td>
+                </tr>
+                {% endcomment %}
+              </tbody>
+            </table>
+          </div>
+          {% comment %}
+          <div id="optimizer__sum_outerdiv">
+            <div id="optimizer__total_1">
+              <p>Total 1</p>
+              :
+              <p id="optimizer__total_1_value"></p>
+              <div>
+                <div id="optimizer__total_1">
+                  <p>Total 1</p>
+                  :
+                  <p id="optimizer__total_1_value"></p>
+                  <div></div>
+                  {% endcomment %}
+
+                  <div style="display: flex; justify-content: flex-end">
+                    <div>
+                      {% comment %}
+                      <input
+                        type="hidden"
+                        id="or__csv-data"
+                        class="or__csv-data"
+                        value="{{optimizer_download_csv_data}}"
+                      />
+                      {% endcomment %}
+                      <button
+                        type="button"
+                        name="Submit"
+                        class="btn explorer-sidebar-submit-btn"
+                        onclick="optimizer_download_csv_fn()"
+                      >
+                        <i
+                          class="fa fa-download fa-lg"
+                          aria-hidden="true"
+                          style="color: black; margin-right: 10px"
+                        ></i>
+                        CSV Download
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: row;
+                    align-items: center;
+                    justify-content: center;
+                    margin-bottom: 10px;
+                  "
+                >
+                  <button
+                    type="button"
+                    name="Submit"
+                    class="btn explorer-sidebar-submit-btn"
+                    id="submit_btn_saveplan"
+                    data-toggle="modal"
+                    data-target="#saveplanModal"
+                  >
+                    Save Plan
+                  </button>
+                </div>
+              </div>
+
+              <div class="only to collect data" style="display: none">
+                <p id="id_stringified_optimizer_left_pannel_data">
+                  {{stringified_optimizer_left_pannel_data}}
+                </p>
+                <p id="id_stringified_grouped_optimizer_left_pannel_data">
+                  {{stringified_grouped_optimizer_left_pannel_data}}
+                </p>
+              </div>
+              <div
+                class="modal fade"
+                id="saveplanModal"
+                tabindex="-1"
+                role="dialog"
+                aria-labelledby="saveplanModalLabel"
+                aria-hidden="true"
+              >
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="exampleModalLabel">
+                        Save the Plan
+                      </h5>
+                    </div>
+                    <div class="modal-body">
+                      <div class="form-group">
+                        <label for="plan-name" class="col-form-label"
+                          ><b>Plan Name</b></label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="plan_name"
+                          onblur="validate_plan_name(this)"
+                        />
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-dismiss="modal"
+                      >
+                        Close
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-primary"
+                        data-dismiss="modal"
+                        style="
+                          background-color: #9a3334;
+                          border-color: #9a3334;
+                          color: #fff;
+                        "
+                        onclick="optimizer_save_the_plan()"
+                      >
+                        Save Plan
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                id="spinner-optimizer"
+                class="spinner-border"
+                style="
+                  display: none;
+                  left: 54%;
+                  top: 40%;
+                  width: 5rem;
+                  height: 5rem;
+                  position: fixed;
+                "
+              ></div>
+            </div>
+          </div>
         </div>
       </div>
+    </main>
+    {% if flag_to_show_grouped_dimensions == 1 %}
+    <div id="mysidebar-right" class="sidebar-right hide_scroller y_scroll mb-4">
+      <div class="content-sidebar-right">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">×</a>
+        {% for key,value in grouped_optimizer_left_pannel_data.items %}
+        <div class="group_of_grouped_channels">
+          <div class="grouped_channel">
+            <div
+              style="
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+              "
+            >
+              <label style="font-weight: 800">{{key}}</label>
+              <button
+                type="button"
+                class="collapsible"
+                onclick="open_collapsible(this)"
+              >
+                <i class="fa fa-plus"></i>
+              </button>
+            </div>
+            <div
+              style="
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+              "
+            >
+              <div style="width: 30%">Max</div>
+              <input
+                type="text"
+                style="width: 0%"
+                class="group_channel_min_budget"
+                name="{{key}}"
+                onchange="update_total_limits_min_value_grouped_panel(this,'{{key}}')"
+                onkeyup="add_commas_min_max_value(this)"
+                oninput="check_keys_min_max_value(this)"
+                onblur="add_commas_min_max_value(this)"
+                value="{{value.constraints.0}}"
+                hidden
+              />
+              <input
+                type="text"
+                style="width: 65%; margin-right: 5%"
+                class="group_channel_max_budget"
+                name="{{key}}"
+                onchange="update_total_limits_max_value_grouped_panel(this,'{{key}}')"
+                onkeyup="add_commas_min_max_value(this)"
+                oninput="check_keys_min_max_value(this)"
+                onblur="add_commas_min_max_value(this)"
+                value="{{value.constraints.1}}"
+                onmouseover="show_ranges_for_grouped_channel(this,'{{key}}')"
+              />
+            </div>
+          </div>
+
+          <div
+            class="group_of_individual_channels"
+            style="display: none; overflow: hidden"
+          >
+            {% for item in value.sub_dimension %}
+            <div class="individual_channel">
+              <input
+                type="checkbox"
+                name="{{item}}"
+                style="width: 1.2rem; height: 1.2rem"
+                class="styled_checkbox input_checkbox_group_constraint"
+                onchange="selectDeselectGroupedDimensions(this,'{{key}}')"
+                checked
+              />
+              <label>{{item}}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %} {% endif %}
+      </div>
     </div>
+    {% if flag_to_show_grouped_dimensions == 1 %}
+    <button class="openbtn btn" id="open_nav_rightside" onclick="openNav()">
+      <i class="fa fa-plus-square-o fa-2x"></i>
+    </button>
+    {% endif %}
   </div>
-  <div id = 'spinner-optimizer'class="spinner-border" 
-  style ="display:none;left:54%;top:40%;width:5rem;height:5rem;position:fixed">
 </div>
-</div>
-
-
 
 <script>
-  $(function () {
-  $('[data-toggle="tooltip"]').tooltip()
-})
-// function will run if div gets shown 
-$('#outer_div_multiple_inputs_percentages').on('show',function(){
-  $('.median_spend_value').each(function(i,obj){
-      obj.value = '$' + Math.round(obj.value).toString().replace("$","").replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+      $(function () {
+      $('[data-toggle="tooltip"]').tooltip()
     })
-})
-// function to display percentage inputs and hide absolute inputs 
-function change_input_type_to_percentages(this_value){
-  if(this_value.checked){ 
-    $('#labels_div_percentages').css('display','flex')
-    $('#labels_div_absolute').css('display','none')
-    document.getElementById('custom-label').innerHTML = 'Toggle to enter input in absolute values' ;
-    $('#outer_div_multiple_inputs').hide()
-    $('#to_populate_multiple_inputs').css('display','flex');
-    $('#outer_div_multiple_inputs_percentages').show().trigger('show');
-    $('.max_perc_value').val('200')
-    $('.min_perc_value').val('-100')
-    global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(original_optimizer_left_pannel_data));
-  }else {
-    $('#labels_div_percentages').css('display','none')
-    $('#labels_div_absolute').css('display','flex')
-    document.getElementById('custom-label').innerHTML = 'Toggle to enter input in percentages';
-    $('#outer_div_multiple_inputs').show()
-    $('#to_populate_multiple_inputs').css('display','none')
-    $('#outer_div_multiple_inputs_percentages').hide();
-    // reloading the browser to refresh all inputs
-    location.reload()  
-  }
-  $('#total_budget').val(null)
-  $('#total_days').val(null)
-  total_budget.setAttribute('placeholder','Total Budget Range')
-}
-// function to show fixed budget div 
-function show_fixed_budget_div(){
-  if(fixed_budget_div_open == true){
-    $('#plus-icon').removeClass('fa-plus-square').addClass('fa-minus-square')
-    $('#fixed_inputs_div').css('display','block');
-  }else{
-    $('#plus-icon').removeClass('fa-minus-square').addClass('fa-plus-square')
-    $('#fixed_inputs_div').css('display','none');
-  }
-  fixed_budget_div_open = !fixed_budget_div_open
-}
-// function for performing left panel dimension search
-function search_dimension_names(this_value){
-  let character_to_searched = this_value.value;
-  $('.optimizer_left_panel_dimension_name').each(function(index,element){
-    character_present = element.innerHTML.replaceAll('&amp;','&');
-    if(character_present.includes(character_to_searched))
-      element.parentElement.style.display = 'block';
-    else 
-      element.parentElement.style.display = 'none';
-  })
-}
-
-// function to search dimensions in table 
-function search_dimensions_table(this_value){
-  let filter = this_value.value;
-  table = document.getElementById("table_1_optimizer");
-  tr = table.getElementsByTagName("tr");
-  for(let i = 1 ; i < tr.length ; i++){
-    td = tr[i].getElementsByTagName('td')[0];
-    txtValue = td.textContent || td.innerText;
-    if(txtValue.indexOf(filter) > -1)
-      tr[i].style.display = "table-row";
-    else 
-      tr[i].style.display = "none";
-  }
-}
-
-{% comment %} 
-  document.getElementById("newsectionbtn").onclick = function () 
-
-    var container = document.getElementById("multiple_inputs");
-    var section = document.getElementById("multiple_inputs_append");
-    if (container.children.length <= 10) {
-      container.appendChild(section.cloneNode(true));
-      let min_max_div_node_list = document.querySelectorAll('#min_max_div')
-      min_max_div_node_list[min_max_div_node_list.length - 1].children[0].value = ""
-      min_max_div_node_list[min_max_div_node_list.length - 1].children[1].value = ""
-    }else{
-      //add error message here
-    }
-  } {% endcomment %}
-
-  // DOM Selectors
-  total_budget = document.getElementById('total_budget')
-  id_stringified_optimizer_left_pannel_data = document.getElementById('id_stringified_optimizer_left_pannel_data')
-  get_all_the_key_value = document.querySelectorAll('.get_all_the_key_value')
-  let table_body_1_optimizer = document.querySelector(".table_body_1_optimizer");
-  let table_body_2_optimizer = document.querySelector(".table_body_2_optimizer");
-
-
-
-  {% comment %} global variables  {% endcomment %}
-  {% comment %} stringified_optimizer_left_pannel_data = {{stringified_optimizer_left_pannel_data}} {% endcomment %}
-  optimizer_left_panel_min_value = 0
-  optimizer_left_panel_max_value = 0
-  global_range_min = 0
-  global_range_max = 0
-  optimizer_left_panel_number_of_days = 1
-  optimizer_left_panel_total_budget = 0
-  optimizer_left_panel_user_selected_final_dict = {}
-  global_optimizer_download_csv_json = null
-  json_table_1_data = {};
-  dict_donut_chart_data = {}; 
-  global_start_date = "02/01/21" 
-  global_end_date = "02/28/21"
-  global_is_cpm_checked = {{cpm_checked}}
-  arr = JSON.parse(id_stringified_optimizer_left_pannel_data.innerHTML)
-  global_optimizer_left_pannel_data  = JSON.parse(JSON.stringify(arr).replaceAll('&amp;', '&' ));
-  original_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data))
-  const_unchanged_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(arr).replaceAll('&amp;', '&' ));
-  global_seasonality = {{seasonality}}
-  let global_chart_colors = ["#45B8AC", "#EFC050", "#5B5EA6", "#9B2335", "#DFCFBE", "#98B4D4", "#34568B", "#6B5B95","#88B04B","#F7CAC9","#92A8D1", "#955251", "#B565A7", "#009B77", "#DD4124", "#D65076"];
-  let global_sum_fixed_budget_values = 0;
-  let discarded_dimensions_json = {};
-  let fixed_budget_div_open = false;
-  {% comment %} Graphs and Charts variables  {% endcomment %}
-  global_my_optimizer_bar_chart = 0
-  global_my_optimizer_line_chart = 0
-
-  console.log("global_seasonality", global_seasonality)
-
-  $(window).on('load',function(){
-    $('#optimizer-btn').addClass('active')
-    $('#explorer-btn').removeClass('active')
-    $('#predictor-btn').removeClass('active')
-    $('.min_value , .max_value , .fixed_budget_input').each(function(i,obj){
-      obj.value = '$' + obj.value.toString().replace("$","").replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+    // function will run if div gets shown
+    $('#outer_div_multiple_inputs_percentages').on('show',function(){
+      $('.median_spend_value').each(function(i,obj){
+          obj.value = '$' + Math.round(obj.value).toString().replace("$","").replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+        })
     })
-    $('.cpm_value , .cpm_perc_value').each(function(i,obj){
-      obj.value = Math.round(obj.value);
-    })
-    $('#optimizer_date_picker').daterangepicker({
-        startDate: moment(),
-        endDate: moment().add(5, 'day'),
-        locale: { 
-            format: 'MM/DD/YYYY'
-        }
-      });
-    // renaming the table column (conversion)
-    var table_element0 = document.getElementById('table_1_optimizer').
-                  children[0].children[0].children[6];
-    var table_element1 = document.getElementById('table_1_optimizer').
-                  children[0].children[0].children[8];
-    var table_element2 = document.getElementById('table_1_optimizer').
-                  children[0].children[0].children[7];
-    if(get_is_weekly_selected() == 1 || get_convert_to_weekly_data() == 1)
-      table_element0.innerText = window.localStorage.getItem('target_selector') + " per week";
-    else
-      table_element0.innerText = window.localStorage.getItem('target_selector') + " per day";
-    table_element1.innerText = "Overall " + window.localStorage.getItem('target_selector'); 
-    table_element2.innerText = "% of " + window.localStorage.getItem('target_selector'); 
-    $('#optimizer_date_picker').on("apply.daterangepicker", function (ev, picker) {
-      $('#total_budget').val(null);
-      global_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
-      global_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
-      date_format_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate._d;
-      date_format_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate._d;
-      let diff_time = Math.abs(date_format_end_date - date_format_start_date)
-      let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
-      update_number_of_days(diff_days)
-      console.log(`\n global_start_date : ${global_start_date} 
-                  \n global_end_date : ${global_end_date} 
-                  \n diff_days : ${diff_days}`)
-    });
-   })
-// function to get cookies 
-function getCookie(name) {
-    if (!document.cookie) {
-      return null;
+    // function to display ranges on hover
+    function show_ranges_for_grouped_channel(this_value,key){
+      min_range = global_grouped_optimizer_left_panel_data[key]['fixed_ranges'][0]
+      max_range = global_grouped_optimizer_left_panel_data[key]['fixed_ranges'][1]
+     this_value.title =  "$" + min_range.toString().replace("$","").replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",") + " - " + "$" + max_range.toString().replace("$","").replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
     }
-
-    const xsrfCookies = document.cookie.split(';')
-      .map(c => c.trim())
-      .filter(c => c.startsWith(name + '='));
-
-    if (xsrfCookies.length === 0) {
-      return null;
+    // functions on side navbar right side
+    // open the right side navbar
+    function openNav() {
+      document.getElementById("mysidebar-right").style.width = "250px";
+      //document.getElementById("main").style.marginLeft = "250px";
     }
-    return decodeURIComponent(xsrfCookies[0].split('=')[1]);
- }
-
- function update_user_selected_final_dict(key, min_value, max_value, median_spend,min_perc,max_perc,cpm_value) {
-  //range_min = parseInt(optimizer_left_panel_number_of_days*optimizer_left_panel_min_value)
-  //range_max = parseInt(optimizer_left_panel_number_of_days*optimizer_left_panel_max_value)
-  //total_budget.setAttribute('placeholder', `${range_min} - ${range_max}`)
-  min_value = parseInt(min_value)
-  max_value = parseInt(max_value)
-  cpm_value = parseInt(cpm_value)
-  min_perc =  parseFloat(min_perc)
-  max_perc =  parseFloat(max_perc)
-  max_spend =  parseFloat(median_spend)
-  
-  if(min_value >= max_value){
-    error_message = `Min value more than Max value please change min : ${min_value} - max : ${max_value}`
-    alert(error_message)
-    console.warn(error_message)
-  }
-  else{
-    if (global_is_cpm_checked){
-      optimizer_left_panel_user_selected_final_dict[key]=[min_value, max_value, median_spend, min_perc, max_perc, cpm_value]
+    // close the right side navbar
+    function closeNav() {
+      document.getElementById("mysidebar-right").style.width = "0";
+      //document.getElementById("main").style.marginLeft = "0";
     }
-    else{
-      optimizer_left_panel_user_selected_final_dict[key]=[min_value, max_value, median_spend, min_perc, max_perc]
+    // this is to open and collapse individual channels
+    function open_collapsible(this_value) {
+      var div_to_collapsed = this_value.parentElement.parentElement.nextElementSibling;
+      if (div_to_collapsed.style.display == "none")
+        div_to_collapsed.style.display = "flex";
+      else div_to_collapsed.style.display = "none";
     }
-    //console.log("optimizer_left_panel_user_selected_final_dict",optimizer_left_panel_user_selected_final_dict)
-    update_global_optimizer_left_pannel_data()
-  }
-}
- function add_commas_min_max_value(this_value){
-  var temp = this_value.value.replace(/,/g, '').replace('$','');
-  this_value.value = '$' + temp.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
-}
- function update_total_limits_min_value(key, this_value){
-  $('#total_budget').val(null);
-  original_min_value = const_unchanged_global_optimizer_left_pannel_data[key][0]
-  original_max_value = const_unchanged_global_optimizer_left_pannel_data[key][1]
-  min_value = this_value.value.replace(/,/g, '').replace('$','');
-  max_value = this_value.nextElementSibling.value.replace(/,/g, '').replace('$','');
-  median_spend = const_unchanged_global_optimizer_left_pannel_data[key][2]
-  if(min_value < original_min_value || min_value >= original_max_value){
-    console.log("Min value lower than the given bound values or higer than the max value")
-    this_value.value = original_min_value
-  }
-  else{
-    if (global_is_cpm_checked){
-      cpm_value = this_value.parentElement.nextElementSibling.children[0].value;
-      update_user_selected_final_dict(key, min_value, max_value, median_spend, -100, 200, cpm_value)
-    }
-    else{
-      update_user_selected_final_dict(key, min_value, max_value, median_spend, -100, 200, 0)
-    }
-  }
- }
-function update_total_limits_max_value(key, this_value){
-  $('#total_budget').val(null);
-  console.log("this_value", this_value)
-  original_min_value = const_unchanged_global_optimizer_left_pannel_data[key][0]
-  original_max_value = const_unchanged_global_optimizer_left_pannel_data[key][1]
-  min_value = this_value.previousElementSibling.value.replace(/,/g, '').replace('$','');
-  max_value = this_value.value.replace(/,/g, '').replace('$','');
-  median_spend = const_unchanged_global_optimizer_left_pannel_data[key][2]
-  if(max_value > original_max_value || max_value <= original_min_value){
-    console.log("Max value higer than the given bound values or lower than the min value")
-    this_value.value = original_max_value
-  }
-  else{
-    if (global_is_cpm_checked){
-      cpm_value = this_value.nextElementSibling.value
-      update_user_selected_final_dict(key, min_value, max_value,median_spend , -100, 200, cpm_value)
-    }
-    else{
-      update_user_selected_final_dict(key, min_value, max_value, median_spend, -100, 200, 0)
-      
-    }
-  }
-}
-// function to max values update left pannel inputs if it is in percentages
-function update_total_limits_max_value_perc(key, this_value){
-  $('#total_budget').val(null);
-  min_perc_value = parseInt(this_value.parentElement.previousElementSibling.previousElementSibling.children[0].value);
-  max_perc_value = parseInt(this_value.value);
-  median_spend = global_optimizer_left_pannel_data[key][2]
-  if(max_perc_value > 200 || max_perc_value < -100){
-    alert("Max percentage cannot be higher than 200% or lower than -100%")
-    this_value.value = "200";
-    return;
-  }else if(max_perc_value < min_perc_value){
-    alert("Max percentage cannot be lower than Min percentage")
-    this_value.value = "200";
-    return;
-  }else{
-    min_value = median_spend + ((min_perc_value/100)* median_spend);
-    max_value = median_spend + ((max_perc_value/100) * median_spend);
-    if (global_is_cpm_checked){
-      cpm_value = this_value.parentElement.nextElementSibling.children[0].value;
-      update_user_selected_final_dict(key, min_value, max_value, median_spend ,min_perc_value, max_perc_value, cpm_value)
-    }
-    else{
-      update_user_selected_final_dict(key, min_value, max_value, median_spend ,min_perc_value, max_perc_value, 0) 
-    }
-  }
-}
-// function to min values update left pannel inputs if it is in percentages
-function update_total_limits_min_value_perc(key, this_value){
-  $('#total_budget').val(null);
-  min_perc_value = parseInt(this_value.value);
-  max_perc_value = parseInt(this_value.parentElement.nextElementSibling.nextElementSibling.children[0].value);
-  median_spend = global_optimizer_left_pannel_data[key][2]
-
-  if(min_perc_value < -100 || min_perc_value > 200){
-    alert("Min percentage cannot be lower than -100% or higher than 200%")
-    this_value.value = "-100";
-  }else if(min_perc_value == max_perc_value){
-    alert("Min and Max percentage can never be equal")
-    this_value.value = "-100";
-    return;
-  }else if(max_perc_value < min_perc_value){
-    alert("Max percentage cannot be lower than Min percentage")
-    this_value.value = "-100";
-    return;
-  }else{
-    min_value = median_spend + ((min_perc_value/100) * median_spend)
-    max_value = median_spend + ((max_perc_value/100) * median_spend)
-    if (global_is_cpm_checked){
-      cpm_value = this_value.parentElement.nextElementSibling.children[0].value;
-      update_user_selected_final_dict(key, min_value, max_value, median_spend, min_perc_value, max_perc_value, cpm_value)
-    }
-    else{
-      update_user_selected_final_dict(key, min_value, max_value, median_spend, min_perc_value, max_perc_value, 0) 
-    }
-  }
-}
-
-
- function update_cpm_value_with_min_max(key, this_value){
-  $('#total_budget').val(null);
-  cpm_value = this_value.value
-  global_optimizer_left_pannel_data[key][5] = parseInt(cpm_value)
-  console.log("CPM updated global_optimizer_left_pannel_data", global_optimizer_left_pannel_data)
-  // console.log("CPM updated this_value", $(this_value).siblings())
- }
- // these functions will set the values of all min max percentages at once 
- function change_all_max_perc_values(event,this_value){
-    if(event.type === 'blur' || event.key === 'Enter' || event.key === 'Tab' ){
-      var value_to_set = parseInt(this_value.value);
-      min_all_value = parseInt(document.getElementById('min_all_value').value);
-      if(isNaN(value_to_set)){
-        alert('Please enter valid integer value')
-        this_value.value = "200";
-        return;
+    // select All dimemsions functionality in case of absolute values
+    $('#selectAll').change(function(){
+      select_all_check = this.checked
+      $('.input_checkbox').each(function(){
+          if(select_all_check == true)
+              this.checked = true
+          else
+              this.checked = false
+      })
+       // upating the budget ranges
+       if(flag_to_show_grouped_dimensions != 1)
+        update_global_optimizer_left_pannel_data()
+       else {
+        closeNav();
+        $('#open_nav_rightside').prop('disabled',!select_all_check)
+        $('.input_checkbox_group_constraint').each(function(index,obj){
+          // this will disable/ enable the checkboxes dynamically
+            this.checked = select_all_check;
+            this.disabled = !select_all_check;
+            // removing the key temporarily if user has deselected the dimension from left panel
+            if(select_all_check == false){
+              temporary_grouped_optimizer_left_panel_data[this.name] = global_grouped_optimizer_left_panel_data[this.name]
+              delete global_grouped_optimizer_left_panel_data[this.name]
+            }else{
+            global_grouped_optimizer_left_panel_data[this.name] = temporary_grouped_optimizer_left_panel_data[this.name]
+            }
+            obj.dispatchEvent(
+                new Event('change',{
+                bubbles:true
+              })
+            );
+        })
       }
-      if(value_to_set > 200 || value_to_set < -100){
+  })
+    // select All dimensions functionality in case of percentages
+    $('#selectAll_perc').change(function(){
+      select_all_check = this.checked
+      $('.input_checkbox_perc').each(function(){
+          if(select_all_check == true)
+              this.checked = true
+          else
+              this.checked = false
+      })
+      if(flag_to_show_grouped_dimensions != 1)
+      update_global_optimizer_left_pannel_data()
+      else {
+        closeNav();
+       $('#open_nav_rightside').prop('disabled',!select_all_check)
+      $('.input_checkbox_group_constraint').each(function(index,obj){
+        // this will disable/ enable the checkboxes dynamically
+          this.checked = select_all_check;
+          this.disabled = !select_all_check;
+          // removing the key temporarily if user has deselected the dimension from left panel
+          if(select_all_check == false){
+            temporary_grouped_optimizer_left_panel_data[this.name] = global_grouped_optimizer_left_panel_data[this.name]
+            delete global_grouped_optimizer_left_panel_data[this.name]
+          }else{
+          global_grouped_optimizer_left_panel_data[this.name] = temporary_grouped_optimizer_left_panel_data[this.name]
+          }
+          obj.dispatchEvent(
+              new Event('change',{
+              bubbles:true
+            })
+          );
+      })
+    }
+  })
+  // updating the left panel data and conversion on if user changes any selection
+      $('.input_checkbox').change(function(){
+        // functionality to change the values / checkboxes on right hand side
+        input_checkbox_value  = this.checked;
+        input_checkbox_name = this.name
+        selectedDimensions = getSelectedDimensions()
+        selectedDimensions.length == 0 ?
+        $('#open_nav_rightside').prop('disabled', true):
+        $('#open_nav_rightside').prop('disabled', false);
+         // close the navbar if open in this case no of selected dimensions should be zero
+        if(flag_to_show_grouped_dimensions != 1)
+          update_global_optimizer_left_pannel_data()
+        else{
+        if(selectedDimensions.length == 0)
+          closeNav()
+        $('.input_checkbox_group_constraint').each(function(index,obj){
+          if(input_checkbox_name == this.name){
+            // this will disable/ enable the checkboxes dynamically
+              this.checked = input_checkbox_value;
+              this.disabled = !input_checkbox_value;
+              // removing the key temporarily if user has deselected the dimension from left panel
+              if(input_checkbox_value == false){
+                temporary_grouped_optimizer_left_panel_data[input_checkbox_name] = global_grouped_optimizer_left_panel_data[input_checkbox_name]
+                delete global_grouped_optimizer_left_panel_data[input_checkbox_name]
+              }else{
+              global_grouped_optimizer_left_panel_data[input_checkbox_name] = temporary_grouped_optimizer_left_panel_data[input_checkbox_name]
+              }
+              obj.dispatchEvent(
+                  new Event('change',{
+                  bubbles:true
+                })
+              );
+            }
+          })
+        }
+      })
+      $('.input_checkbox_perc').change(function(){
+        // functionality to change the values / checkboxes on right hand side
+       input_checkbox_value  = this.checked;
+        input_checkbox_name = this.name;
+        selectedDimensions = getSelectedDimensions()
+        selectedDimensions.length == 0 ?
+        $('#open_nav_rightside').prop('disabled', true):
+        $('#open_nav_rightside').prop('disabled', false);
+        if(flag_to_show_grouped_dimensions != 1)
+          update_global_optimizer_left_pannel_data()
+        else{
+          // close the navbar if open in this case no of selected dimensions should be zero
+        if(selectedDimensions.length == 0)
+          closeNav()
+        $('.input_checkbox_group_constraint').each(function(index, obj){
+          if(input_checkbox_name == this.name){
+            // this will disable/ enable the checkboxes dynamically
+              this.checked = input_checkbox_value;
+              this.disabled = !input_checkbox_value;
+              if(input_checkbox_value == false){
+                temporary_grouped_optimizer_left_panel_data[input_checkbox_name] = global_grouped_optimizer_left_panel_data[input_checkbox_name]
+                delete global_grouped_optimizer_left_panel_data[input_checkbox_name]
+                // close the navbar if open in this case no of selected dimensions should be zero
+                }else{
+                  global_grouped_optimizer_left_panel_data[input_checkbox_name] = temporary_grouped_optimizer_left_panel_data[input_checkbox_name]
+                }
+                obj.dispatchEvent(
+                  new Event('change',{
+                  bubbles:true
+                })
+              );
+            }
+          })
+        }
+      })
+    // function to get selected dimensions
+    function getSelectedDimensions(){
+      checked_dimensions = [];
+      type_of_input = document.getElementById('customSwitch1').checked == true ? 'perc' : 'abs';
+        if(type_of_input  == 'abs'){
+              $('.input_checkbox:checked').each(function(){
+                  checked_dimensions.push(this.name)
+              })
+            }else{
+              $('.input_checkbox_perc:checked').each(function(){
+                  checked_dimensions.push(this.name)
+              })
+            }
+        return checked_dimensions;
+        }
+    // function to change input budget values on selection or unselection
+    function selectDeselectGroupedDimensions(this_value,key){
+      // changing budget as per user selection and deselection
+      var dimensionBudget = 0;
+      var dimensionMinBudget = 0;
+      var sub_dimension_array = [];
+      var dimensionObjectSiblings = this_value.parentElement.parentElement.children;
+      var dimensionBudgetDiv = this_value.parentElement.parentElement.previousElementSibling.children[1].children[1]
+      var dimensionMinBudgetDiv = this_value.parentElement.parentElement.previousElementSibling.children[1].children[0]
+      for(let i=0;i<dimensionObjectSiblings.length;i++){
+          if(dimensionObjectSiblings[i].children[0].checked == true)
+            sub_dimension_array.push(dimensionObjectSiblings[i].children[1].innerText)
+      }
+      sub_dimension_array.forEach((key)=>{
+        dimensionMinBudget += global_optimizer_left_pannel_data[key][0]
+        dimensionBudget += global_optimizer_left_pannel_data[key][1]
+      })
+    dimensionBudgetDiv.value ='$' + dimensionBudget.toString().replace("$","").replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");;
+    dimensionMinBudgetDiv.value = '$' + dimensionMinBudget.toString().replace("$","").replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");;
+    // updating the dictionary
+    global_grouped_optimizer_left_panel_data[key] = {
+     'constraints':[parseInt(dimensionMinBudget),parseInt(dimensionBudget)],
+     'fixed_ranges':[parseInt(dimensionMinBudget),parseInt(dimensionBudget)],
+     'sub_dimension':sub_dimension_array
+    }
+    const_unchanged_global_grouped_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_grouped_optimizer_left_panel_data))
+    update_global_optimizer_left_pannel_data(investment_range_to_be_called = true)
+  }
+    // function to reset the inputs
+    function reset_inputs(){
+      $('.input_checkbox_group_constraint').each(function(index,element){
+        element.checked = true;
+        element.disabled = false;
+      })
+      $('.group_channel_min_budget').each(function(index,element){
+        original_min_value = original_global_grouped_optimizer_left_pannel_data[element.name]["fixed_ranges"][0]
+        element.value = "$" + original_min_value.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+      })
+      $('.group_channel_max_budget').each(function(index,element){
+        original_max_value =  original_global_grouped_optimizer_left_pannel_data[element.name]["fixed_ranges"][1]
+        element.value = "$" + original_max_value.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+      })
+      // make the grouped panel dictionary same as original one
+      global_grouped_optimizer_left_panel_data  = JSON.parse(JSON.stringify(original_global_grouped_optimizer_left_pannel_data))
+    }
+    // function to display percentage inputs and hide absolute inputs
+    function change_input_type_to_percentages(this_value){
+      if(this_value.checked){
+        $('#labels_div_percentages').css('display','flex')
+        $('#labels_div_absolute').css('display','none')
+        document.getElementById('custom-label').innerHTML = 'Toggle to enter input in absolute values' ;
+        $('#outer_div_multiple_inputs').hide()
+        $('#to_populate_multiple_inputs').css('display','flex');
+        $('#outer_div_multiple_inputs_percentages').show().trigger('show');
+        $('.max_perc_value').val('200')
+        $('.min_perc_value').val('-100')
+        global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(original_optimizer_left_pannel_data));
+        if(flag_to_show_grouped_dimensions == 1){
+          // reseting the right hand side input if user changes the type of input
+            reset_inputs()
+        }
+      }else {
+        $('#labels_div_percentages').css('display','none')
+        $('#labels_div_absolute').css('display','flex')
+        document.getElementById('custom-label').innerHTML = 'Toggle to enter input in percentages';
+        $('#outer_div_multiple_inputs').show()
+        $('#to_populate_multiple_inputs').css('display','none')
+        $('#outer_div_multiple_inputs_percentages').hide();
+        // reloading the browser to refresh all inputs
+        location.reload()
+        if(flag_to_show_grouped_dimensions == 1){
+           // reseting the right hand side input if user changes the type of input
+            reset_inputs()
+        }
+      }
+      $('#total_budget').val(null)
+      $('#total_days').val(null)
+      total_budget.setAttribute('placeholder','Total Budget Range')
+    }
+    // function to show fixed budget div
+    function show_fixed_budget_div(){
+      if(fixed_budget_div_open == true){
+        $('#plus-icon').removeClass('fa-plus-square').addClass('fa-minus-square')
+        $('#fixed_inputs_div').css('display','block');
+      }else{
+        $('#plus-icon').removeClass('fa-minus-square').addClass('fa-plus-square')
+        $('#fixed_inputs_div').css('display','none');
+      }
+      fixed_budget_div_open = !fixed_budget_div_open
+    }
+    // function for performing left panel dimension search
+    function search_dimension_names(this_value){
+      let character_to_searched = this_value.value;
+      var type_of_input = document.getElementById('customSwitch1').checked == true ? 'perc' : 'abs';
+      class_name = type_of_input == 'abs' ? '.optimizer_left_panel_dimension_name': '.optimizer_left_panel_dimension_name_perc'
+      $(class_name).each(function(index,element){
+        character_present = element.innerHTML.replaceAll('&amp;','&');
+        if(character_present.includes(character_to_searched)){
+          element.parentElement.style.display = 'flex';
+          element.parentElement.nextElementSibling.style.display = "flex"
+        }else{
+          element.parentElement.style.display = 'none';
+          element.parentElement.nextElementSibling.style.display = "none"
+        }
+      })
+    }
+
+    // function to search dimensions in table
+    function search_dimensions_table(this_value){
+      let filter = this_value.value;
+      table = document.getElementById("table_1_optimizer");
+      tr = table.getElementsByTagName("tr");
+      for(let i = 1 ; i < tr.length ; i++){
+        td = tr[i].getElementsByTagName('td')[0];
+        txtValue = td.textContent || td.innerText;
+        if(txtValue.indexOf(filter) > -1)
+          tr[i].style.display = "table-row";
+        else
+          tr[i].style.display = "none";
+      }
+    }
+
+    {% comment %}
+      document.getElementById("newsectionbtn").onclick = function ()
+
+        var container = document.getElementById("multiple_inputs");
+        var section = document.getElementById("multiple_inputs_append");
+        if (container.children.length <= 10) {
+          container.appendChild(section.cloneNode(true));
+          let min_max_div_node_list = document.querySelectorAll('#min_max_div')
+          min_max_div_node_list[min_max_div_node_list.length - 1].children[0].value = ""
+          min_max_div_node_list[min_max_div_node_list.length - 1].children[1].value = ""
+        }else{
+          //add error message here
+        }
+      } {% endcomment %}
+
+      // DOM Selectors
+      total_budget = document.getElementById('total_budget')
+
+      id_stringified_optimizer_left_pannel_data = document.getElementById('id_stringified_optimizer_left_pannel_data')
+      id_stringified_grouped_optimizer_left_pannel_data = document.getElementById('id_stringified_grouped_optimizer_left_pannel_data')
+      get_all_the_key_value = document.querySelectorAll('.get_all_the_key_value')
+      let table_body_1_optimizer = document.querySelector(".table_body_1_optimizer");
+      let summary_metric_table = document.querySelector(".summary_metric_table");
+
+
+
+      {% comment %} global variables  {% endcomment %}
+      {% comment %} stringified_optimizer_left_pannel_data = {{stringified_optimizer_left_pannel_data}} {% endcomment %}
+      optimizer_left_panel_min_value = 0
+      optimizer_left_panel_max_value = 0
+      global_range_min = 0
+      global_range_max = 0
+      optimizer_left_panel_number_of_days = 1
+      optimizer_left_panel_total_budget = 0
+      optimizer_left_panel_user_selected_final_dict = {}
+      global_optimizer_download_csv_json = null
+      json_table_1_data = {};
+      dict_donut_chart_data = {};
+      global_start_date = "02/01/21"
+      global_end_date = "02/28/21"
+      global_is_cpm_checked = {{cpm_checked}}
+      arr = JSON.parse(id_stringified_optimizer_left_pannel_data.innerHTML)
+      global_optimizer_left_pannel_data  = JSON.parse(JSON.stringify(arr).replaceAll('&amp;', '&' ));
+      original_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data))
+      const_unchanged_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(arr).replaceAll('&amp;', '&' ));
+      flag_to_show_grouped_dimensions = {{flag_to_show_grouped_dimensions}}
+      if(flag_to_show_grouped_dimensions == 1){
+        global_grouped_optimizer_left_panel_data = JSON.parse(id_stringified_grouped_optimizer_left_pannel_data.innerHTML)
+        const_unchanged_global_grouped_optimizer_left_pannel_data = JSON.parse(id_stringified_grouped_optimizer_left_pannel_data.innerHTML);
+        original_global_grouped_optimizer_left_pannel_data = JSON.parse(id_stringified_grouped_optimizer_left_pannel_data.innerHTML);
+      }
+      let temporary_grouped_optimizer_left_panel_data  = {}
+      global_seasonality = {{seasonality}}
+      let global_chart_colors = ["#45B8AC", "#EFC050", "#5B5EA6", "#9B2335", "#DFCFBE", "#98B4D4", "#34568B", "#6B5B95","#88B04B","#F7CAC9","#92A8D1", "#955251", "#B565A7", "#009B77", "#DD4124", "#D65076"];
+      let global_sum_fixed_budget_values = 0;
+      let discarded_dimensions_json = {};
+      let fixed_budget_div_open = false;
+      {% comment %} Graphs and Charts variables  {% endcomment %}
+      global_my_optimizer_bar_chart = 0
+      global_optimizer_cpa_bar_chart = 0
+      global_my_optimizer_target_bar_chart = 0
+      global_my_optimizer_line_chart = 0
+      validation_of_inputs = false
+      console.log("global_seasonality", global_seasonality)
+
+      $(window).on('load',function(){
+        $('#optimizer-btn').addClass('active')
+        $('#explorer-btn').removeClass('active')
+        $('#predictor-btn').removeClass('active')
+        $('.min_value , .max_value , .fixed_budget_input , .group_channel_max_budget, .group_channel_min_budget').each(function(i,obj){
+          obj.value = '$' + obj.value.toString().replace("$","").replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+        })
+        $('.cpm_value , .cpm_perc_value').each(function(i,obj){
+          obj.value = Math.round(obj.value);
+        })
+        $('#optimizer_date_picker').daterangepicker({
+            startDate: moment(),
+            endDate: moment().add(5, 'day'),
+            locale: {
+                format: 'MM/DD/YYYY'
+            }
+          });
+        // renaming the table column (conversion)
+        var table_element0 = document.getElementById('table_1_optimizer').
+                      children[0].children[0].children[7];
+        var table_element1 = document.getElementById('table_1_optimizer').
+                      children[0].children[0].children[8];
+        var table_element2 = document.getElementById('table_1_optimizer').
+                      children[0].children[0].children[9];
+        var table_element3 = document.getElementById('table_1_optimizer').
+                      children[0].children[0].children[10];
+        if(get_is_weekly_selected() == 1 || get_convert_to_weekly_data() == 1)
+          table_element0.innerText = window.localStorage.getItem('target_selector') + " per week";
+        else
+          table_element0.innerText = window.localStorage.getItem('target_selector') + " per day";
+        table_element1.innerText = "Overall " + window.localStorage.getItem('target_selector');
+        table_element2.innerText = "% of " + window.localStorage.getItem('target_selector');
+        constraint_type = window.localStorage.getItem('constraint_type')
+        table_element3.innerText = window.localStorage.getItem('target_selector') + " at Original " + constraint_type +" Allocation %";
+        $('#optimizer_date_picker').on("apply.daterangepicker", function (ev, picker) {
+          $('#total_budget').val(null);
+          global_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
+          global_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
+          date_format_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate._d;
+          date_format_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate._d;
+          let diff_time = Math.abs(date_format_end_date - date_format_start_date)
+          let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
+          update_number_of_days(diff_days)
+          console.log(`\n global_start_date : ${global_start_date}
+                      \n global_end_date : ${global_end_date}
+                      \n diff_days : ${diff_days}`)
+        });
+       })
+    // function to get cookies
+    function getCookie(name) {
+        if (!document.cookie) {
+          return null;
+        }
+
+        const xsrfCookies = document.cookie.split(';')
+          .map(c => c.trim())
+          .filter(c => c.startsWith(name + '='));
+
+        if (xsrfCookies.length === 0) {
+          return null;
+        }
+        return decodeURIComponent(xsrfCookies[0].split('=')[1]);
+     }
+
+     function update_user_selected_final_dict(key, min_value, max_value, median_spend,min_perc,max_perc,cpm_value) {
+      //range_min = parseInt(optimizer_left_panel_number_of_days*optimizer_left_panel_min_value)
+      //range_max = parseInt(optimizer_left_panel_number_of_days*optimizer_left_panel_max_value)
+      //total_budget.setAttribute('placeholder', `${range_min} - ${range_max}`)
+      min_value = parseInt(min_value)
+      max_value = parseInt(max_value)
+      cpm_value = parseInt(cpm_value)
+      min_perc =  parseFloat(min_perc)
+      max_perc =  parseFloat(max_perc)
+      max_spend =  parseFloat(median_spend)
+
+      if(min_value >= max_value){
+        error_message = `Min value more than Max value please change min : ${min_value} - max : ${max_value}`
+        alert(error_message)
+        console.warn(error_message)
+      }
+      else{
+        if (global_is_cpm_checked){
+          optimizer_left_panel_user_selected_final_dict[key]=[min_value, max_value, median_spend, min_perc, max_perc, cpm_value]
+        }
+        else{
+          optimizer_left_panel_user_selected_final_dict[key]=[min_value, max_value, median_spend, min_perc, max_perc]
+        }
+        //console.log("optimizer_left_panel_user_selected_final_dict",optimizer_left_panel_user_selected_final_dict)
+        // dispatching event when user changes something on left to reflect changes on right
+        // it should not change if user has not selected dimension grouping
+        // this call is done to update the dimension min max
+        // this call will update the dimension capping constraints
+        if(flag_to_show_grouped_dimensions == 1){
+          update_global_optimizer_left_pannel_data(investment_range_to_be_called = false)
+        $('.input_checkbox_group_constraint').each(function(index,obj){
+          if(key == obj.name){
+                obj.dispatchEvent(
+                  new Event('change',{
+                  bubbles:true
+                })
+              );
+            }
+        })
+      }else{
+        update_global_optimizer_left_pannel_data(investment_range_to_be_called = false)
+      }
+    }
+  }
+    // function to update values in right panel
+    function update_total_limits_min_value_grouped_panel(this_value,key){
+      original_min_value = const_unchanged_global_grouped_optimizer_left_pannel_data[key]["constraints"][0];
+      original_max_value = const_unchanged_global_grouped_optimizer_left_pannel_data[key]["constraints"][1];
+      min_value = this_value.value.replace(/,/g, '').replace('$','');
+      max_value = this_value.nextElementSibling.value.replace(/,/g, '').replace('$','');
+      if(min_value < original_min_value || min_value >= original_max_value){
+        alert("Min value lower than the given bound values or higer than the max value")
+        console.log("Min value lower than the given bound values or higer than the max value")
+        this_value.value = original_min_value
+      }else{
+        global_grouped_optimizer_left_panel_data[key]["constraints"][0] = parseInt(min_value)
+        global_grouped_optimizer_left_panel_data[key]["constraints"][1] = parseInt(max_value)
+      }
+    }
+    // function to update values in right side navbar panel
+    function update_total_limits_max_value_grouped_panel(this_value,key){
+      original_min_value = const_unchanged_global_grouped_optimizer_left_pannel_data[key]["constraints"][0];
+      original_max_value = const_unchanged_global_grouped_optimizer_left_pannel_data[key]["constraints"][1];
+      max_value = this_value.value.replace(/,/g, '').replace('$','');
+      min_value = this_value.previousElementSibling.value.replace(/,/g, '').replace('$','');
+      if(max_value <= original_min_value || max_value > original_max_value){
+        alert("Max value higer than the given bound values or lower than the min value")
+        console.log("Max value higer than the given bound values or lower than the min value")
+        this_value.value = original_max_value
+      }else{
+        global_grouped_optimizer_left_panel_data[key]["constraints"][1] = parseInt(max_value)
+      }
+    update_global_optimizer_left_pannel_data(investment_range_to_be_called=true)
+    }
+     function add_commas_min_max_value(this_value){
+      var temp = this_value.value.replace(/,/g, '').replace('$','');
+      this_value.value = '$' + temp.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+    }
+     function update_total_limits_min_value(key, this_value){
+      $('#total_budget').val(null);
+      original_min_value = const_unchanged_global_optimizer_left_pannel_data[key][0]
+      original_max_value = const_unchanged_global_optimizer_left_pannel_data[key][1]
+      min_value = this_value.value.replace(/,/g, '').replace('$','');
+      max_value = this_value.nextElementSibling.value.replace(/,/g, '').replace('$','');
+      median_spend = const_unchanged_global_optimizer_left_pannel_data[key][2]
+      if(min_value < original_min_value || min_value >= original_max_value){
+        console.log("Min value lower than the given bound values or higer than the max value")
+        this_value.value = original_min_value
+      }
+      else{
+        if (global_is_cpm_checked){
+          cpm_value = this_value.nextElementSibling.nextElementSibling.value
+          update_user_selected_final_dict(key, min_value, max_value, median_spend, -100, 200, cpm_value)
+        }
+        else{
+          update_user_selected_final_dict(key, min_value, max_value, median_spend, -100, 200, 0)
+        }
+      }
+     }
+    function update_total_limits_max_value(key, this_value){
+      $('#total_budget').val(null);
+      console.log("this_value", this_value)
+      original_min_value = const_unchanged_global_optimizer_left_pannel_data[key][0]
+      original_max_value = const_unchanged_global_optimizer_left_pannel_data[key][1]
+      min_value = this_value.previousElementSibling.value.replace(/,/g, '').replace('$','');
+      max_value = this_value.value.replace(/,/g, '').replace('$','');
+      median_spend = const_unchanged_global_optimizer_left_pannel_data[key][2]
+      if(max_value > original_max_value || max_value <= original_min_value){
+        console.log("Max value higer than the given bound values or lower than the min value")
+        this_value.value = original_max_value
+      }
+      else{
+        if (global_is_cpm_checked){
+          cpm_value = this_value.nextElementSibling.value
+          update_user_selected_final_dict(key, min_value, max_value,median_spend , -100, 200, cpm_value)
+        }
+        else{
+          update_user_selected_final_dict(key, min_value, max_value, median_spend, -100, 200, 0)
+
+        }
+
+      }
+    }
+    // function to max values update left pannel inputs if it is in percentages
+    function update_total_limits_max_value_perc(key, this_value){
+      $('#total_budget').val(null);
+      min_perc_value = parseInt(this_value.parentElement.previousElementSibling.previousElementSibling.children[0].value);
+      max_perc_value = parseInt(this_value.value);
+      median_spend = global_optimizer_left_pannel_data[key][2]
+      if(max_perc_value > 200 || max_perc_value < -100){
         alert("Max percentage cannot be higher than 200% or lower than -100%")
         this_value.value = "200";
         return;
-      }
-      if(value_to_set <= min_all_value){
-        if(value_to_set == min_all_value)
-          alert('Min and Max percentage cannot be equal')
-        else
-          alert('Min percentage cannot be higher than Max percentage')
+      }else if(max_perc_value < min_perc_value){
+        alert("Max percentage cannot be lower than Min percentage")
         this_value.value = "200";
         return;
-      }
-      $('.max_perc_value').val(value_to_set);
-      $('.max_perc_value').each(function(index,obj){
-        obj.dispatchEvent(
-          new Event('change',{
-          bubbles:true
-          })
-        );
-      })
-    }else
-      return;
-  }
-  document.onkeydown=function(event)
-    {
-        if(event.keyCode==9)
-        {
-
-            event.preventDefault();
-            return false;
+      }else{
+        min_value = median_spend + ((min_perc_value/100)* median_spend);
+        max_value = median_spend + ((max_perc_value/100) * median_spend);
+        if (global_is_cpm_checked){
+          cpm_value = this_value.parentElement.parentElement.nextElementSibling.children[0].value;
+          update_user_selected_final_dict(key, min_value, max_value, median_spend ,min_perc_value, max_perc_value, cpm_value)
         }
+        else{
+          update_user_selected_final_dict(key, min_value, max_value, median_spend ,min_perc_value, max_perc_value, 0)
+        }
+      }
     }
-  function change_all_min_perc_values(event,this_value){
-    if(event.type === 'blur' || event.key === 'Enter' || event.key === 'Tab'){
-   
-      var value_to_set = parseInt(this_value.value);
-      max_all_value = parseInt(document.getElementById('max_all_value').value);
-      if(isNaN(value_to_set)){
-        alert('Please enter valid integer value')
+    // function to min values update left pannel inputs if it is in percentages
+    function update_total_limits_min_value_perc(key, this_value){
+      $('#total_budget').val(null);
+      min_perc_value = parseInt(this_value.value);
+      max_perc_value = parseInt(this_value.parentElement.nextElementSibling.nextElementSibling.children[0].value);
+      median_spend = global_optimizer_left_pannel_data[key][2]
+
+      if(min_perc_value < -100 || min_perc_value > 200){
+        alert("Min percentage cannot be lower than -100% or higher than 200%")
+        this_value.value = "-100";
+      }else if(min_perc_value == max_perc_value){
+        alert("Min and Max percentage can never be equal")
         this_value.value = "-100";
         return;
-      }
-      if(value_to_set > 200 || value_to_set < -100 ){
-        alert("Min percentage cannot be higher than 200% or lower than -100%")
+      }else if(max_perc_value < min_perc_value){
+        alert("Max percentage cannot be lower than Min percentage")
         this_value.value = "-100";
         return;
+      }else{
+        min_value = median_spend + ((min_perc_value/100) * median_spend)
+        max_value = median_spend + ((max_perc_value/100) * median_spend)
+        if (global_is_cpm_checked){
+          cpm_value = this_value.parentElement.parentElement.nextElementSibling.children[0].value;
+          update_user_selected_final_dict(key, min_value, max_value, median_spend, min_perc_value, max_perc_value, cpm_value)
+        }
+        else{
+          update_user_selected_final_dict(key, min_value, max_value, median_spend, min_perc_value, max_perc_value, 0)
+        }
       }
-      if(value_to_set >= max_all_value){
-        if(value_to_set == max_all_value)
-         alert('Min and Max percentage cannot be equal')
-        else        
-          alert('Min percentage cannot be higher than Max percentage')
-        this_value.value = "-100";
-        return;
-      }
-      $('.min_perc_value').val(value_to_set);
-      $('.min_perc_value').each(function(index,obj){
-        obj.dispatchEvent(
-          new Event('change',{
-          bubbles:true
+    }
+
+
+     function update_cpm_value_with_min_max(key, this_value){
+      $('#total_budget').val(null);
+      cpm_value = this_value.value
+      global_optimizer_left_pannel_data[key][5] = parseInt(cpm_value)
+      console.log("CPM updated global_optimizer_left_pannel_data", global_optimizer_left_pannel_data)
+      // console.log("CPM updated this_value", $(this_value).siblings())
+     }
+     // these functions will set the values of all min max percentages at once
+     function change_all_max_perc_values(event,this_value){
+        if(event.type === 'blur' || event.key === 'Enter' || event.key === 'Tab' ){
+          var value_to_set = parseInt(this_value.value);
+          min_all_value = parseInt(document.getElementById('min_all_value').value);
+          if(isNaN(value_to_set)){
+            alert('Please enter valid integer value')
+            this_value.value = "200";
+            return;
+          }
+          if(value_to_set > 200 || value_to_set < -100){
+            alert("Max percentage cannot be higher than 200% or lower than -100%")
+            this_value.value = "200";
+            return;
+          }
+          if(value_to_set <= min_all_value){
+            if(value_to_set == min_all_value)
+              alert('Min and Max percentage cannot be equal')
+            else
+              alert('Min percentage cannot be higher than Max percentage')
+            this_value.value = "200";
+            return;
+          }
+          $('.max_perc_value').val(value_to_set);
+          $('.max_perc_value').each(function(index,obj){
+            obj.dispatchEvent(
+              new Event('change',{
+              bubbles:true
+              })
+            );
           })
-        );
+        }else
+          return;
+      }
+      document.onkeydown=function(event)
+        {
+            if(event.keyCode==9)
+            {
+
+                event.preventDefault();
+                return false;
+            }
+        }
+      function change_all_min_perc_values(event,this_value){
+        if(event.type === 'blur' || event.key === 'Enter' || event.key === 'Tab'){
+
+          var value_to_set = parseInt(this_value.value);
+          max_all_value = parseInt(document.getElementById('max_all_value').value);
+          if(isNaN(value_to_set)){
+            alert('Please enter valid integer value')
+            this_value.value = "-100";
+            return;
+          }
+          if(value_to_set > 200 || value_to_set < -100 ){
+            alert("Min percentage cannot be higher than 200% or lower than -100%")
+            this_value.value = "-100";
+            return;
+          }
+          if(value_to_set >= max_all_value){
+            if(value_to_set == max_all_value)
+             alert('Min and Max percentage cannot be equal')
+            else
+              alert('Min percentage cannot be higher than Max percentage')
+            this_value.value = "-100";
+            return;
+          }
+          $('.min_perc_value').val(value_to_set);
+          $('.min_perc_value').each(function(index,obj){
+            obj.dispatchEvent(
+              new Event('change',{
+              bubbles:true
+              })
+            );
+          })
+        }else
+          return;
+      }
+    function update_number_of_days(value){
+      $('#total_budget').val(null);
+      optimizer_left_panel_number_of_days = parseInt(value)
+      update_global_optimizer_left_pannel_data()
+      //total_budget.setAttribute('placeholder', `${range_min} - ${range_max}`)
+     }
+     function add_commas(value) {
+          // this function runs on onkeyup which means when user releases a key
+          budgetHTML = document.getElementById('total_budget');
+          // removing all placed previous commas
+          var temp = budgetHTML.value.replace(/,/g, '').replace('$','');
+          // place new commas as per US format
+          budgetHTML.value = '$' + temp.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+      }
+      function check_keys(){
+        budget = document.getElementById('total_budget').value;
+        var clean = budget.replace(/,/g, '').replace('$','');
+
+        // don't move cursor to end if no change
+        if(isNaN(clean)) {
+          document.getElementById('total_budget').value = '';
+        }
+        if(clean = ''){
+          alert('Budget cannot be blank')
+          document.getElementById('total_budget').value = '';
+        }
+      }
+      function validate_plan_name(this_value){
+        value =  this_value.value;
+        var format = /[ `!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/;
+
+        // check for validations
+        if(value == ''){
+          alert('Plan name cannot be blank')
+          this_value.value = '';
+          return;
+        }
+        if(format.test(value)){
+          this_value.value = '';
+          alert('No special characters allowed')
+          return;
+        }
+        if(value.length >50 || value.length < 4) {
+          this_value.value = '';
+          alert('Plan name must be Maximum 50 characters and minimum of 3 characters')
+          return;
+        }
+      }
+      function check_keys_min_max_value(this_value){
+        var value = this_value.value;
+        var clean = value.replace(/,/g, '').replace('$','');
+        if(isNaN(clean)) {
+          this_value.value = '';
+        }
+      }
+     function update_budget(this_value){
+      optimizer_left_panel_total_budget = parseInt(this_value.value.replace(/,/g, '').replace('$',''));
+      console.log("optimizer_left_panel_total_budget",optimizer_left_panel_total_budget)
+      if(optimizer_left_panel_total_budget < global_range_min || optimizer_left_panel_total_budget > global_range_max){
+        this_value.value = global_range_min
+        alert("Please enter a Budget with in specified range, reseting to minimum butget value")
+        return
+      }
+      var budget_per_day_week = optimizer_left_panel_total_budget/optimizer_left_panel_number_of_days;
+      if(get_is_weekly_selected() == 1 || get_convert_to_weekly_data() == 1)
+        document.getElementById('budget_per_day_text').innerText = 'Investment per week : '
+               +   `$ ${Math.round(budget_per_day_week).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
+      else
+        document.getElementById('budget_per_day_text').innerText = 'Investment per day : '
+               +   `$ ${Math.round(budget_per_day_week).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
+     }
+     function update_investment_range(){
+      // updating the global optimizer data
+      selectedDimensions = getSelectedDimensions()
+      for (let key in global_optimizer_left_pannel_data){
+        if(selectedDimensions.indexOf(key) != -1){
+          if (key in optimizer_left_panel_user_selected_final_dict){
+            global_optimizer_left_pannel_data[key] = optimizer_left_panel_user_selected_final_dict[key]
+          }
+        }
+      }
+      stringified_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data).replaceAll('&amp;', '&'));
+      stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(global_grouped_optimizer_left_panel_data)
+      var dimension_keys = Object.keys(stringified_global_optimizer_left_pannel_data)
+      // splicing the elements at 2 , 3 , 4
+      const removeValFromIndex = [2 , 3, 4];
+      const indexSet = new Set(removeValFromIndex);
+      dimension_keys.forEach((key)=>{
+        stringified_global_optimizer_left_pannel_data[key] =
+        stringified_global_optimizer_left_pannel_data[key].filter((value, i) => !indexSet.has(i));
       })
-    }else
-      return;
-  }
-function update_number_of_days(value){
-  $('#total_budget').val(null);
-  optimizer_left_panel_number_of_days = parseInt(value)
-  update_global_optimizer_left_pannel_data()
-  //total_budget.setAttribute('placeholder', `${range_min} - ${range_max}`)
- }
- function add_commas(value) {
-      // this function runs on onkeyup which means when user releases a key
-      budgetHTML = document.getElementById('total_budget');
-      // removing all placed previous commas 
-      var temp = budgetHTML.value.replace(/,/g, '').replace('$','');
-      // place new commas as per US format
-      budgetHTML.value = '$' + temp.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
-  }
-  function check_keys(){
-    budget = document.getElementById('total_budget').value;
-    var clean = budget.replace(/,/g, '').replace('$','');
-                          
-    // don't move cursor to end if no change
-    if(isNaN(clean)) {
-      document.getElementById('total_budget').value = '';
+      // re stringifiying the json
+      stringified_global_optimizer_left_pannel_data = JSON.stringify(stringified_global_optimizer_left_pannel_data)
+      isolated_dimensions = getIsolatedDimensionsFromGroup()
+      data_to_submit =  {
+        dimension_capping_constraints:stringified_global_grouped_optimizer_left_pannel_data,
+        dimension_min_max:stringified_global_optimizer_left_pannel_data,
+        isolated_dimensions:isolated_dimensions.toString(),
+        selected_dimensions:selectedDimensions.toString()
+      }
+      $.ajax({
+        url: '/optimizer/ajax/investment_range_for_group_dimension_constraints/',
+        data: JSON.stringify(data_to_submit),
+        type : 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        success:function(data){
+          investment_ranges = data.investment_ranges;
+          global_sum_fixed_budget_values = 0;
+          $('.fixed_budget_input').each(function(i,obj){
+             discarded_dimensions_json[obj.name] = parseInt(obj.value.replace(/,/g, '').replace('$',''));
+             global_sum_fixed_budget_values += parseInt(obj.value.replace(/,/g, '').replace('$',''));
+          })
+          optimizer_left_panel_min_value = investment_ranges[0] + global_sum_fixed_budget_values
+          optimizer_left_panel_max_value = investment_ranges[1] + global_sum_fixed_budget_values
+          global_range_min = parseInt(optimizer_left_panel_number_of_days * optimizer_left_panel_min_value)
+          global_range_max = parseInt(optimizer_left_panel_number_of_days * optimizer_left_panel_max_value)
+          total_budget.setAttribute('placeholder',
+          `$${global_range_min.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")} -
+           $${global_range_max.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`)
+          console.log("success")
+        },error:function(error){
+            console.log(error)
+        }
+      })
+     }
+     function update_global_optimizer_left_pannel_data(investment_range_to_be_called = false){
+      //console.log("global_optimizer_left_pannel_data", global_optimizer_left_pannel_data)
+      sum_min_values = 0
+      sum_max_values = 0
+      // get the selected checked dimensions
+      if(flag_to_show_grouped_dimensions == 1 && investment_range_to_be_called == true){
+        update_investment_range()
+      }else{
+          selectedDimensions = getSelectedDimensions()
+          if(global_seasonality){
+          date_format_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate._d;
+          date_format_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate._d;
+          let diff_time = Math.abs( date_format_end_date - date_format_start_date)
+          let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
+          optimizer_left_panel_number_of_days = diff_days;
+        }
+        type_of_input = document.getElementById('customSwitch1').checked == true ? 'perc' : 'abs';
+        for (let key in global_optimizer_left_pannel_data){
+          if(selectedDimensions.indexOf(key) != -1){
+          if (key in optimizer_left_panel_user_selected_final_dict){
+            global_optimizer_left_pannel_data[key] = optimizer_left_panel_user_selected_final_dict[key]
+          }
+          if(type_of_input == 'abs'){
+            min_values = global_optimizer_left_pannel_data[key][0]
+            max_values = global_optimizer_left_pannel_data[key][1]
+          }else{
+            min_values =  Math.floor(global_optimizer_left_pannel_data[key][2] +
+            global_optimizer_left_pannel_data[key][2]*((global_optimizer_left_pannel_data[key][3])/100))
+            max_values =  Math.floor(global_optimizer_left_pannel_data[key][2] +
+            global_optimizer_left_pannel_data[key][2]*((global_optimizer_left_pannel_data[key][4])/100))
+            // updating the maximum and minmum values in data
+            global_optimizer_left_pannel_data[key][0] = min_values
+            global_optimizer_left_pannel_data[key][1] = max_values
+          }
+          sum_min_values += min_values
+          sum_max_values += max_values
+        }
+      }
     }
-    if(clean = ''){
-      alert('Budget cannot be blank')
-      document.getElementById('total_budget').value = '';
+      // append the range for fixed budget
+      global_sum_fixed_budget_values = 0;
+      $('.fixed_budget_input').each(function(i,obj){
+         discarded_dimensions_json[obj.name] = parseInt(obj.value.replace(/,/g, '').replace('$',''));
+         global_sum_fixed_budget_values += parseInt(obj.value.replace(/,/g, '').replace('$',''));
+      })
+      optimizer_left_panel_min_value = sum_min_values + global_sum_fixed_budget_values
+      optimizer_left_panel_max_value = sum_max_values + global_sum_fixed_budget_values
+      global_range_min = parseInt(optimizer_left_panel_number_of_days * optimizer_left_panel_min_value)
+      global_range_max = parseInt(optimizer_left_panel_number_of_days * optimizer_left_panel_max_value)
+      total_budget.setAttribute('placeholder',
+      `$${global_range_min.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")} -
+       $${global_range_max.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`)
     }
-  }
-  function validate_plan_name(this_value){
-    value =  this_value.value;
-    var format = /[ `!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/;
-                          
-    // check for validations
-    if(value == ''){
-      alert('Plan name cannot be blank')
-      this_value.value = '';
-      return;
-    }
-    if(format.test(value)){
-      this_value.value = '';
-      alert('No special characters allowed')
-      return;
-    }
-    if(value.length >50 || value.length < 4) {
-      this_value.value = '';
-      alert('Plan name must be Maximum 50 characters and minimum of 3 characters')
-      return;
-    }
-  }
-  function check_keys_min_max_value(this_value){
-    var value = this_value.value;
-    var clean = value.replace(/,/g, '').replace('$','');
-    if(isNaN(clean)) {
-      this_value.value = '';
-    }
-  }
- function update_budget(this_value){
-  optimizer_left_panel_total_budget = parseInt(this_value.value.replace(/,/g, '').replace('$',''));
-  console.log("optimizer_left_panel_total_budget",optimizer_left_panel_total_budget)
-  if(optimizer_left_panel_total_budget < global_range_min || optimizer_left_panel_total_budget > global_range_max){
-    this_value.value = global_range_min
-    alert("Please enter a Budget with in specified range, reseting to minimum butget value")
-    return
-  }
- }
- 
- function update_global_optimizer_left_pannel_data(){
-  //console.log("global_optimizer_left_pannel_data", global_optimizer_left_pannel_data)
-  sum_min_values = 0
-  sum_max_values = 0
-  if(global_seasonality){
-    date_format_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate._d;
-      date_format_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate._d;
-      let diff_time = Math.abs( date_format_end_date - date_format_start_date)
-      let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
-      optimizer_left_panel_number_of_days = diff_days;
-  }
-  type_of_input = document.getElementById('customSwitch1').checked == true ? 'perc' : 'abs';
-  for (let key in global_optimizer_left_pannel_data){
-    if (key in optimizer_left_panel_user_selected_final_dict){
-      global_optimizer_left_pannel_data[key] = optimizer_left_panel_user_selected_final_dict[key]
-    }
-    if(type_of_input == 'abs'){
-      min_values = global_optimizer_left_pannel_data[key][0]
-      max_values = global_optimizer_left_pannel_data[key][1]
-    }else{
-      min_values =  Math.floor(global_optimizer_left_pannel_data[key][2] +  
-      global_optimizer_left_pannel_data[key][2]*((global_optimizer_left_pannel_data[key][3])/100))
-      max_values =  Math.floor(global_optimizer_left_pannel_data[key][2] +  
-      global_optimizer_left_pannel_data[key][2]*((global_optimizer_left_pannel_data[key][4])/100))
-      // updating the maximum and minmum values in data
-      global_optimizer_left_pannel_data[key][0] = min_values 
-      global_optimizer_left_pannel_data[key][1] = max_values
-    }
-    sum_min_values += min_values
-    sum_max_values += max_values
-  }
-  // append the range for fixed budget
-  global_sum_fixed_budget_values = 0;
-  $('.fixed_budget_input').each(function(i,obj){
-     discarded_dimensions_json[obj.name] = parseInt(obj.value.replace(/,/g, '').replace('$',''));
-     global_sum_fixed_budget_values += parseInt(obj.value.replace(/,/g, '').replace('$',''));
-  })
-  optimizer_left_panel_min_value = sum_min_values + global_sum_fixed_budget_values 
-  optimizer_left_panel_max_value = sum_max_values + global_sum_fixed_budget_values
-  global_range_min = parseInt(optimizer_left_panel_number_of_days * optimizer_left_panel_min_value)
-  global_range_max = parseInt(optimizer_left_panel_number_of_days * optimizer_left_panel_max_value)
-  total_budget.setAttribute('placeholder',
-  `$${global_range_min.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")} - 
-  $${global_range_max.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`)
- }
-
 </script>
-
 
 {% comment %} on submit {% endcomment %}
 <script>
-  function submit_predictor_left_pannel_chart_inputs() {
-    console.log("inputs submitted")
-    // Final validation before the submit
-    if(!global_seasonality)
-      optimizer_left_panel_total_budget = parseInt(optimizer_left_panel_total_budget) - 
-      global_sum_fixed_budget_values*optimizer_left_panel_number_of_days;
-    else {
-      date_format_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate._d;
-      date_format_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate._d;
-      let diff_time = Math.abs( date_format_end_date - date_format_start_date)
-      let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
-      optimizer_left_panel_total_budget = parseInt(optimizer_left_panel_total_budget) - 
-      global_sum_fixed_budget_values*diff_days;
-    }
-    if(optimizer_left_panel_total_budget == 0 || isNaN(optimizer_left_panel_total_budget)){
-      alert("Please add valid Total Budget before submitting")
-      return
-    }
-    $('#spinner-optimizer').css('display','block');
-    $('#container').css('opacity',0.5);
-    $("body").css("background-color", "#cecece");
-    $('#container').css('pointer-events','none');
-    if(optimizer_left_panel_number_of_days < 0 || optimizer_left_panel_number_of_days > 365){
-      alert("Please add valid Days / Date range before submitting")
-      return
-    }
-    // re-initializing the variables 
-    if(global_seasonality){
-      global_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
-      global_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
-    }
-    stringified_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data).replaceAll('&amp;', '&'));
-    var dimension_keys = Object.keys(stringified_global_optimizer_left_pannel_data)
-    // splicing the elements at 2 , 3 , 4
-    const removeValFromIndex = [2 , 3, 4];
-    const indexSet = new Set(removeValFromIndex);
-    dimension_keys.forEach((key)=>{
-      stringified_global_optimizer_left_pannel_data[key] = 
-      stringified_global_optimizer_left_pannel_data[key].filter((value, i) => !indexSet.has(i));
-    })
-    // re stringifiying the json 
-    stringified_global_optimizer_left_pannel_data = JSON.stringify(stringified_global_optimizer_left_pannel_data)
-    stringified_discarded_dimensions_json = JSON.stringify(discarded_dimensions_json)
-    document.getElementById('right_div').style.display = "block";
-    data_to_submit = 0
-    
-    if(global_seasonality){ 
-      data_to_submit = {
-        seasonality : global_seasonality,
-        dimension_min_max: stringified_global_optimizer_left_pannel_data,
-        total_budget : optimizer_left_panel_total_budget,
-        start_date: global_start_date,
-        end_date:global_end_date,
-        discarded_dimensions:stringified_discarded_dimensions_json
+      function getIsolatedDimensionsFromGroup(){
+        isolated_dimensions = []
+        $('.input_checkbox_group_constraint').each(function(){
+          if(this.checked == false && this.disabled == false)
+            isolated_dimensions.push(this.name)
+        })
+        return isolated_dimensions
       }
-    }else{
-      data_to_submit = {
-        seasonality : global_seasonality,
-        dimension_min_max: stringified_global_optimizer_left_pannel_data,
-        total_budget : optimizer_left_panel_total_budget,
-        number_of_days : optimizer_left_panel_number_of_days,
-        discarded_dimensions:stringified_discarded_dimensions_json
-      }
-    }
-    console.log("sending data data_to_submit",data_to_submit )
-    $.ajax({
-      url: '/optimizer/ajax/left_pannel_dimension_min_max/',
-      data: JSON.stringify(data_to_submit),
-      type : 'POST',
-      headers: {
-        'X-CSRFToken': getCookie('csrftoken')
-      },
-      success: function (data) {
-          console.log("From success", data)
-          $('#container').css('opacity',1);
-          $("body").css("background-color", "#fff");
-          $('#container').css('pointer-events','auto');
-          $('#spinner-optimizer').css('display','none');
-          global_optimizer_download_csv_json = data.optimizer_download_csv_json
-          json_table_1_data = data.json_table_1_data
-          //json_donut_chart_data = data.json_donut_chart_data
-          dict_donut_chart_data = data.dict_donut_chart_data
-          dict_line_chart_data = data.dict_line_chart_data
-          console.log("Success")
-          console.log("submit_predictor_left_pannel_chart_inputs", global_optimizer_download_csv_json)
-          console.log("json_table_1_data", json_table_1_data)
-          //console.log("json_donut_chart_data", json_donut_chart_data)
-          console.log("dict_donut_chart_data", dict_donut_chart_data)
-          populate_table_1(json_table_1_data)
-          if(global_my_optimizer_bar_chart != 0){
-            console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
-            global_my_optimizer_bar_chart.destroy();
+      function submit_predictor_left_pannel_chart_inputs() {
+        console.log("inputs submitted")
+        // Final validation before the submit
+        optimizer_left_panel_total_budget = document.getElementById('total_budget').value.replace(/,/g, '').replace('$','');
+        if(!global_seasonality)
+          optimizer_left_panel_total_budget = parseInt(optimizer_left_panel_total_budget) -
+          global_sum_fixed_budget_values*optimizer_left_panel_number_of_days;
+        else {
+          date_format_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate._d;
+          date_format_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate._d;
+          let diff_time = Math.abs( date_format_end_date - date_format_start_date)
+          let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
+          optimizer_left_panel_total_budget = parseInt(optimizer_left_panel_total_budget) -
+          global_sum_fixed_budget_values*diff_days;
+        }
+        if(optimizer_left_panel_total_budget == 0 || isNaN(optimizer_left_panel_total_budget)){
+          alert("Please add valid Total Budget before submitting")
+          return
+        }
+
+        checkedDimensions = getSelectedDimensions()
+        if(checkedDimensions.length == 0){
+          alert("Atleast one dimension must be selected")
+         return
+        }
+        $('#spinner-optimizer').css('display','block');
+        $('#container').css('opacity',0.5);
+        $("body").css("background-color", "#cecece");
+        $('#container').css('pointer-events','none');
+        if(optimizer_left_panel_number_of_days < 0 || optimizer_left_panel_number_of_days > 365){
+          alert("Please add valid Days / Date range before submitting")
+          return
+        }
+        // re-initializing the variables
+        if(global_seasonality){
+          global_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
+          global_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
+        }
+        stringified_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data).replaceAll('&amp;', '&'));
+        if(flag_to_show_grouped_dimensions == 1){
+          stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(global_grouped_optimizer_left_panel_data)
+          isolatedDimensions = getIsolatedDimensionsFromGroup()
+        }
+          var dimension_keys = Object.keys(stringified_global_optimizer_left_pannel_data)
+        // splicing the elements at 2 , 3 , 4
+        const removeValFromIndex = [2 , 3, 4];
+        const indexSet = new Set(removeValFromIndex);
+        dimension_keys.forEach((key)=>{
+          stringified_global_optimizer_left_pannel_data[key] =
+          stringified_global_optimizer_left_pannel_data[key].filter((value, i) => !indexSet.has(i));
+        })
+        // re stringifiying the json
+        stringified_global_optimizer_left_pannel_data = JSON.stringify(stringified_global_optimizer_left_pannel_data)
+        stringified_discarded_dimensions_json = JSON.stringify(discarded_dimensions_json)
+        document.getElementById('right_div').style.display = "block";
+        data_to_submit = 0
+        if(global_seasonality){
+          data_to_submit = {
+            seasonality : global_seasonality,
+            dimension_min_max: stringified_global_optimizer_left_pannel_data,
+            total_budget : optimizer_left_panel_total_budget,
+            start_date: global_start_date,
+            end_date:global_end_date,
+            discarded_dimensions:stringified_discarded_dimensions_json,
+            selected_dimensions:checkedDimensions.toString(),
           }
-          
-          populate_grouped_bar_chart(dict_donut_chart_data)
-          //$("#optimizer__total_1_value").val(5)
-          //$("#optimizer__total_2_value").val(888)
-      },
-      error: function (error_object) {
-        console.log("From errors", error_object.responseJSON.error);
-        $('#container').css('opacity',1);
-        $("body").css("background-color", "#fff");
-        $('#container').css('pointer-events','auto');
-        $('#spinner-optimizer').css('display','none');
-        alert(error_object.responseJSON.error)
+        }else{
+          data_to_submit = {
+            seasonality : global_seasonality,
+            dimension_min_max: stringified_global_optimizer_left_pannel_data,
+            total_budget : optimizer_left_panel_total_budget,
+            number_of_days : optimizer_left_panel_number_of_days,
+            discarded_dimensions:stringified_discarded_dimensions_json,
+            selected_dimensions:checkedDimensions.toString(),
+          }
+        }
+        if(flag_to_show_grouped_dimensions == 1){
+          data_to_submit["dimension_capping_constraints"] = stringified_global_grouped_optimizer_left_pannel_data
+          data_to_submit["isolated_dimensions"] = isolatedDimensions.toString()
+        }
+        console.log("sending data data_to_submit",data_to_submit )
+        $.ajax({
+          url: '/optimizer/ajax/left_pannel_dimension_min_max/',
+          data: JSON.stringify(data_to_submit),
+          type : 'POST',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          success: function (data) {
+              console.log("From success", data)
+              $('#container').css('opacity',1);
+              $("body").css("background-color", "#fff");
+              $('#container').css('pointer-events','auto');
+              $('#spinner-optimizer').css('display','none');
+              global_optimizer_download_csv_json = data.optimizer_download_csv_json
+              constraint_type = data.constraint_type
+              json_table_1_data = data.json_table_1_data
+              //json_donut_chart_data = data.json_donut_chart_data
+              dict_donut_chart_data = data.dict_donut_chart_data
+              dict_target_chart_data = data.dict_target_chart_data
+              dict_line_chart_data = data.dict_line_chart_data
+              summary_metric_json = data.summary_metric_dic
+              target_type = data.target_type
+              confidence_score = data.confidence_score
+              console.log("submit_predictor_left_pannel_chart_inputs", global_optimizer_download_csv_json)
+              console.log("json_table_1_data", json_table_1_data)
+              //console.log("json_donut_chart_data", json_donut_chart_data)
+              console.log("dict_donut_chart_data", dict_donut_chart_data)
+              populate_table_1(json_table_1_data, constraint_type)
+              populate_table_summary_metric(summary_metric_json,confidence_score)
+              if(global_my_optimizer_bar_chart != 0){
+                console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
+                global_my_optimizer_bar_chart.destroy();
+              }
+              if(global_optimizer_cpa_bar_chart != 0){
+                global_optimizer_cpa_bar_chart.destroy();
+              }
+              if(global_my_optimizer_target_bar_chart != 0){
+                global_my_optimizer_target_bar_chart.destroy();
+              }
+              populate_grouped_bar_chart(dict_donut_chart_data,constraint_type)
+              populate_cpa_graph(summary_metric_json, target_type)
+              populate_grouped_target_bar_chart(dict_target_chart_data)
+              //$("#optimizer__total_1_value").val(5)
+              //$("#optimizer__total_2_value").val(888)
+          },
+          error: function (error_object) {
+            console.log("From errors", error_object.responseJSON.error);
+            $('#container').css('opacity',1);
+            $("body").css("background-color", "#fff");
+            $('#container').css('pointer-events','auto');
+            $('#spinner-optimizer').css('display','none');
+            alert(error_object.responseJSON.error)
 
-        // $('.dimension_error').css("display", "block");
-        // $('.dimension_error').html(data.responseJSON.error); // add error to the dom
+            // $('.dimension_error').css("display", "block");
+            // $('.dimension_error').html(data.responseJSON.error); // add error to the dom
+
+          }
+      });
 
       }
-  });
 
-  }
+      {% comment %} Download CSV  {% endcomment %}
+      function optimizer_download_csv_fn(){
+        console.log("optimizer_download_csv_fn");
+        // console.log(global_optimizer_download_csv_json);
 
-  {% comment %} Download CSV  {% endcomment %}
-  function optimizer_download_csv_fn(){
-    console.log("optimizer_download_csv_fn");
-    // console.log(global_optimizer_download_csv_json);
-    
-    //optimizer_download_csv_data = "test, fgsdg ,sdfgsd,fgsdf,gsgdfg"
-    //optimizer_download_csv_json = $("#or__csv-data").val()
-    optimizer_download_csv_json = global_optimizer_download_csv_json
-    optimizer_download_csv_data = JSON.parse(optimizer_download_csv_json)
-    //console.log("optimizer_download_csv_data", optimizer_download_csv_data)
+        //optimizer_download_csv_data = "test, fgsdg ,sdfgsd,fgsdf,gsgdfg"
+        //optimizer_download_csv_json = $("#or__csv-data").val()
+        optimizer_download_csv_json = global_optimizer_download_csv_json
+        optimizer_download_csv_data = JSON.parse(optimizer_download_csv_json)
+        //console.log("optimizer_download_csv_data", optimizer_download_csv_data)
 
-    let element = document.createElement('a');
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(optimizer_download_csv_data));
-    element.setAttribute('download', 'Optimized plan.csv');
-    element.style.display = 'none';
-    if (typeof element.download != "undefined") {
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
-    }
-    else {
-        //browser does not support - alert the user
-        alert('This functionality is not supported by the current browser, recommend trying with Google Chrome instead.');
-    }
+        let element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(optimizer_download_csv_data));
+        element.setAttribute('download', 'Optimized plan.csv');
+        element.style.display = 'none';
+        if (typeof element.download != "undefined") {
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+        else {
+            //browser does not support - alert the user
+            alert('This functionality is not supported by the current browser, recommend trying with Google Chrome instead.');
+        }
 
-  }
-
-  {% comment %} Start : Populate Table  1 {% endcomment %}
-  function populate_table_1(json_table_1_data){
-    console.log("json_table_1_data")
-
-    table_body_1_optimizer.innerHTML = ""
-    for (const key in json_table_1_data) {
-      value = json_table_1_data[key]
-      // console.log(`${key} : ${value}`);
-      tableRow = document.createElement("tr");
-
-      td1 = document.createElement("td");
-      textNode1 = document.createTextNode(value["dimension"]);
-      td1.appendChild(textNode1);
-      
-      td2 = document.createElement("td");
-      textNode2 = document.createTextNode(`$ ${value["original_median_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-      td2.appendChild(textNode2);
-
-      td3 = document.createElement("td");
-      textNode3 = document.createTextNode(`$ ${value["recommended_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-      td3.appendChild(textNode3);
-
-      td4 = document.createElement("td");
-      textNode4 = document.createTextNode(value["buget_allocation_old"]+" %");
-      td4.appendChild(textNode4);
-
-      td5 = document.createElement("td");
-      textNode5 = document.createTextNode(value["buget_allocation_new"]+" %");
-      td5.appendChild(textNode5);
-
-      td6 = document.createElement("td");
-      textNode6 = document.createTextNode(`$ ${value["recommended_budget_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-      td6.appendChild(textNode6);
-
-      td7 = document.createElement("td");
-      if(value["est_opt_target_per_day"]){
-        textNode7 = document.createTextNode(`${value["est_opt_target_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-        td7.appendChild(textNode7);
-      }else{
-        textNode7 = document.createTextNode(`${value["est_opt_target_per_day"]}`);
-        td7.appendChild(textNode7);
       }
 
-     
-      td8 = document.createElement("td");
-      if(value["dimension"] == "Total"){
-        textNode8 = document.createTextNode(Math.round(value["estimated_target_new"],2)+" %");
-        td8.appendChild(textNode8);
-      }
-      else{ 
-        textNode8 = document.createTextNode(value["estimated_target_new"] +" %");
-        td8.appendChild(textNode8);
-      }
+      // function to draw the CPA bars graph
+      function populate_cpa_graph(summary_metric_json, target_type){
+        let xValues = []
+        let y_label = ""
+        let max_value_on_y_axis = Math.max(summary_metric_json["Current Projection CPA/ROI"], summary_metric_json["Optimized CPA/ROI"])
+        if(target_type == 'volume'){
+          xValues = ["CPA plans"]
+          y_label = "CPA"
+        }
+        else if(target_type == 'revenue'){
+          xValues = ["ROI plans"]
+          y_label = "ROI"
+        }
+        let barColors = global_chart_colors
+        ctx = "optimizer_CPA_chart"
+        const topLabels = {
+          'id': 'topLabels',
+          afterDatasetsDraw(chart, args, pluginOptions){
+            const {ctx, scales : {x, y} } = chart;
+            ctx.font = 'bold 15px sans-serif'
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center'
+            if(target_type == 'volume'){
+              ctx.fillText(`$ ${Math.round(summary_metric_json["Current Projection CPA/ROI"])}`, x.getPixelForValue(0) - 80, chart.getDatasetMeta(0).data[0].y+14)
+              ctx.fillText(`$ ${Math.round(summary_metric_json["Optimized CPA/ROI"])}`, x.getPixelForValue(0) + 80, chart.getDatasetMeta(1).data[0].y+14)
+            }else{
+              ctx.fillText(`${Math.round(summary_metric_json["Current Projection CPA/ROI"])}`,  x.getPixelForValue(0) - 80, chart.getDatasetMeta(0).data[0].y+14)
+              ctx.fillText(`${Math.round(summary_metric_json["Optimized CPA/ROI"])}`, x.getPixelForValue(0) + 80, chart.getDatasetMeta(1).data[0].y+14)
+            }
+            }
+        }
+        config = {
+          type: "bar",
+          data: {
+            labels: xValues,
+            datasets: [
+              {
+                label: 'Initial Plan',
+                data: [Math.round(summary_metric_json["Current Projection CPA/ROI"])],
+                backgroundColor: '#a7a7a6'
 
-      td9 = document.createElement("td");
-      if(value["est_opt_target_for_n_days"]){
-        textNode9 = document.createTextNode(`${value["est_opt_target_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-        td9.appendChild(textNode9);
-      }else{
-        textNode9 = document.createTextNode(`${value["est_opt_target_for_n_days"]}`);
-        td9.appendChild(textNode9);
+              },
+              {
+                label: 'Optimized Plan',
+                data: [Math.round(summary_metric_json["Optimized CPA/ROI"])],
+                backgroundColor: '#9A3334',
+              }],
+          },
+          plugins:[topLabels],
+          options: {
+            responsive: true,
+            interaction: {
+              mode: 'index',
+              intersect: false,
+            },
+            stacked: false,
+            plugins: {
+              title: {
+                display: true,
+                text: '',
+                position: 'bottom'
+              },
+              tooltip : {
+                callbacks: {
+                  label: function(context) {
+                      let label = context.dataset.label || '';
+
+                      if (label) {
+                          label += ': ';
+                      }
+                      if(target_type == 'volume')
+                        label += '$ ' + context.parsed.y ;
+                      else
+                        label += context.parsed.y ;
+                      return label;
+                  }
+                }
+              },
+            },
+            scales: {
+              x: {
+                display: true,
+                title: {
+                  display: true,
+                  text: '',
+                },
+              },
+              y: {
+                display: true ,
+                title: {
+                  display: true,
+                  text: y_label,
+                },
+                ticks:{
+                  callback: function(value, index) {
+                    if(target_type == 'volume')
+                      return '$ ' + value;
+                    else
+                      return value;
+                  },
+                  beginAtZero: true,
+                  max: Math.round(max_value_on_y_axis + 0.20*max_value_on_y_axis)
+                }
+              }
+            },
+          },
+        }
+        global_optimizer_cpa_bar_chart = new Chart(ctx, config);
       }
-      td10 = document.createElement("td");
-      if(value["current_projections_for_n_days"]){
-        textNode10 = document.createTextNode(`${value["current_projections_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-        td10.appendChild(textNode10);
-      }else{
-        textNode10 = document.createTextNode(`${value["current_projections_for_n_days"]}`);
-        td10.appendChild(textNode10);
+      // function to populate the summary metrics table
+      function populate_table_summary_metric(summary_metric_json,confidence_score){
+        // getting the value out of span
+        var total_budget_span_value = $('#total_budget_metric span');
+        var total_target_span_value = $('#total_target_metric span');
+        var roi_cpa_span_value = $('#roi_cpa_metric span');
+        var confidence_span_value = $('#confidence_metric span');
+        console.log($('#total_budget_metric span').text())
+        // appending the columns of table
+        total_budget_span_value.text(`$ ${summary_metric_json["Optimized Total Budget"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        total_target_span_value.text(`${summary_metric_json["Optimized Total Target"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+        if(target_type=='volume')
+          roi_cpa_span_value.text("$ " + Math.round(summary_metric_json["Optimized CPA/ROI"]));
+        else
+        roi_cpa_span_value.text(Math.round(summary_metric_json["Optimized CPA/ROI"]));
+        confidence_span_value.text(`${confidence_score} %`) ;
+
       }
-      tableRow.appendChild(td1)
-      tableRow.appendChild(td2)
-      tableRow.appendChild(td3)
-      tableRow.appendChild(td4)
-      tableRow.appendChild(td5)
-      tableRow.appendChild(td6)
-      tableRow.appendChild(td7)
-      tableRow.appendChild(td8)
-      tableRow.appendChild(td9)
-      tableRow.appendChild(td10)
-      table_body_1_optimizer.appendChild(tableRow)
+      {% comment %} Start : Populate Table  1 {% endcomment %}
+      function populate_table_1(json_table_1_data, constraint_type){
+        console.log("json_table_1_data")
+
+        table_body_1_optimizer.innerHTML = ""
+        for (const key in json_table_1_data) {
+          value = json_table_1_data[key]
+          // console.log(`${key} : ${value}`);
+          tableRow = document.createElement("tr");
+
+          td1 = document.createElement("td");
+          textNode1 = document.createTextNode(value["dimension"]);
+          td1.appendChild(textNode1);
+
+          td2 = document.createElement("td");
+          if(constraint_type == 'median')
+            textNode2 = document.createTextNode(`$ ${value["original_median_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+          else
+            textNode2 = document.createTextNode(`$ ${value["original_mean_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+          td2.appendChild(textNode2);
+
+          td3 = document.createElement("td");
+          textNode3 = document.createTextNode(`$ ${value["recommended_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+          td3.appendChild(textNode3);
+
+          td4 = document.createElement("td");
+          if(value["dimension"] == "Total"){
+          textNode4 = document.createTextNode(Math.round(value["total_buget_allocation_old_%"],2)+" %");
+          td4.appendChild(textNode4);
+          }
+          else{
+            textNode4 = document.createTextNode(value["total_buget_allocation_old_%"]+" %");
+            td4.appendChild(textNode4);
+          }
+          td5 = document.createElement("td");
+          if(constraint_type == 'median')
+            textNode5 = document.createTextNode(value["median_buget_allocation_old_%"]+" %");
+          else
+            textNode5 = document.createTextNode(value["mean_buget_allocation_old_%"]+" %");
+          td5.appendChild(textNode5);
+
+          td6 = document.createElement("td");
+          textNode6 = document.createTextNode(value["buget_allocation_new_%"]+" %");
+          td6.appendChild(textNode6);
+
+          td7 = document.createElement("td");
+          textNode7 = document.createTextNode(`$ ${value["recommended_budget_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+          td7.appendChild(textNode7);
+
+          td8 = document.createElement("td");
+          if(value["estimated_return_per_day"]){
+            textNode8 = document.createTextNode(`${value["estimated_return_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+            td8.appendChild(textNode8);
+          }else{
+            textNode8 = document.createTextNode(`${value["estimated_return_per_day"]}`);
+            td8.appendChild(textNode8);
+          }
+          td9 = document.createElement("td");
+          if(value["estimated_return_for_n_days"]){
+            textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+            td9.appendChild(textNode9);
+          }else{
+            textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"]}`);
+            td9.appendChild(textNode9);
+          }
+
+          td10 = document.createElement("td");
+          if(value["dimension"] == "Total"){
+            textNode10 = document.createTextNode(Math.round(value["estimated_return_%"],2)+" %");
+            td10.appendChild(textNode10);
+          }
+          else{
+            textNode10 = document.createTextNode(value["estimated_return_%"] +" %");
+            td10.appendChild(textNode10);
+          }
+          td11 = document.createElement("td");
+          if(value["current_projections_for_n_days"]){
+            textNode11 = document.createTextNode(`${value["current_projections_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+            td11.appendChild(textNode11);
+          }else{
+            textNode11 = document.createTextNode(`${value["current_projections_for_n_days"]}`);
+            td11.appendChild(textNode11);
+          }
+          tableRow.appendChild(td1)
+          tableRow.appendChild(td2)
+          tableRow.appendChild(td3)
+          tableRow.appendChild(td4)
+          tableRow.appendChild(td5)
+          tableRow.appendChild(td6)
+          tableRow.appendChild(td7)
+          tableRow.appendChild(td8)
+          tableRow.appendChild(td9)
+          tableRow.appendChild(td10)
+          tableRow.appendChild(td11)
+          table_body_1_optimizer.appendChild(tableRow)
 
 
-    }
-  }
-  {% comment %} End : Populate Table  1 {% endcomment %}
-
-  {% comment %} Start : Populate Donut Chart{% endcomment %}
-  function populate_grouped_bar_chart(dict_donut_chart_data){
+        }
+      }
+    // populate the target bar chart
+    function populate_grouped_target_bar_chart(dict_target_chart_data){
       console.log("populate_grouped_bar_chart")
-      let xValues = dict_donut_chart_data['dimension']
-      let buget_allocation_old = dict_donut_chart_data['buget_allocation_old']
-      let buget_allocation_new = dict_donut_chart_data['buget_allocation_new']
+      let canvasElement = document.getElementById("optimizer_target_bar_chart")
+      height = "80";
+      width = "80";
+      ctx = resizeCanvas(canvasElement, width, height);
+      let xValues = dict_target_chart_data['dimension']
+      let target_allocation_old = dict_target_chart_data["current_projections_%"]
+      let target_allocation_new = dict_target_chart_data["estimated_return_%"]
       let barColors = global_chart_colors
-      ctx = "optimizer_bar_chart"
+      //ctx = "optimizer_target_bar_chart"
       config = {
         type: "bar",
         data: {
           labels: xValues,
           datasets: [
             {
-              label: 'Buget Allocation Original',
-              data: buget_allocation_old,
-              backgroundColor: '#a7a7a6'
-
+              label: 'Target Allocation Original',
+              data: target_allocation_old,
+              backgroundColor: '#a7a7a6',
             },
             {
-              label: 'Buget Allocation New',
-              data: buget_allocation_new,
+              label: 'Target Allocation New',
+              data: target_allocation_new,
               backgroundColor: '#9A3334',
             }],
         },
         options: {
           responsive: true,
-          interaction: {
+          indexAxis: 'y',
+         /* interaction: {
             mode: 'index',
             intersect: false,
-          },
+          }, */
           stacked: false,
           plugins: {
             title: {
               display: true,
-              text: 'Distribution Between Dimensions',
+              text: '',
               position: 'bottom'
+            },
+            zoom: {
+              zoom: {
+                wheel: {
+                  enabled: true,
+                },
+                pinch: {
+                  enabled: true
+                },
+                mode: 'y',
+              },pan:{
+                enabled:true,
+                mode:'y'
+              }
             },
             tooltip : {
               callbacks: {
@@ -1238,157 +2687,287 @@ function update_number_of_days(value){
                     if (label) {
                         label += ': ';
                     }
-                    label += context.parsed.y + '%';
+                    label += context.parsed.x + '%';
                     return label;
                 }
               }
             }
           },
           scales: {
-            x: {
+            y: {
               display: true,
               title: {
                 display: true,
                 text: 'Dimension',
               },
               ticks: {
-                // Shorten the label If it has more than 10 characters  
-                callback: function(value, index) {  
-                  return this.getLabelForValue(value).length > 10 ?  
+                // Shorten the label If it has more than 10 characters
+                callback: function(value, index) {
+                  return this.getLabelForValue(value).length > 10 ?
                           this.getLabelForValue(value).substr(0,10) : this.getLabelForValue(value) ;
                 }
               }
             },
-            y: {
+            x: {
               display: true ,
               title: {
                 display: true,
                 text: '',
               },
               ticks:{
-                callback: function(value, index) {  
+                callback: function(value, index) {
                   return value + '%'
                 }
               }
             }
           },
-        },
-      }
-      global_my_optimizer_bar_chart = new Chart(ctx, config);
-      console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
-    
-      
-  }
-  {% comment %} End : Populate Donut Chart {% endcomment %}
 
- {% comment %} optimizer_save_the_plan  {% endcomment %}
-  function optimizer_save_the_plan(){
-    plan_name = $('#plan_name').val();
-    $.ajax({
-      url: '/optimizer/ajax/optimizer_save_the_plan/',
-      data: {
-        //testing data change late
-        plan_name : plan_name,
-        json_table_data : JSON.stringify(json_table_1_data),
-        donut_chart_data : JSON.stringify(dict_donut_chart_data),
-        left_hand_panel_data : JSON.stringify(global_optimizer_left_pannel_data),
-        discarded_dimensions_json : JSON.stringify(discarded_dimensions_json)
-        //testing data change late
-      },
-      success: function (data) {
-          console.log("Success optimizer_save_the_plan", data)
-          alert(data.message)
-      },
-      error : function(error){
-          alert(error.responseJSON.message)
+        },
       }
-  });
+      global_my_optimizer_target_bar_chart = new Chart(ctx, config);
+      console.log("global_my_optimizer_bar_chart", global_my_optimizer_target_bar_chart)
   }
-  // get is_weekly_selected variable
-  function get_is_weekly_selected(){
-    let is_weekly_selected
-    console.log("get_is_weekly_selected")
-    $.ajax({
-      async: false,
-      url: '/predictor/ajax/is_weekly_selected/',
-      success: function (data) {
-         is_weekly_selected = data.is_weekly_selected;
-        },
-      error: function (error_data) {
-        console.log(
-          "error in '/predictor/ajax/is_weekly_selected/'",
-          error_data
-        );
-      },
-  })
-  return is_weekly_selected;
-}
-  // get convert_to_weekly_data
-  function get_convert_to_weekly_data(){
-    let convert_to_weekly_data
-    console.log("get_convert_to_weekly_data")
-    $.ajax({
-      async: false,
-      url: '/predictor/ajax/convert_to_weekly_data/',
-      success: function (data) {
-         convert_to_weekly_data = data.convert_to_weekly_data;
-        },
-      error: function (error_data) {
-        console.log(
-          "error in '/predictor/ajax/convert_to_weekly_data/'",
-          error_data
-        );
-      },
-  })
-  return convert_to_weekly_data;
-}
-  // download json data 
-  function download(content, fileName, contentType) {
-		  const a = document.createElement("a");
-		  const file = new Blob([content], { type: contentType });
-		  a.href = URL.createObjectURL(file);
-		  a.download = fileName;
-		  a.click();
-		}
-    function onDownload(){
-      params = {}
-      explorer_inputs = {};
-      predictor_inputs = {};
-      optimizer_inputs = {};
-      let is_weekly_selected  = get_is_weekly_selected()
-      let convert_to_weekly_data = get_convert_to_weekly_data()
-      explorer_inputs['date_selector'] = window.localStorage.getItem('date_selector');
-      explorer_inputs['use_impressions'] = window.localStorage.getItem('cpm_checkbox');
-      explorer_inputs['is_weekly_selected'] = is_weekly_selected;
-      explorer_inputs['convert_to_weekly_data'] = convert_to_weekly_data;
-      explorer_inputs['investment_selector'] = window.localStorage.getItem('investment_selector');
-      explorer_inputs['dimension_selector'] = window.localStorage.getItem('dimension_selector');
-      explorer_inputs['target_selector'] = window.localStorage.getItem('target_selector');
-      params['explorer_inputs'] = explorer_inputs; 
-      predictor_inputs['seasonality'] = global_seasonality;
-      if(global_seasonality !=1){
-        predictor_inputs['predictor_left_hand_dimensions_start_and_end_dates'] =  JSON.parse(
-          window.localStorage.getItem('predictor_left_hand_dimensions_start_and_end_dates')
-          ) 
-      }
-      params['predictor_inputs'] = predictor_inputs;
-      optimizer_inputs['left_panel_data'] = global_optimizer_left_pannel_data;
-      optimizer_inputs['discarded_dimensions'] = discarded_dimensions_json
-      optimizer_inputs['total_budget'] = optimizer_left_panel_total_budget - global_sum_fixed_budget_values;
-      if(global_seasonality == 1){
-        optimizer_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
-        optimizer_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
-        optimizer_inputs['start_date_optimizer'] = optimizer_start_date;
-        optimizer_inputs['end_date_predictor'] = optimizer_end_date;
-      }
-      else 
-       optimizer_inputs['total_no_of_days'] = optimizer_left_panel_number_of_days;
-      params['optimizer_inputs'] = optimizer_inputs
-      download(JSON.stringify(params,null,"\t") ,"params.json", "application/json");
-		}
-  {% comment %} {% if run_wondow_onload %}
-  window.onload = submit_predictor_chart_inputs;
-  {% endif %} {% endcomment %}
+  // function to resize canvas
+  function resizeCanvas(canvas, width, height) {
+    // Get the canvas context.
+    var ctx = canvas.getContext("2d");
 
+    // Set the canvas width and height.
+    canvas.width = width;
+    canvas.height = height;
+
+    // Clear the canvas.
+    ctx.clearRect(0, 0, width, height);
+    return ctx;
+  }
+      {% comment %} End : Populate Table  1 {% endcomment %}
+
+      {% comment %} Start : Populate Donut Chart{% endcomment %}
+      function populate_grouped_bar_chart(dict_donut_chart_data, constraint_type){
+          console.log("populate_grouped_bar_chart")
+          let canvasElement = document.getElementById("optimizer_bar_chart")
+          height = "80"
+          width = "80"
+          ctx = resizeCanvas(canvasElement, width, height)
+          let xValues = dict_donut_chart_data['dimension']
+          let buget_allocation_old = "";
+          if(constraint_type == 'median')
+            buget_allocation_old = dict_donut_chart_data['median_buget_allocation_old_%']
+          else
+            buget_allocation_old = dict_donut_chart_data['mean_buget_allocation_old_%']
+            let buget_allocation_new = dict_donut_chart_data['buget_allocation_new_%']
+          let barColors = global_chart_colors
+          // ctx = "optimizer_bar_chart"
+          config = {
+            type: "bar",
+            data: {
+              labels: xValues,
+              datasets: [
+                {
+                  label: 'Buget Allocation Original',
+                  data: buget_allocation_old,
+                  backgroundColor: '#a7a7a6'
+
+                },
+                {
+                  label: 'Buget Allocation New',
+                  data: buget_allocation_new,
+                  backgroundColor: '#9A3334',
+                }],
+            },
+            options: {
+              responsive: true,
+              indexAxis:'y',
+            /*  interaction: {
+                mode: 'index',
+                intersect: false,
+              }, */
+              stacked: false,
+              plugins: {
+                title: {
+                  display: true,
+                  text: '',
+                  position: 'bottom'
+                },
+                zoom: {
+                  zoom: {
+                    wheel: {
+                      enabled: true,
+                    },
+                    pinch: {
+                      enabled: true
+                    },
+                    mode: 'y',
+                  },pan:{
+                    enabled:true,
+                    mode:'y'
+                  }
+                },
+                tooltip : {
+                  callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+
+                        if (label) {
+                            label += ': ';
+                        }
+                        label += context.parsed.x + '%';
+                        return label;
+                    }
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  display: true,
+                  title: {
+                    display: true,
+                    text: 'Dimension',
+                  },
+                  ticks: {
+                    // Shorten the label If it has more than 10 characters
+                    callback: function(value, index) {
+                      return this.getLabelForValue(value).length > 10 ?
+                              this.getLabelForValue(value).substr(0,10) : this.getLabelForValue(value) ;
+                    }
+                  }
+                },
+                x: {
+                  display: true ,
+                  title: {
+                    display: true,
+                    text: '',
+                  },
+                  ticks:{
+                    callback: function(value, index) {
+                      return value + '%'
+                    }
+                  }
+                }
+              },
+            },
+          }
+          global_my_optimizer_bar_chart = new Chart(ctx, config);
+          console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
+
+
+      }
+      {% comment %} End : Populate Donut Chart {% endcomment %}
+
+     {% comment %} optimizer_save_the_plan  {% endcomment %}
+      function optimizer_save_the_plan(){
+        plan_name = $('#plan_name').val();
+        $.ajax({
+          url: '/optimizer/ajax/optimizer_save_the_plan/',
+          data: {
+            //testing data change late
+            plan_name : plan_name,
+            json_table_data : JSON.stringify(json_table_1_data),
+            donut_chart_data : JSON.stringify(dict_donut_chart_data),
+            left_hand_panel_data : JSON.stringify(global_optimizer_left_pannel_data),
+            discarded_dimensions_json : JSON.stringify(discarded_dimensions_json)
+            //testing data change late
+          },
+          success: function (data) {
+              console.log("Success optimizer_save_the_plan", data)
+              alert(data.message)
+          },
+          error : function(error){
+              alert(error.responseJSON.message)
+          }
+      });
+      }
+      // get is_weekly_selected variable
+      function get_is_weekly_selected(){
+        let is_weekly_selected
+        console.log("get_is_weekly_selected")
+        $.ajax({
+          async: false,
+          url: '/predictor/ajax/is_weekly_selected/',
+          success: function (data) {
+             is_weekly_selected = data.is_weekly_selected;
+            },
+          error: function (error_data) {
+            console.log(
+              "error in '/predictor/ajax/is_weekly_selected/'",
+              error_data
+            );
+            return 0;
+          },
+      })
+      return is_weekly_selected;
+    }
+      // get convert_to_weekly_data
+      function get_convert_to_weekly_data(){
+        let convert_to_weekly_data
+        console.log("get_convert_to_weekly_data")
+        $.ajax({
+          async: false,
+          url: '/predictor/ajax/convert_to_weekly_data/',
+          success: function (data) {
+             convert_to_weekly_data = data.convert_to_weekly_data;
+            },
+          error: function (error_data) {
+            console.log(
+              "error in '/predictor/ajax/convert_to_weekly_data/'",
+              error_data
+            );
+            return 0;
+          },
+      })
+      return convert_to_weekly_data;
+    }
+      // download json data
+      function download(content, fileName, contentType) {
+    		  const a = document.createElement("a");
+    		  const file = new Blob([content], { type: contentType });
+    		  a.href = URL.createObjectURL(file);
+    		  a.download = fileName;
+    		  a.click();
+    		}
+        function onDownload(){
+          params = {}
+          explorer_inputs = {};
+          predictor_inputs = {};
+          optimizer_inputs = {};
+          let is_weekly_selected  = get_is_weekly_selected()
+          let convert_to_weekly_data = get_convert_to_weekly_data()
+          explorer_inputs['date_selector'] = window.localStorage.getItem('date_selector');
+          explorer_inputs['use_impressions'] = window.localStorage.getItem('cpm_checkbox');
+          explorer_inputs['is_weekly_selected'] = is_weekly_selected;
+          explorer_inputs['convert_to_weekly_data'] = convert_to_weekly_data;
+          explorer_inputs['investment_selector'] = window.localStorage.getItem('investment_selector');
+          explorer_inputs['dimension_selector'] = window.localStorage.getItem('dimension_selector');
+          explorer_inputs['target_selector'] = window.localStorage.getItem('target_selector');
+          explorer_inputs['is_group_dimension_selected'] = flag_to_show_grouped_dimensions;
+          explorer_inputs['dimension_grouping_selector'] = window.localStorage.getItem('dimension_grouping_selector')
+          params['explorer_inputs'] = explorer_inputs;
+          predictor_inputs['seasonality'] = global_seasonality;
+          predictor_inputs['constraint_type'] = constraint_type;
+          if(global_seasonality !=1){
+            predictor_inputs['predictor_left_hand_dimensions_start_and_end_dates'] =  JSON.parse(
+              window.localStorage.getItem('predictor_left_hand_dimensions_start_and_end_dates')
+              )
+          }
+          params['predictor_inputs'] = predictor_inputs;
+          optimizer_inputs['left_panel_data'] = global_optimizer_left_pannel_data;
+          optimizer_inputs['discarded_dimensions'] = discarded_dimensions_json;
+          optimizer_inputs['total_budget'] = optimizer_left_panel_total_budget - global_sum_fixed_budget_values;
+          if(flag_to_show_grouped_dimensions == 1)
+            optimizer_inputs['dimension_capping_constraints'] = global_grouped_optimizer_left_panel_data
+          if(global_seasonality == 1){
+            optimizer_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
+            optimizer_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
+            optimizer_inputs['start_date_optimizer'] = optimizer_start_date;
+            optimizer_inputs['end_date_predictor'] = optimizer_end_date;
+          }
+          else
+           optimizer_inputs['total_no_of_days'] = optimizer_left_panel_number_of_days;
+          params['optimizer_inputs'] = optimizer_inputs
+          download(JSON.stringify(params,null,"\t") ,"params.json", "application/json");
+    		}
+      {% comment %} {% if run_wondow_onload %}
+      window.onload = submit_predictor_chart_inputs;
+      {% endif %} {% endcomment %}
 </script>
 {%endblock%}

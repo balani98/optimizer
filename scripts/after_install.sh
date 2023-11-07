@@ -10,16 +10,17 @@ sudo systemctl stop apache2
 # sudo pkill -f tailwind
 # sudo pkill -f node
 
-cd /var/www/optimizer
-
+cd /mnt/apps/optimizer/source
 
 
 # install requirements.txt
-pip install -r /var/www/optimizer/requirements.txt
-# installing the cryptography for SSL modules
-pip install cryptography==38.0.4
-# Declaring the environment variables
-sudo export ENVIRONMENT=production
+pip install -r /mnt/apps/optimizer/source/requirements.txt
 
-# restart apache2 server
-sudo systemctl restart apache2
+# installing the cryptography for getting SSL modules
+pip install cryptography==38.0.4
+
+# restart apache2 server for production server
+# sudo systemctl restart apache2
+
+# restart python server 
+screen -dm bash -c  'nohup python manage.py runserver 0.0.0.0:8080' 

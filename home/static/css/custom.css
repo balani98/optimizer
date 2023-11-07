@@ -39,8 +39,8 @@ body {
   padding: 100px 0 0;
   /* Height of navbar */
   box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.1);
-  padding-right: 10px;
-  padding-left: 10px;
+  /* padding-right: 0; */
+  padding-left: 7px;
   --bs-bg-opacity: 1;
   background-color: rgba(var(--bs-dark-rgb), var(--bs-bg-opacity));
 }
@@ -200,7 +200,7 @@ body {
 .explorer-sidebar-dropdown {
   background-color: #fff;
   border: #fff;
-  width: 100%;
+  width: 13.7rem;
   padding: 10px;
   color:black;
 }
@@ -214,7 +214,7 @@ body {
   background-color:#a7a7a6;
   color:black;
   padding: 8px 40px;
-  width: 100%;
+  width: 13.7rem;
 }
 
 .dropbtn:hover,
@@ -429,7 +429,7 @@ body {
 
 /* pie chart dropdowncss */
 .piemultiselect {
-  width: 200px;
+  width: 100%;
 }
 
 .pieselectBox {
@@ -507,6 +507,37 @@ body {
 
 #barChartCheckboxes label:hover {
   background-color: #1e90ff;
+}
+/*-------Scroll bars ----------*/
+.scrollbar {
+  overflow: hidden;
+}
+
+/* Show the scrollbars on hover */
+.scrollbar:hover {
+  overflow-y: auto;
+  overflow-x:hidden;
+}
+
+/* Style the scrollbar */
+.scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar::-webkit-scrollbar-track {
+  background-color: #9A3334;
+}
+
+.scrollbar::-webkit-scrollbar-thumb {
+  background-color:#797C7E;
+  opacity:0.1;
+  border-radius:15px;
+}
+
+.scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #797C7E;
+  opacity:0.1;
+  border-radius:15px;
 }
 
 
