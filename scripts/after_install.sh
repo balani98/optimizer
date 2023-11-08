@@ -16,6 +16,7 @@ source venv/bin/activate
 # install requirements.txt
 pip install -r /mnt/apps/optimizer/source/requirements.txt
 
+sudo export ENVIRONMENT=test
 # installing the cryptography for getting SSL modules
 pip install cryptography==38.0.4
 
