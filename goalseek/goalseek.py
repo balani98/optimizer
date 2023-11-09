@@ -707,7 +707,7 @@ class optimizer_conversion:
             dataframe: recal of optimizer result for discarded dimension
         """
         discard_json = {chnl:discard_json[chnl] for chnl in discard_json.keys() if(discard_json[chnl]!=0)}
-
+        check_discard_json = bool(discard_json)
         d_dis = df_spend_dis.set_index('dimension').to_dict()['spend']
 
         for dim_ in discard_json.keys():
@@ -799,7 +799,7 @@ class optimizer_conversion:
         for i in int_cols:
             df_res.loc[df_res[i].values != None, i]=df_res.loc[df_res[i].values != None, i].astype(float).round().astype(int)
 
-        return df_res, summary_metrics_dic
+        return df_res, summary_metrics_dic, check_discard_json
     
         
     def dimension_bound_max_check(self, dimension_bound):
@@ -917,13 +917,13 @@ class optimizer_conversion:
             result_df[['spend', 'return']]=result_df[['spend', 'return']].round(2)
         
         result_df = self.lift_cal(result_df, conv_goal, df_spend_dis, days, dimension_bound)
-        result_df, summary_metrics_dic = self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound, conv_goal, days)        
+        result_df, summary_metrics_dic, check_discard_json = self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound, conv_goal, days)        
         result_itr_df=result_itr_df.round(2)
 
         # Optimization confidence score calculation
         optimization_conf_score = self.confidence_score(result_df, df_score_final, df_grp, lst_dim, dimension_bound)
 
-        return result_df, summary_metrics_dic, optimization_conf_score
+        return result_df, summary_metrics_dic, optimization_conf_score, check_discard_json
 
 class optimizer_conversion_seasonality:
     def __init__(self, df_param, constraint_type, target_type, is_weekly_selected):
@@ -1496,7 +1496,7 @@ class optimizer_conversion_seasonality:
             dataframe: recal of optimizer result for discarded dimension
         """
         discard_json = {chnl:discard_json[chnl] for chnl in discard_json.keys() if(discard_json[chnl]!=0)}
-
+        check_discard_json = bool(discard_json)
         d_dis = df_spend_dis.set_index('dimension').to_dict()['spend']
 
         for dim_ in discard_json.keys():
@@ -1602,7 +1602,7 @@ class optimizer_conversion_seasonality:
         for i in int_cols:
             df_res.loc[df_res[i].values != None, i]=df_res.loc[df_res[i].values != None, i].astype(float).round().astype(int)
 
-        return df_res, summary_metrics_dic
+        return df_res, summary_metrics_dic, check_discard_json
     
         
     def dimension_bound_max_check(self, dimension_bound):
@@ -1869,10 +1869,10 @@ class optimizer_conversion_seasonality:
         result_df = result_df.rename_axis('dimension').reset_index()
 
         result_df = self.lift_cal(result_df, conv_goal, df_spend_dis, days, dimension_bound)
-        result_df, summary_metrics_dic = self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound, conv_goal, days, d_weekday, d_month, date_range, freq_type)        
+        result_df, summary_metrics_dic, check_discard_json = self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound, conv_goal, days, d_weekday, d_month, date_range, freq_type)        
         result_itr_df=result_itr_df.round(2)
 
         # Optimization confidence score calculation
         optimization_conf_score = self.confidence_score(result_df, df_score_final, df_grp, lst_dim, dimension_bound)
 
-        return result_df, summary_metrics_dic, optimization_conf_score
+        return result_df, summary_metrics_dic, optimization_conf_score, check_discard_json

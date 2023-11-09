@@ -2360,6 +2360,7 @@ $(window).on('load',function(){
     var params = {}
     console.log(global_response_curve_eqn_dic)
     params['response curve formulation'] = global_response_curve_eqn_dic
+    params['Note'] = 'Coefficients in the equations are rounded to two decimal places, so the results might vary when compared to the response curves'
     download(JSON.stringify(params,null,"\t") ,"response-curve-formulation.json", "application/json");
   }
   {% if run_wondow_onload %}

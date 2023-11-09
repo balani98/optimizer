@@ -1176,7 +1176,8 @@ class optimizer_iterative:
             dataframe: recal of optimizer result for discarded dimension
         """
         discard_json = {chnl:discard_json[chnl] for chnl in discard_json.keys() if(discard_json[chnl]!=0)}
-
+        check_discard_json = bool(discard_json)
+        print('deeps',check_discard_json)
         d_dis = df_spend_dis.set_index('dimension').to_dict()['spend']
 
         for dim_ in discard_json.keys():
@@ -1267,7 +1268,7 @@ class optimizer_iterative:
         for i in int_cols:
             df_res.loc[df_res[i].values != None, i]=df_res.loc[df_res[i].values != None, i].astype(float).round().astype(int)
 
-        return df_res, summary_metrics_dic
+        return df_res, summary_metrics_dic, check_discard_json
     
 
     def confidence_score(self, result_df, accuracy_df, df_grp, lst_dim, dimension_bound):
@@ -1376,7 +1377,7 @@ class optimizer_iterative:
 
         # Calculating other variables for optimization plan for front end
         result_df=self.lift_cal(result_df, budget_per_day, df_spend_dis, days, dimension_bound)
-        result_df, summary_metrics_dic=self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound_actual, budget_per_day, days)
+        result_df, summary_metrics_dic, check_discard_json =self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound_actual, budget_per_day, days)
         
         # Df for iterative steps, not displayed in front end
         result_itr_df=result_itr_df.round(2)
@@ -1384,7 +1385,7 @@ class optimizer_iterative:
         # Optimization confidence score calculation
         optimization_conf_score = self.confidence_score(result_df, df_score_final, df_grp, lst_dim, dimension_bound)
 
-        return result_df, summary_metrics_dic, optimization_conf_score
+        return result_df, summary_metrics_dic, optimization_conf_score, check_discard_json
 
 
 class optimizer_iterative_seasonality:
@@ -2502,7 +2503,8 @@ class optimizer_iterative_seasonality:
             dataframe: recal of optimizer result for discarded dimension
         """
         discard_json = {chnl:discard_json[chnl] for chnl in discard_json.keys() if(discard_json[chnl]!=0)}
-
+        check_discard_json = bool(discard_json)
+        print('deeps',check_discard_json)
         d_dis = df_spend_dis.set_index('dimension').to_dict()['spend']
 
         for dim_ in discard_json.keys():
@@ -2607,7 +2609,7 @@ class optimizer_iterative_seasonality:
         for i in int_cols:
             df_res.loc[df_res[i].values != None, i]=df_res.loc[df_res[i].values != None, i].astype(float).round().astype(int)
 
-        return df_res, summary_metrics_dic
+        return df_res, summary_metrics_dic,check_discard_json
 
 
     def total_return_seasonality(self, Spend, dimension_bound, dim, init_weekday, init_month):
@@ -2832,7 +2834,7 @@ class optimizer_iterative_seasonality:
         
         # Calculating other variables for optimization plan for front end
         result_df=self.lift_cal(result_df, budget_per_day, df_spend_dis, days, dimension_bound)
-        result_df, summary_metrics_dic=self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound_actual, budget_per_day, days, d_weekday, d_month, date_range, freq_type)
+        result_df, summary_metrics_dic, check_discard_json = self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound_actual, budget_per_day, days, d_weekday, d_month, date_range, freq_type)
         
         # Df for iterative steps, not displayed in front end
         result_itr_df=result_itr_df.round(2)
@@ -2840,4 +2842,4 @@ class optimizer_iterative_seasonality:
         # Optimization confidence score calculation
         optimization_conf_score = self.confidence_score(result_df, df_score_final, df_grp, lst_dim, dimension_bound)
 
-        return result_df, summary_metrics_dic, optimization_conf_score
+        return result_df, summary_metrics_dic, optimization_conf_score, check_discard_json
