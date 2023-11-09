@@ -186,6 +186,7 @@ def left_panel_submit(request):
         is_weekly_selected = request.session.get("is_weekly_selected")
         df_spend_dis = pd.DataFrame(request.session.get('df_spend_dis'))
         df_score_final = pd.DataFrame(request.session.get('df_score_final'))
+        drop_dimension_from_session = request.session.get("drop_dimension")
         confidence_score = 0
         if seasonality:
             print(
@@ -356,6 +357,7 @@ def left_panel_submit(request):
         context["confidence_score"] = confidence_score
         context["summary_metric_dic"] = summary_metric_dic
         context["discarded_dim_considered_or_not"] = discarded_dim_considered_or_not
+        context["drop_dimension_from_session"] = drop_dimension_from_session
         return JsonResponse(context)
     except Exception as e:
         return HttpResponse(ERROR_DICT[str(e)], status=403)

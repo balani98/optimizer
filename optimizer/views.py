@@ -225,6 +225,7 @@ def dimension_min_max(request):
         is_group_dimension_selected = request.session.get("dimension_grouping_check")
         is_weekly_selected = request.session.get("is_weekly_selected")
         df_score_final =  pd.DataFrame(request.session.get('df_score_final'))
+        drop_dimension_from_session = request.session.get("drop_dimension")
         if is_group_dimension_selected == True:
             isolated_dimensions = body['isolated_dimensions'].split(",")
             grouped_dimension_constraints = json.loads(body['dimension_capping_constraints'])
@@ -426,6 +427,7 @@ def dimension_min_max(request):
         context["confidence_score"] = confidence_score
         context['discarded_dimensions'] = discarded_dimensions
         context["discarded_dim_considered_or_not"] = discarded_dim_considered_or_not
+        context["drop_dimension_from_session"] = drop_dimension_from_session
         return JsonResponse(context)
     except Exception as e:
         return JsonResponse({"error": ERROR_DICT[str(e)]}, status=500)

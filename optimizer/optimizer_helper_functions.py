@@ -1177,7 +1177,6 @@ class optimizer_iterative:
         """
         discard_json = {chnl:discard_json[chnl] for chnl in discard_json.keys() if(discard_json[chnl]!=0)}
         check_discard_json = bool(discard_json)
-        print('deeps',check_discard_json)
         d_dis = df_spend_dis.set_index('dimension').to_dict()['spend']
 
         for dim_ in discard_json.keys():
@@ -2504,7 +2503,6 @@ class optimizer_iterative_seasonality:
         """
         discard_json = {chnl:discard_json[chnl] for chnl in discard_json.keys() if(discard_json[chnl]!=0)}
         check_discard_json = bool(discard_json)
-        print('deeps',check_discard_json)
         d_dis = df_spend_dis.set_index('dimension').to_dict()['spend']
 
         for dim_ in discard_json.keys():
