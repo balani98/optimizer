@@ -248,7 +248,7 @@ def dimension_min_max(request):
             )
             try:
                 (
-                    df_optimizer_results_post_min_max, summary_metric_dic, confidence_score
+                    df_optimizer_results_post_min_max, summary_metric_dic, confidence_score, discarded_dim_considered_or_not
                 ) = optimizer_object.execute(scatter_plot_df,
                                              total_budget,
                                              date_range,
@@ -270,7 +270,7 @@ def dimension_min_max(request):
             optimizer_object = optimizer_iterative(df_predictor_page_latest_data, constraint_type, target_type)
             try:
                 (
-                    df_optimizer_results_post_min_max, summary_metric_dic, confidence_score
+                    df_optimizer_results_post_min_max, summary_metric_dic, confidence_score, discarded_dim_considered_or_not
                 ) = optimizer_object.execute(
                     scatter_plot_df,
                     total_budget,
@@ -424,6 +424,8 @@ def dimension_min_max(request):
         context["summary_metric_dic"] = summary_metric_dic
         context["target_type"] = target_type
         context["confidence_score"] = confidence_score
+        context['discarded_dimensions'] = discarded_dimensions
+        context["discarded_dim_considered_or_not"] = discarded_dim_considered_or_not
         return JsonResponse(context)
     except Exception as e:
         return JsonResponse({"error": ERROR_DICT[str(e)]}, status=500)

@@ -852,13 +852,13 @@
               </div>
               {% if drop_dimension_from_session|length != 0 %} 
               {% if target_type  == 'volume' %}
-              <p class="fw-bold" style="color: #9a3334">
+              <p class="fw-bold" style="color: #9a3334;display:none" id="discarded_dimensions_note">
                 Note: There might be discrepancy in the {{targetSelector}} as
                 discarded dimensions have been included in the media investment
                 plan
               </p>
               {% elif target_type == 'revenue' %}
-              <p class="fw-bold" style="color: #9a3334">
+              <p class="fw-bold" style="color: #9a3334;display:none" id = "discarded_dimensions_note">
                 Note: There might be discrepancy in the ROAS as discarded
                 dimensions have been included in the media investment plan
               </p>
@@ -1994,6 +1994,12 @@
               summary_metric_json = data.summary_metric_dic
               target_type = data.target_type
               confidence_score = data.confidence_score
+              discarded_dim_considered_or_not = data.discarded_dim_considered_or_not
+              if(discarded_dim_considered_or_not == true ){
+                document.getElementById('discarded_dimensions_note').style.display = 'block'
+              }else{
+                document.getElementById('discarded_dimensions_note').style.display = 'none'
+              }
               console.log("Success")
               console.log("submit_predictor_left_pannel_chart_inputs", global_optimizer_download_csv_json)
               console.log("json_table_1_data", json_table_1_data)

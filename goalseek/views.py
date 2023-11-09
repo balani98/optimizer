@@ -200,7 +200,8 @@ def left_panel_submit(request):
             optimize_obj_seasonality = optimizer_conversion_seasonality(df_predictor_page_latest_data, constraint_type,target_type, is_weekly_selected)
             (df_optimizer_results_post_min_max,
             summary_metric_dic,
-            confidence_score) = optimize_obj_seasonality.execute(scatter_plot_df,
+            confidence_score,
+            discarded_dim_considered_or_not) = optimize_obj_seasonality.execute(scatter_plot_df,
                                                                          total_conversion, 
                                                                          date_range,
                                                                          df_spend_dis,
@@ -219,7 +220,8 @@ def left_panel_submit(request):
             print('number_of_days',number_of_days)
             (df_optimizer_results_post_min_max,
              summary_metric_dic,
-             confidence_score) = optimize_con_obj.execute(scatter_plot_df, 
+             confidence_score,
+             discarded_dim_considered_or_not) = optimize_con_obj.execute(scatter_plot_df, 
                                                                          total_conversion, 
                                                                          number_of_days, 
                                                                          df_spend_dis, 
@@ -353,6 +355,7 @@ def left_panel_submit(request):
         context["dict_target_chart_data"] = dict_target_chart_data
         context["confidence_score"] = confidence_score
         context["summary_metric_dic"] = summary_metric_dic
+        context["discarded_dim_considered_or_not"] = discarded_dim_considered_or_not
         return JsonResponse(context)
     except Exception as e:
         return HttpResponse(ERROR_DICT[str(e)], status=403)
