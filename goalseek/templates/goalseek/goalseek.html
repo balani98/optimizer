@@ -1995,9 +1995,10 @@
               target_type = data.target_type
               confidence_score = data.confidence_score
               discarded_dim_considered_or_not = data.discarded_dim_considered_or_not
-              if(discarded_dim_considered_or_not == true ){
+              drop_dimension_from_session = data.drop_dimension_from_session
+              if(discarded_dim_considered_or_not == true && drop_dimension_from_session.length != 0){
                 document.getElementById('discarded_dimensions_note').style.display = 'block'
-              }else{
+              }else if(discarded_dim_considered_or_not == false && drop_dimension_from_session.length != 0){
                 document.getElementById('discarded_dimensions_note').style.display = 'none'
               }
               console.log("Success")
