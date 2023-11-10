@@ -317,7 +317,8 @@ def predictor_ajax_left_panel_submit(request):
                     drop_dimension,
                     d_cpm,
                     df_spend_dis,
-                    mean_median_dic
+                    mean_median_dic,
+                    response_curve_eqn_dic
                 ) = object_predictor_ml.execute()
             except Exception as error:
                 print(str(error))
@@ -335,7 +336,8 @@ def predictor_ajax_left_panel_submit(request):
                     scatter_plot_df,
                     drop_dimension,
                     df_spend_dis,
-                    mean_median_dic
+                    mean_median_dic,
+                    response_curve_eqn_dic
                 ) = object_predictor_ml.execute()
             except Exception as error:
                 print(str(error))
@@ -481,9 +483,11 @@ def predictor_ajax_left_panel_submit(request):
         context["transformed_mean_median_array"] = transformed_mean_median_array
         context["max_spend"] = max_spend
         context["max_predictions"] = max_predictions
+        context["response_curve_eqn_dic"] =  response_curve_eqn_dic
         context["target_type"] = target_type
         request.session["is_predict_page_submit_success"] = 1
         request.session["drop_dimension"] = drop_dimension
+        request.session["response_curve_eqn_dic"] = response_curve_eqn_dic
         return JsonResponse(context)
     except Exception as exp:
         print(f"\nException in predictor_ajax_left_panel_submit{exp}")
@@ -791,6 +795,7 @@ def predictor_ajax_predictor_discard(request):
         request.session["discarded_items"] = discarded_items
         discarded_items_from_session = request.session["discarded_items"]
         print(discarded_items_from_session)
+        response_curve_eqn_dic = request.session.get("response_curve_eqn_dic")
 
         # testing
         # reading the df
@@ -813,6 +818,9 @@ def predictor_ajax_predictor_discard(request):
                 discarded_items_from_session_array
             )
         ]
+        # removing the discarde dimensions from response curve dictionary
+        # Using a dictionary comprehension
+        response_curve_eqn_dic = {key: value for key, value in response_curve_eqn_dic.items() if key not in discarded_items_from_session_array}
 
         # saving( overwriting) the latest df
         _uuid = request.session.get("_uuid")
@@ -821,6 +829,7 @@ def predictor_ajax_predictor_discard(request):
 
         context["discarded_items"] = discarded_items_from_session_array
         context["drop_dimension_from_session"] = drop_dimension_from_session
+        context["response_curve_eqn_dic"] = response_curve_eqn_dic
         return JsonResponse(context)
     except Exception as exp:
         print(exp)
@@ -857,6 +866,7 @@ def predictor_window_on_load(request):
         default_dim = request.session.get("predictor_default_dim")
         cpm_checked = request.session.get("cpm_checked")
         target_type = request.session.get("target_type")
+        response_curve_eqn_dic = request.session.get("response_crve_eqn_dic")
         if seasonality == 0:
             predictor_unique_dimensions_json = request.session["predictor_unique_dimensions_json"]
         print("seasonality", seasonality)
@@ -975,6 +985,7 @@ def predictor_window_on_load(request):
         context["max_spend"] = max_spend
         context["max_predictions"] = max_predictions
         context["target_type"] = target_type
+        context["response_curve_eqn_dic"] =  response_curve_eqn_dic
         return JsonResponse(context, status=200)
 
     except Exception as exp:

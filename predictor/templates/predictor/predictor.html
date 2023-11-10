@@ -431,10 +431,17 @@
        
       
       <div class="explorer-chart" style ="padding:1.5rem;background-color:#fff">
-        <a href="{% url 'download_pdf' %}" class = "btn float-right btn-secondary" 
-        style="background-color:#9A3334;border-color:#9A3334">
-        
-        <i class="fa fa-download" aria-hidden="true" style="color:#fff; margin-right: 10px;"></i> Download</a>
+        <div class="d-flex flex-wrap align-content-end float-right">
+          <a type = 'button' onclick = "download_response_curve_eqn()" class = "btn btn-secondary ml-1 " 
+          style="background-color:#9A3334;border-color:#9A3334;color:#fff">
+          
+          <i class="fa fa-download" aria-hidden="true" style="color:#fff; margin-right: 10px;"></i>Export Formula</a>
+
+          <a href="{% url 'download_pdf' %}" class = "btn btn-secondary ml-1" 
+          style="background-color:#9A3334;border-color:#9A3334">
+          
+          <i class="fa fa-download" aria-hidden="true" style="color:#fff; margin-right: 10px;"></i> Download</a>
+        </div>
         <div class="dropdown">
           <select
             id="dimensionValueSelector"
@@ -687,6 +694,7 @@
   let global_unique_dimensions_json = {} 
   let mean_median_selection =  'median'
   let global_unchecked_dimensions = []
+  global_response_curve_eqn_dic = {}
   // Initiaze the datarange picker
   $('input[name="predictordaterange"]').daterangepicker()
   getPredictorStartAndEndDates()
@@ -1111,6 +1119,7 @@
         multi_line_chart_data2 = data.multi_line_chart_data2;
         original_mean_median_plotting_array = data.transformed_mean_median_array
         monthly_predictions_json = data.monthly_predictions_json
+        global_response_curve_eqn_dic = data.response_curve_eqn_dic
         // there should not be any unchecked dimension after time of submit
         global_unchecked_dimensions = []
         // make progress bar settings as before
@@ -2122,6 +2131,7 @@ function scatter_plot_chart(data) {
               onChangeHelperFunction(true)
                              // Start : Updating Drop dimension
               drop_dimension_from_session = data.drop_dimension_from_session
+              global_response_curve_eqn_dic = data.response_curve_eqn_dic
               if (drop_dimension_from_session) {
                 $("#drop_dimension_outer_div").css("display", "flex");
                 $("#drop_dimension_outer_div").css("flex-direction", "column");
@@ -2339,6 +2349,20 @@ $(window).on('load',function(){
     plot_median_dot()
     plot_mean_dot()
    })
+   function download(content, fileName, contentType) {
+    const a = document.createElement("a");
+    const file = new Blob([content], { type: contentType });
+    a.href = URL.createObjectURL(file);
+    a.download = fileName;
+    a.click();
+  }
+  function download_response_curve_eqn(){
+    var params = {}
+    console.log(global_response_curve_eqn_dic)
+    params['response curve formulation'] = global_response_curve_eqn_dic
+    params['Note'] = 'Coefficients in the equations are rounded to two decimal places, so the results might vary when compared to the response curves'
+    download(JSON.stringify(params,null,"\t") ,"response-curve-formulation.json", "application/json");
+  }
   {% if run_wondow_onload %}
     window.onload = predictor_window_on_load_front_end;
   {% endif %}

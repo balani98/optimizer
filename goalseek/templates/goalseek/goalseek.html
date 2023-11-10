@@ -846,10 +846,56 @@
                           </div>
                         </div>
                       </div>
+                      <div class="tooltip_outer_div" style="position: relative">
+                        <div
+                          style="
+                            display: flex;
+                            flex-direction: row;
+                            justify-content: left;
+                          "
+                        >
+                          <div>
+                            <i
+                              class="fa fa-info-circle"
+                              aria-hidden="true"
+                              style="color: #9a3334; font-size: 1.5rem"
+                            ></i>
+                          </div>
+                        </div>
+                        <span
+                          class="tooltiptext"
+                          style="position: absolute; margin-left: -9rem"
+                          >Confidence Score: Precision score for optimization
+                          calculated based on each dimension's response curve
+                          accuracy (computed through SMAPE i.e. 1-SMAPE) and
+                          optimized budget allocation%</span
+                        >
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
+              {% if drop_dimension_from_session|length != 0 %} 
+                {% if target_type == 'volume' %}
+              <p
+                class="fw-bold"
+                style="color: #9a3334; display: none"
+                id="discarded_dimensions_note"
+              >
+                Note: There might be discrepancy in the Cost Per {{targetSelector}} as
+                discarded dimensions have been included in the media investment
+                plan
+              </p>
+              {% elif target_type == 'revenue' %}
+              <p
+                class="fw-bold"
+                style="color: #9a3334; display: none"
+                id="discarded_dimensions_note"
+              >
+                Note: There might be discrepancy in the Return on Investment as discarded
+                dimensions have been included in the media investment plan
+              </p>
+              {% endif %} {% endif %}
             </div>
             <div class="col-lg-5 col-sm-12">
               <div class="tooltip_outer_div" style="position: relative">
@@ -1980,6 +2026,13 @@
               summary_metric_json = data.summary_metric_dic
               target_type = data.target_type
               confidence_score = data.confidence_score
+              discarded_dim_considered_or_not = data.discarded_dim_considered_or_not
+              drop_dimension_from_session = data.drop_dimension_from_session
+              if(discarded_dim_considered_or_not == true && drop_dimension_from_session.length != 0){
+                document.getElementById('discarded_dimensions_note').style.display = 'block'
+              }else if(discarded_dim_considered_or_not == false && drop_dimension_from_session.length != 0){
+                document.getElementById('discarded_dimensions_note').style.display = 'none'
+              }
               console.log("Success")
               console.log("submit_predictor_left_pannel_chart_inputs", global_optimizer_download_csv_json)
               console.log("json_table_1_data", json_table_1_data)
