@@ -262,12 +262,24 @@
           </div>
           {% if seasonality %}
           <div class="tooltip_outer_div">
-            <input
-              class="optimiser-date-input"
-              type="text"
-              name="daterange"
-              id="optimizer_date_picker"
-            />
+            <div class="d-flex align-items-center" style="width: 13.9rem">
+              <input
+                class="optimiser-date-input"
+                type="text"
+                name="start_date"
+                id="optimizer_date_picker_st_date"
+                style="width: 50%"
+                placeholder="Enter start date"
+              />
+              <input
+                class="optimiser-date-input"
+                type="text"
+                name="end_date"
+                id="optimizer_date_picker_end_date"
+                style="width: 50%"
+                placeholder="Enter end date"
+              />
+            </div>
             <span class="tooltiptext"
               >This will populate the total budget range. Select Dates : Start
               and End date</span
@@ -955,15 +967,15 @@
                 </div>
               </div>
               {% if drop_dimension_from_session|length != 0 %} 
-                {% if target_type == 'volume' %}
+              {% if target_type == 'volume' %}
               <p
                 class="fw-bold"
                 id="discarded_dimensions_note"
                 style="color: #9a3334; display: none"
               >
-                Note: There might be discrepancy in the Cost Per {{targetSelector}} as
-                discarded dimensions have been included in the media investment
-                plan
+                Note: There might be discrepancy in the Cost Per
+                {{targetSelector}} as discarded dimensions have been included in
+                the media investment plan
               </p>
               {% elif target_type == 'revenue' %}
               <p
@@ -971,8 +983,9 @@
                 id="discarded_dimensions_note"
                 style="color: #9a3334; display: none"
               >
-                Note: There might be discrepancy in the Return On Investment as discarded
-                dimensions have been included in the media investment plan
+                Note: There might be discrepancy in the Return On Investment as
+                discarded dimensions have been included in the media investment
+                plan
               </p>
               {% endif %} {% endif %}
             </div>
@@ -1748,9 +1761,14 @@
       global_my_optimizer_target_bar_chart = 0
       global_my_optimizer_line_chart = 0
       validation_of_inputs = false
+      is_weekly_selected = 0
+      convert_to_weekly_data = 0
       console.log("global_seasonality", global_seasonality)
 
+
       $(window).on('load',function(){
+        is_weekly_selected = get_is_weekly_selected()
+        convert_to_weekly_data = get_convert_to_weekly_data()
         $('#optimizer-btn').addClass('active')
         $('#explorer-btn').removeClass('active')
         $('#predictor-btn').removeClass('active')
@@ -1760,13 +1778,63 @@
         $('.cpm_value , .cpm_perc_value').each(function(i,obj){
           obj.value = Math.round(obj.value);
         })
-        $('#optimizer_date_picker').daterangepicker({
-            startDate: moment(),
-            endDate: moment().add(5, 'day'),
-            locale: {
-                format: 'MM/DD/YYYY'
-            }
-          });
+
+        // Define a function to handle beforeShowDay logic for end date
+        function updateEndDatePickerBeforeShowDay(date) {
+            var startDate = $('#optimizer_date_picker_st_date').datepicker('getDate');
+            var daysDifference = Math.floor((date - startDate) / (24 * 60 * 60 * 1000));
+            var today = new Date(); // Get today's date
+            today.setHours(0, 0, 0, 0); // Set hours, minutes, seconds, and milliseconds to 0 for comparison
+
+          if(is_weekly_selected || convert_to_weekly_data){
+              if (date <= startDate || date.getTime() === today.getTime()) {
+                return false;
+            }else
+              return daysDifference % 7 === 0; // Mark the date as valid if it's a multiple of 7
+          }else{
+            if (date < startDate) {
+              return false;
+          }else
+            return true
+          }
+        }
+        var currentDate = new Date()
+        currentDate.setHours(0, 0, 0, 0);
+        // Add 5 days to the current date
+        var currentEndDate = new Date()
+        currentEndDate.setHours(0, 0, 0, 0);
+        if(is_weekly_selected || convert_to_weekly_data)
+          currentEndDate.setDate(currentDate.getDate() + 5*7);
+        else
+        currentEndDate.setDate(currentDate.getDate() + 5);
+        $("#optimizer_date_picker_st_date").datepicker({
+          autoclose: true,
+          todayHighlight: true,
+          orientation:'auto',
+          startDate:currentDate,
+          toggleActive:true,
+          format:'mm/dd/yyyy'
+        }).datepicker('update', currentDate).on('changeDate', function (e) {
+          var newStartDate = e.date;
+          var newEndDate = new Date(newStartDate);
+          if(is_weekly_selected || convert_to_weekly_data)
+            newEndDate.setDate(newEndDate.getDate() + 35); // Set end date to be 5 days after start date
+          else
+           newEndDate.setDate(newEndDate.getDate() + 5);
+            $("#optimizer_date_picker_end_date").datepicker('setBeforeShowDay', updateEndDatePickerBeforeShowDay);
+          $("#optimizer_date_picker_end_date").datepicker('update');
+          $("#optimizer_date_picker_end_date").datepicker('setDate',newEndDate);
+        });
+
+        $("#optimizer_date_picker_end_date").datepicker({
+          autoclose: true,
+          startDate:currentDate,
+          orientation:'right',
+          toggleActive:true,
+          format:'mm/dd/yyyy',
+          beforeShowDay: updateEndDatePickerBeforeShowDay
+        }).datepicker('update',currentEndDate)
+
         // renaming the table column (conversion)
         var table_element0 = document.getElementById('table_1_optimizer').
                       children[0].children[0].children[7];
@@ -1776,7 +1844,7 @@
                       children[0].children[0].children[9];
         var table_element3 = document.getElementById('table_1_optimizer').
                       children[0].children[0].children[10];
-        if(get_is_weekly_selected() == 1 || get_convert_to_weekly_data() == 1)
+        if(is_weekly_selected == 1 || convert_to_weekly_data == 1)
           table_element0.innerText = window.localStorage.getItem('target_selector') + " per week";
         else
           table_element0.innerText = window.localStorage.getItem('target_selector') + " per day";
@@ -1784,20 +1852,23 @@
         table_element2.innerText = "% of " + window.localStorage.getItem('target_selector');
         constraint_type = window.localStorage.getItem('constraint_type')
         table_element3.innerText = window.localStorage.getItem('target_selector') + " at Original " + constraint_type +" Allocation %";
-        $('#optimizer_date_picker').on("apply.daterangepicker", function (ev, picker) {
-          $('#total_budget').val(null);
-          global_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
-          global_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
-          date_format_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate._d;
-          date_format_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate._d;
-          let diff_time = Math.abs(date_format_end_date - date_format_start_date)
-          let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
-          update_number_of_days(diff_days)
-          console.log(`\n global_start_date : ${global_start_date}
-                      \n global_end_date : ${global_end_date}
-                      \n diff_days : ${diff_days}`)
-        });
+        $('#optimizer_date_picker_end_date ,#optimizer_date_picker_st_date').datepicker()
+        .on('changeDate', function(e) {
+        // `e` here contains the extra attributes
+      $('#total_budget').val(null);
+      global_start_date = $('#optimizer_date_picker_st_date').datepicker('getDate')
+      global_end_date = $('#optimizer_date_picker_end_date').datepicker('getDate')
+      date_format_start_date = global_start_date.getTime() ;
+      date_format_end_date = global_end_date.getTime();
+      let diff_time = Math.abs(date_format_end_date - date_format_start_date)
+      let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
+      update_number_of_days(diff_days)
+      console.log(`\n global_start_date : ${global_start_date}
+                  \n global_end_date : ${global_end_date}
+                  \n diff_days : ${diff_days}`)
+    });
        })
+
     // function to get cookies
     function getCookie(name) {
         if (!document.cookie) {
@@ -2143,7 +2214,7 @@
         return
       }
       var budget_per_day_week = optimizer_left_panel_total_budget/optimizer_left_panel_number_of_days;
-      if(get_is_weekly_selected() == 1 || get_convert_to_weekly_data() == 1)
+      if(is_weekly_selected == 1 || convert_to_weekly_data == 1)
         document.getElementById('budget_per_day_text').innerText = 'Investment per week : '
                +   `$ ${Math.round(budget_per_day_week).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
       else
@@ -2216,11 +2287,13 @@
       }else{
           selectedDimensions = getSelectedDimensions()
           if(global_seasonality){
-          date_format_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate._d;
-          date_format_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate._d;
-          let diff_time = Math.abs( date_format_end_date - date_format_start_date)
-          let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
-          optimizer_left_panel_number_of_days = diff_days;
+            global_start_date = $('#optimizer_date_picker_st_date').datepicker('getDate')
+            global_end_date = $('#optimizer_date_picker_end_date').datepicker('getDate')
+            date_format_start_date = global_start_date.getTime() ;
+            date_format_end_date = global_end_date.getTime();
+            let diff_time = Math.abs( date_format_end_date - date_format_start_date)
+           let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
+           optimizer_left_panel_number_of_days = diff_days;
         }
         type_of_input = document.getElementById('customSwitch1').checked == true ? 'perc' : 'abs';
         for (let key in global_optimizer_left_pannel_data){
@@ -2263,595 +2336,262 @@
 
 {% comment %} on submit {% endcomment %}
 <script>
-      function getIsolatedDimensionsFromGroup(){
-        isolated_dimensions = []
-        $('.input_checkbox_group_constraint').each(function(){
-          if(this.checked == false && this.disabled == false)
-            isolated_dimensions.push(this.name)
-        })
-        return isolated_dimensions
-      }
-      function submit_predictor_left_pannel_chart_inputs() {
-        console.log("inputs submitted")
-        // Final validation before the submit
-        optimizer_left_panel_total_budget = document.getElementById('total_budget').value.replace(/,/g, '').replace('$','');
-        if(!global_seasonality)
-          optimizer_left_panel_total_budget = parseInt(optimizer_left_panel_total_budget) -
-          global_sum_fixed_budget_values*optimizer_left_panel_number_of_days;
-        else {
-          date_format_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate._d;
-          date_format_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate._d;
-          let diff_time = Math.abs( date_format_end_date - date_format_start_date)
-          let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
-          optimizer_left_panel_total_budget = parseInt(optimizer_left_panel_total_budget) -
-          global_sum_fixed_budget_values*diff_days;
+        function getIsolatedDimensionsFromGroup(){
+          isolated_dimensions = []
+          $('.input_checkbox_group_constraint').each(function(){
+            if(this.checked == false && this.disabled == false)
+              isolated_dimensions.push(this.name)
+          })
+          return isolated_dimensions
         }
-        if(optimizer_left_panel_total_budget == 0 || isNaN(optimizer_left_panel_total_budget)){
-          alert("Please add valid Total Budget before submitting")
-          return
-        }
+        function submit_predictor_left_pannel_chart_inputs() {
+          console.log("inputs submitted")
+          // Final validation before the submit
+          optimizer_left_panel_total_budget = document.getElementById('total_budget').value.replace(/,/g, '').replace('$','');
+          if(!global_seasonality)
+            optimizer_left_panel_total_budget = parseInt(optimizer_left_panel_total_budget) -
+            global_sum_fixed_budget_values*optimizer_left_panel_number_of_days;
+          else {
+            global_start_date = $('#optimizer_date_picker_st_date').datepicker('getDate')
+            global_end_date = $('#optimizer_date_picker_end_date').datepicker('getDate')
+            date_format_start_date = global_start_date.getTime() ;
+            date_format_end_date = global_end_date.getTime();
+            let diff_time = Math.abs( date_format_end_date - date_format_start_date)
+            let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
+            optimizer_left_panel_total_budget = parseInt(optimizer_left_panel_total_budget) -
+            global_sum_fixed_budget_values*diff_days;
+          }
+          if(optimizer_left_panel_total_budget == 0 || isNaN(optimizer_left_panel_total_budget)){
+            alert("Please add valid Total Budget before submitting")
+            return
+          }
 
-        checkedDimensions = getSelectedDimensions()
-        if(checkedDimensions.length == 0){
-          alert("Atleast one dimension must be selected")
-         return
-        }
-        $('#spinner-optimizer').css('display','block');
-        $('#container').css('opacity',0.5);
-        $("body").css("background-color", "#cecece");
-        $('#container').css('pointer-events','none');
-        if(optimizer_left_panel_number_of_days < 0 || optimizer_left_panel_number_of_days > 365){
-          alert("Please add valid Days / Date range before submitting")
-          return
-        }
-        // re-initializing the variables
-        if(global_seasonality){
-          global_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
-          global_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
-        }
-        stringified_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data).replaceAll('&amp;', '&'));
-        if(flag_to_show_grouped_dimensions == 1){
-          stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(global_grouped_optimizer_left_panel_data)
-          isolatedDimensions = getIsolatedDimensionsFromGroup()
-        }
-          var dimension_keys = Object.keys(stringified_global_optimizer_left_pannel_data)
-        // splicing the elements at 2 , 3 , 4
-        const removeValFromIndex = [2 , 3, 4];
-        const indexSet = new Set(removeValFromIndex);
-        dimension_keys.forEach((key)=>{
-          stringified_global_optimizer_left_pannel_data[key] =
-          stringified_global_optimizer_left_pannel_data[key].filter((value, i) => !indexSet.has(i));
-        })
-        // re stringifiying the json
-        stringified_global_optimizer_left_pannel_data = JSON.stringify(stringified_global_optimizer_left_pannel_data)
-        stringified_discarded_dimensions_json = JSON.stringify(discarded_dimensions_json)
-        document.getElementById('right_div').style.display = "block";
-        data_to_submit = 0
-        if(global_seasonality){
-          data_to_submit = {
-            seasonality : global_seasonality,
-            dimension_min_max: stringified_global_optimizer_left_pannel_data,
-            total_budget : optimizer_left_panel_total_budget,
-            start_date: global_start_date,
-            end_date:global_end_date,
-            discarded_dimensions:stringified_discarded_dimensions_json,
-            selected_dimensions:checkedDimensions.toString(),
+          checkedDimensions = getSelectedDimensions()
+          if(checkedDimensions.length == 0){
+            alert("Atleast one dimension must be selected")
+           return
           }
-        }else{
-          data_to_submit = {
-            seasonality : global_seasonality,
-            dimension_min_max: stringified_global_optimizer_left_pannel_data,
-            total_budget : optimizer_left_panel_total_budget,
-            number_of_days : optimizer_left_panel_number_of_days,
-            discarded_dimensions:stringified_discarded_dimensions_json,
-            selected_dimensions:checkedDimensions.toString(),
+          $('#spinner-optimizer').css('display','block');
+          $('#container').css('opacity',0.5);
+          $("body").css("background-color", "#cecece");
+          $('#container').css('pointer-events','none');
+          if(optimizer_left_panel_number_of_days < 0 || optimizer_left_panel_number_of_days > 365){
+            alert("Please add valid Days / Date range before submitting")
+            return
           }
-        }
-        if(flag_to_show_grouped_dimensions == 1){
-          data_to_submit["dimension_capping_constraints"] = stringified_global_grouped_optimizer_left_pannel_data
-          data_to_submit["isolated_dimensions"] = isolatedDimensions.toString()
-        }
-        console.log("sending data data_to_submit",data_to_submit )
-        $.ajax({
-          url: '/optimizer/ajax/left_pannel_dimension_min_max/',
-          data: JSON.stringify(data_to_submit),
-          type : 'POST',
-          headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-          },
-          success: function (data) {
-              console.log("From success", data)
+          // re-initializing the variables
+          if(global_seasonality){
+            global_start_date = $('#optimizer_date_picker_st_date').datepicker('getDate').toLocaleDateString('en-US', {
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit'
+  }).replace(/\//g, '-'); // Replace slashes with hyphens;
+        global_end_date = $('#optimizer_date_picker_end_date').datepicker('getDate').toLocaleDateString('en-US', {
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit'
+  }).replace(/\//g, '-'); // Replace slashes with hyphens;
+
+          }
+          stringified_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data).replaceAll('&amp;', '&'));
+          if(flag_to_show_grouped_dimensions == 1){
+            stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(global_grouped_optimizer_left_panel_data)
+            isolatedDimensions = getIsolatedDimensionsFromGroup()
+          }
+            var dimension_keys = Object.keys(stringified_global_optimizer_left_pannel_data)
+          // splicing the elements at 2 , 3 , 4
+          const removeValFromIndex = [2 , 3, 4];
+          const indexSet = new Set(removeValFromIndex);
+          dimension_keys.forEach((key)=>{
+            stringified_global_optimizer_left_pannel_data[key] =
+            stringified_global_optimizer_left_pannel_data[key].filter((value, i) => !indexSet.has(i));
+          })
+          // re stringifiying the json
+          stringified_global_optimizer_left_pannel_data = JSON.stringify(stringified_global_optimizer_left_pannel_data)
+          stringified_discarded_dimensions_json = JSON.stringify(discarded_dimensions_json)
+          document.getElementById('right_div').style.display = "block";
+          data_to_submit = 0
+          if(global_seasonality){
+            data_to_submit = {
+              seasonality : global_seasonality,
+              dimension_min_max: stringified_global_optimizer_left_pannel_data,
+              total_budget : optimizer_left_panel_total_budget,
+              start_date: global_start_date,
+              end_date:global_end_date,
+              discarded_dimensions:stringified_discarded_dimensions_json,
+              selected_dimensions:checkedDimensions.toString(),
+            }
+          }else{
+            data_to_submit = {
+              seasonality : global_seasonality,
+              dimension_min_max: stringified_global_optimizer_left_pannel_data,
+              total_budget : optimizer_left_panel_total_budget,
+              number_of_days : optimizer_left_panel_number_of_days,
+              discarded_dimensions:stringified_discarded_dimensions_json,
+              selected_dimensions:checkedDimensions.toString(),
+            }
+          }
+          if(flag_to_show_grouped_dimensions == 1){
+            data_to_submit["dimension_capping_constraints"] = stringified_global_grouped_optimizer_left_pannel_data
+            data_to_submit["isolated_dimensions"] = isolatedDimensions.toString()
+          }
+          console.log("sending data data_to_submit",data_to_submit )
+          $.ajax({
+            url: '/optimizer/ajax/left_pannel_dimension_min_max/',
+            data: JSON.stringify(data_to_submit),
+            type : 'POST',
+            headers: {
+              'X-CSRFToken': getCookie('csrftoken')
+            },
+            success: function (data) {
+                console.log("From success", data)
+                $('#container').css('opacity',1);
+                $("body").css("background-color", "#fff");
+                $('#container').css('pointer-events','auto');
+                $('#spinner-optimizer').css('display','none');
+                global_optimizer_download_csv_json = data.optimizer_download_csv_json
+                constraint_type = data.constraint_type
+                json_table_1_data = data.json_table_1_data
+                //json_donut_chart_data = data.json_donut_chart_data
+                dict_donut_chart_data = data.dict_donut_chart_data
+                dict_target_chart_data = data.dict_target_chart_data
+                dict_line_chart_data = data.dict_line_chart_data
+                summary_metric_json = data.summary_metric_dic
+                target_type = data.target_type
+                confidence_score = data.confidence_score
+                discarded_dim_considered_or_not = data.discarded_dim_considered_or_not
+                drop_dimension_from_session = data.drop_dimension_from_session
+                if(discarded_dim_considered_or_not == true && drop_dimension_from_session.length != 0){
+                  document.getElementById('discarded_dimensions_note').style.display = 'block'
+                }else if(discarded_dim_considered_or_not == false && drop_dimension_from_session.length != 0){
+                  document.getElementById('discarded_dimensions_note').style.display = 'none'
+                }
+                console.log("submit_predictor_left_pannel_chart_inputs", global_optimizer_download_csv_json)
+                console.log("json_table_1_data", json_table_1_data)
+                //console.log("json_donut_chart_data", json_donut_chart_data)
+                console.log("dict_donut_chart_data", dict_donut_chart_data)
+                populate_table_1(json_table_1_data, constraint_type)
+                populate_table_summary_metric(summary_metric_json,confidence_score)
+                if(global_my_optimizer_bar_chart != 0){
+                  console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
+                  global_my_optimizer_bar_chart.destroy();
+                }
+                if(global_optimizer_cpa_bar_chart != 0){
+                  global_optimizer_cpa_bar_chart.destroy();
+                }
+                if(global_my_optimizer_target_bar_chart != 0){
+                  global_my_optimizer_target_bar_chart.destroy();
+                }
+                populate_grouped_bar_chart(dict_donut_chart_data,constraint_type)
+                populate_cpa_graph(summary_metric_json, target_type)
+                populate_grouped_target_bar_chart(dict_target_chart_data)
+                //$("#optimizer__total_1_value").val(5)
+                //$("#optimizer__total_2_value").val(888)
+            },
+            error: function (error_object) {
+              console.log("From errors", error_object.responseJSON.error);
               $('#container').css('opacity',1);
               $("body").css("background-color", "#fff");
               $('#container').css('pointer-events','auto');
               $('#spinner-optimizer').css('display','none');
-              global_optimizer_download_csv_json = data.optimizer_download_csv_json
-              constraint_type = data.constraint_type
-              json_table_1_data = data.json_table_1_data
-              //json_donut_chart_data = data.json_donut_chart_data
-              dict_donut_chart_data = data.dict_donut_chart_data
-              dict_target_chart_data = data.dict_target_chart_data
-              dict_line_chart_data = data.dict_line_chart_data
-              summary_metric_json = data.summary_metric_dic
-              target_type = data.target_type
-              confidence_score = data.confidence_score
-              discarded_dim_considered_or_not = data.discarded_dim_considered_or_not
-              drop_dimension_from_session = data.drop_dimension_from_session
-              if(discarded_dim_considered_or_not == true && drop_dimension_from_session.length != 0){
-                document.getElementById('discarded_dimensions_note').style.display = 'block'
-              }else if(discarded_dim_considered_or_not == false && drop_dimension_from_session.length != 0){
-                document.getElementById('discarded_dimensions_note').style.display = 'none'
-              }
-              console.log("submit_predictor_left_pannel_chart_inputs", global_optimizer_download_csv_json)
-              console.log("json_table_1_data", json_table_1_data)
-              //console.log("json_donut_chart_data", json_donut_chart_data)
-              console.log("dict_donut_chart_data", dict_donut_chart_data)
-              populate_table_1(json_table_1_data, constraint_type)
-              populate_table_summary_metric(summary_metric_json,confidence_score)
-              if(global_my_optimizer_bar_chart != 0){
-                console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
-                global_my_optimizer_bar_chart.destroy();
-              }
-              if(global_optimizer_cpa_bar_chart != 0){
-                global_optimizer_cpa_bar_chart.destroy();
-              }
-              if(global_my_optimizer_target_bar_chart != 0){
-                global_my_optimizer_target_bar_chart.destroy();
-              }
-              populate_grouped_bar_chart(dict_donut_chart_data,constraint_type)
-              populate_cpa_graph(summary_metric_json, target_type)
-              populate_grouped_target_bar_chart(dict_target_chart_data)
-              //$("#optimizer__total_1_value").val(5)
-              //$("#optimizer__total_2_value").val(888)
-          },
-          error: function (error_object) {
-            console.log("From errors", error_object.responseJSON.error);
-            $('#container').css('opacity',1);
-            $("body").css("background-color", "#fff");
-            $('#container').css('pointer-events','auto');
-            $('#spinner-optimizer').css('display','none');
-            alert(error_object.responseJSON.error)
+              alert(error_object.responseJSON.error)
 
-            // $('.dimension_error').css("display", "block");
-            // $('.dimension_error').html(data.responseJSON.error); // add error to the dom
+              // $('.dimension_error').css("display", "block");
+              // $('.dimension_error').html(data.responseJSON.error); // add error to the dom
 
-          }
-      });
-
-      }
-
-      {% comment %} Download CSV  {% endcomment %}
-      function optimizer_download_csv_fn(){
-        console.log("optimizer_download_csv_fn");
-        // console.log(global_optimizer_download_csv_json);
-
-        //optimizer_download_csv_data = "test, fgsdg ,sdfgsd,fgsdf,gsgdfg"
-        //optimizer_download_csv_json = $("#or__csv-data").val()
-        optimizer_download_csv_json = global_optimizer_download_csv_json
-        optimizer_download_csv_data = JSON.parse(optimizer_download_csv_json)
-        //console.log("optimizer_download_csv_data", optimizer_download_csv_data)
-
-        let element = document.createElement('a');
-        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(optimizer_download_csv_data));
-        element.setAttribute('download', 'Optimized plan.csv');
-        element.style.display = 'none';
-        if (typeof element.download != "undefined") {
-            document.body.appendChild(element);
-            element.click();
-            document.body.removeChild(element);
-        }
-        else {
-            //browser does not support - alert the user
-            alert('This functionality is not supported by the current browser, recommend trying with Google Chrome instead.');
-        }
-
-      }
-
-      // function to draw the CPA bars graph
-      function populate_cpa_graph(summary_metric_json, target_type){
-        let xValues = []
-        let y_label = ""
-        let max_value_on_y_axis = Math.max(summary_metric_json["Current Projection CPA/ROI"], summary_metric_json["Optimized CPA/ROI"])
-        if(target_type == 'volume'){
-          xValues = ["CPA plans"]
-          y_label = "CPA"
-        }
-        else if(target_type == 'revenue'){
-          xValues = ["ROI plans"]
-          y_label = "ROI"
-        }
-        let barColors = global_chart_colors
-        ctx = "optimizer_CPA_chart"
-        const topLabels = {
-          'id': 'topLabels',
-          afterDatasetsDraw(chart, args, pluginOptions){
-            const {ctx, scales : {x, y} } = chart;
-            ctx.font = 'bold 15px sans-serif'
-            ctx.fillStyle = '#fff';
-            ctx.textAlign = 'center'
-            if(target_type == 'volume'){
-              ctx.fillText(`$ ${Math.round(summary_metric_json["Current Projection CPA/ROI"])}`, x.getPixelForValue(0) - 80, chart.getDatasetMeta(0).data[0].y+14)
-              ctx.fillText(`$ ${Math.round(summary_metric_json["Optimized CPA/ROI"])}`, x.getPixelForValue(0) + 80, chart.getDatasetMeta(1).data[0].y+14)
-            }else{
-              ctx.fillText(`${Math.round(summary_metric_json["Current Projection CPA/ROI"])}`,  x.getPixelForValue(0) - 80, chart.getDatasetMeta(0).data[0].y+14)
-              ctx.fillText(`${Math.round(summary_metric_json["Optimized CPA/ROI"])}`, x.getPixelForValue(0) + 80, chart.getDatasetMeta(1).data[0].y+14)
             }
-            }
-        }
-        config = {
-          type: "bar",
-          data: {
-            labels: xValues,
-            datasets: [
-              {
-                label: 'Initial Plan',
-                data: [Math.round(summary_metric_json["Current Projection CPA/ROI"])],
-                backgroundColor: '#a7a7a6'
-
-              },
-              {
-                label: 'Optimized Plan',
-                data: [Math.round(summary_metric_json["Optimized CPA/ROI"])],
-                backgroundColor: '#9A3334',
-              }],
-          },
-          plugins:[topLabels],
-          options: {
-            responsive: true,
-            interaction: {
-              mode: 'index',
-              intersect: false,
-            },
-            stacked: false,
-            plugins: {
-              title: {
-                display: true,
-                text: '',
-                position: 'bottom'
-              },
-              tooltip : {
-                callbacks: {
-                  label: function(context) {
-                      let label = context.dataset.label || '';
-
-                      if (label) {
-                          label += ': ';
-                      }
-                      if(target_type == 'volume')
-                        label += '$ ' + context.parsed.y ;
-                      else
-                        label += context.parsed.y ;
-                      return label;
-                  }
-                }
-              },
-            },
-            scales: {
-              x: {
-                display: true,
-                title: {
-                  display: true,
-                  text: '',
-                },
-              },
-              y: {
-                display: true ,
-                title: {
-                  display: true,
-                  text: y_label,
-                },
-                ticks:{
-                  callback: function(value, index) {
-                    if(target_type == 'volume')
-                      return '$ ' + value;
-                    else
-                      return value;
-                  },
-                  beginAtZero: true,
-                  max: Math.round(max_value_on_y_axis + 0.20*max_value_on_y_axis)
-                }
-              }
-            },
-          },
-        }
-        global_optimizer_cpa_bar_chart = new Chart(ctx, config);
-      }
-      // function to populate the summary metrics table
-      function populate_table_summary_metric(summary_metric_json,confidence_score){
-        // getting the value out of span
-        var total_budget_span_value = $('#total_budget_metric span');
-        var total_target_span_value = $('#total_target_metric span');
-        var roi_cpa_span_value = $('#roi_cpa_metric span');
-        var confidence_span_value = $('#confidence_metric span');
-        console.log($('#total_budget_metric span').text())
-        // appending the columns of table
-        total_budget_span_value.text(`$ ${summary_metric_json["Optimized Total Budget"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-        total_target_span_value.text(`${summary_metric_json["Optimized Total Target"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-        if(target_type=='volume')
-          roi_cpa_span_value.text("$ " + Math.round(summary_metric_json["Optimized CPA/ROI"]));
-        else
-        roi_cpa_span_value.text(Math.round(summary_metric_json["Optimized CPA/ROI"]));
-        confidence_span_value.text(`${confidence_score} %`) ;
-
-      }
-      {% comment %} Start : Populate Table  1 {% endcomment %}
-      function populate_table_1(json_table_1_data, constraint_type){
-        console.log("json_table_1_data")
-
-        table_body_1_optimizer.innerHTML = ""
-        for (const key in json_table_1_data) {
-          value = json_table_1_data[key]
-          // console.log(`${key} : ${value}`);
-          tableRow = document.createElement("tr");
-
-          td1 = document.createElement("td");
-          textNode1 = document.createTextNode(value["dimension"]);
-          td1.appendChild(textNode1);
-
-          td2 = document.createElement("td");
-          if(constraint_type == 'median')
-            textNode2 = document.createTextNode(`$ ${value["original_median_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-          else
-            textNode2 = document.createTextNode(`$ ${value["original_mean_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-          td2.appendChild(textNode2);
-
-          td3 = document.createElement("td");
-          textNode3 = document.createTextNode(`$ ${value["recommended_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-          td3.appendChild(textNode3);
-
-          td4 = document.createElement("td");
-          if(value["dimension"] == "Total"){
-          textNode4 = document.createTextNode(Math.round(value["total_buget_allocation_old_%"],2)+" %");
-          td4.appendChild(textNode4);
-          }
-          else{
-            textNode4 = document.createTextNode(value["total_buget_allocation_old_%"]+" %");
-            td4.appendChild(textNode4);
-          }
-          td5 = document.createElement("td");
-          if(constraint_type == 'median')
-            textNode5 = document.createTextNode(value["median_buget_allocation_old_%"]+" %");
-          else
-            textNode5 = document.createTextNode(value["mean_buget_allocation_old_%"]+" %");
-          td5.appendChild(textNode5);
-
-          td6 = document.createElement("td");
-          textNode6 = document.createTextNode(value["buget_allocation_new_%"]+" %");
-          td6.appendChild(textNode6);
-
-          td7 = document.createElement("td");
-          textNode7 = document.createTextNode(`$ ${value["recommended_budget_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-          td7.appendChild(textNode7);
-
-          td8 = document.createElement("td");
-          if(value["estimated_return_per_day"]){
-            textNode8 = document.createTextNode(`${value["estimated_return_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-            td8.appendChild(textNode8);
-          }else{
-            textNode8 = document.createTextNode(`${value["estimated_return_per_day"]}`);
-            td8.appendChild(textNode8);
-          }
-          td9 = document.createElement("td");
-          if(value["estimated_return_for_n_days"]){
-            textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-            td9.appendChild(textNode9);
-          }else{
-            textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"]}`);
-            td9.appendChild(textNode9);
-          }
-
-          td10 = document.createElement("td");
-          if(value["dimension"] == "Total"){
-            textNode10 = document.createTextNode(Math.round(value["estimated_return_%"],2)+" %");
-            td10.appendChild(textNode10);
-          }
-          else{
-            textNode10 = document.createTextNode(value["estimated_return_%"] +" %");
-            td10.appendChild(textNode10);
-          }
-          td11 = document.createElement("td");
-          if(value["current_projections_for_n_days"]){
-            textNode11 = document.createTextNode(`${value["current_projections_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
-            td11.appendChild(textNode11);
-          }else{
-            textNode11 = document.createTextNode(`${value["current_projections_for_n_days"]}`);
-            td11.appendChild(textNode11);
-          }
-          tableRow.appendChild(td1)
-          tableRow.appendChild(td2)
-          tableRow.appendChild(td3)
-          tableRow.appendChild(td4)
-          tableRow.appendChild(td5)
-          tableRow.appendChild(td6)
-          tableRow.appendChild(td7)
-          tableRow.appendChild(td8)
-          tableRow.appendChild(td9)
-          tableRow.appendChild(td10)
-          tableRow.appendChild(td11)
-          table_body_1_optimizer.appendChild(tableRow)
-
+        });
 
         }
-      }
-    // populate the target bar chart
-    function populate_grouped_target_bar_chart(dict_target_chart_data){
-      console.log("populate_grouped_bar_chart")
-      let canvasElement = document.getElementById("optimizer_target_bar_chart")
-      height = "80";
-      width = "80";
-      ctx = resizeCanvas(canvasElement, width, height);
-      let xValues = dict_target_chart_data['dimension']
-      let target_allocation_old = dict_target_chart_data["current_projections_%"]
-      let target_allocation_new = dict_target_chart_data["estimated_return_%"]
-      let barColors = global_chart_colors
-      //ctx = "optimizer_target_bar_chart"
-      config = {
-        type: "bar",
-        data: {
-          labels: xValues,
-          datasets: [
-            {
-              label: 'Target Allocation Original',
-              data: target_allocation_old,
-              backgroundColor: '#a7a7a6',
-            },
-            {
-              label: 'Target Allocation New',
-              data: target_allocation_new,
-              backgroundColor: '#9A3334',
-            }],
-        },
-        options: {
-          responsive: true,
-          indexAxis: 'y',
-         /* interaction: {
-            mode: 'index',
-            intersect: false,
-          }, */
-          stacked: false,
-          plugins: {
-            title: {
-              display: true,
-              text: '',
-              position: 'bottom'
-            },
-            zoom: {
-              zoom: {
-                wheel: {
-                  enabled: true,
-                },
-                pinch: {
-                  enabled: true
-                },
-                mode: 'y',
-              },pan:{
-                enabled:true,
-                mode:'y'
-              }
-            },
-            tooltip : {
-              callbacks: {
-                label: function(context) {
-                    let label = context.dataset.label || '';
 
-                    if (label) {
-                        label += ': ';
-                    }
-                    label += context.parsed.x + '%';
-                    return label;
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              display: true,
-              title: {
-                display: true,
-                text: 'Dimension',
-              },
-              ticks: {
-                // Shorten the label If it has more than 10 characters
-                callback: function(value, index) {
-                  return this.getLabelForValue(value).length > 10 ?
-                          this.getLabelForValue(value).substr(0,10) : this.getLabelForValue(value) ;
-                }
-              }
-            },
-            x: {
-              display: true ,
-              title: {
-                display: true,
-                text: '',
-              },
-              ticks:{
-                callback: function(value, index) {
-                  return value + '%'
-                }
-              }
-            }
-          },
+        {% comment %} Download CSV  {% endcomment %}
+        function optimizer_download_csv_fn(){
+          console.log("optimizer_download_csv_fn");
+          // console.log(global_optimizer_download_csv_json);
 
-        },
-      }
-      global_my_optimizer_target_bar_chart = new Chart(ctx, config);
-      console.log("global_my_optimizer_bar_chart", global_my_optimizer_target_bar_chart)
-  }
-  // function to resize canvas
-  function resizeCanvas(canvas, width, height) {
-    // Get the canvas context.
-    var ctx = canvas.getContext("2d");
+          //optimizer_download_csv_data = "test, fgsdg ,sdfgsd,fgsdf,gsgdfg"
+          //optimizer_download_csv_json = $("#or__csv-data").val()
+          optimizer_download_csv_json = global_optimizer_download_csv_json
+          optimizer_download_csv_data = JSON.parse(optimizer_download_csv_json)
+          //console.log("optimizer_download_csv_data", optimizer_download_csv_data)
 
-    // Set the canvas width and height.
-    canvas.width = width;
-    canvas.height = height;
+          let element = document.createElement('a');
+          element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(optimizer_download_csv_data));
+          element.setAttribute('download', 'Optimized plan.csv');
+          element.style.display = 'none';
+          if (typeof element.download != "undefined") {
+              document.body.appendChild(element);
+              element.click();
+              document.body.removeChild(element);
+          }
+          else {
+              //browser does not support - alert the user
+              alert('This functionality is not supported by the current browser, recommend trying with Google Chrome instead.');
+          }
 
-    // Clear the canvas.
-    ctx.clearRect(0, 0, width, height);
-    return ctx;
-  }
-      {% comment %} End : Populate Table  1 {% endcomment %}
+        }
 
-      {% comment %} Start : Populate Donut Chart{% endcomment %}
-      function populate_grouped_bar_chart(dict_donut_chart_data, constraint_type){
-          console.log("populate_grouped_bar_chart")
-          let canvasElement = document.getElementById("optimizer_bar_chart")
-          height = "80"
-          width = "80"
-          ctx = resizeCanvas(canvasElement, width, height)
-          let xValues = dict_donut_chart_data['dimension']
-          let buget_allocation_old = "";
-          if(constraint_type == 'median')
-            buget_allocation_old = dict_donut_chart_data['median_buget_allocation_old_%']
-          else
-            buget_allocation_old = dict_donut_chart_data['mean_buget_allocation_old_%']
-            let buget_allocation_new = dict_donut_chart_data['buget_allocation_new_%']
+        // function to draw the CPA bars graph
+        function populate_cpa_graph(summary_metric_json, target_type){
+          let xValues = []
+          let y_label = ""
+          let max_value_on_y_axis = Math.max(summary_metric_json["Current Projection CPA/ROI"], summary_metric_json["Optimized CPA/ROI"])
+          if(target_type == 'volume'){
+            xValues = ["CPA plans"]
+            y_label = "CPA"
+          }
+          else if(target_type == 'revenue'){
+            xValues = ["ROI plans"]
+            y_label = "ROI"
+          }
           let barColors = global_chart_colors
-          // ctx = "optimizer_bar_chart"
+          ctx = "optimizer_CPA_chart"
+          const topLabels = {
+            'id': 'topLabels',
+            afterDatasetsDraw(chart, args, pluginOptions){
+              const {ctx, scales : {x, y} } = chart;
+              ctx.font = 'bold 15px sans-serif'
+              ctx.fillStyle = '#fff';
+              ctx.textAlign = 'center'
+              if(target_type == 'volume'){
+                ctx.fillText(`$ ${Math.round(summary_metric_json["Current Projection CPA/ROI"])}`, x.getPixelForValue(0) - 80, chart.getDatasetMeta(0).data[0].y+14)
+                ctx.fillText(`$ ${Math.round(summary_metric_json["Optimized CPA/ROI"])}`, x.getPixelForValue(0) + 80, chart.getDatasetMeta(1).data[0].y+14)
+              }else{
+                ctx.fillText(`${Math.round(summary_metric_json["Current Projection CPA/ROI"])}`,  x.getPixelForValue(0) - 80, chart.getDatasetMeta(0).data[0].y+14)
+                ctx.fillText(`${Math.round(summary_metric_json["Optimized CPA/ROI"])}`, x.getPixelForValue(0) + 80, chart.getDatasetMeta(1).data[0].y+14)
+              }
+              }
+          }
           config = {
             type: "bar",
             data: {
               labels: xValues,
               datasets: [
                 {
-                  label: 'Buget Allocation Original',
-                  data: buget_allocation_old,
+                  label: 'Initial Plan',
+                  data: [Math.round(summary_metric_json["Current Projection CPA/ROI"])],
                   backgroundColor: '#a7a7a6'
 
                 },
                 {
-                  label: 'Buget Allocation New',
-                  data: buget_allocation_new,
+                  label: 'Optimized Plan',
+                  data: [Math.round(summary_metric_json["Optimized CPA/ROI"])],
                   backgroundColor: '#9A3334',
                 }],
             },
+            plugins:[topLabels],
             options: {
               responsive: true,
-              indexAxis:'y',
-            /*  interaction: {
+              interaction: {
                 mode: 'index',
                 intersect: false,
-              }, */
+              },
               stacked: false,
               plugins: {
                 title: {
                   display: true,
                   text: '',
                   position: 'bottom'
-                },
-                zoom: {
-                  zoom: {
-                    wheel: {
-                      enabled: true,
-                    },
-                    pinch: {
-                      enabled: true
-                    },
-                    mode: 'y',
-                  },pan:{
-                    enabled:true,
-                    mode:'y'
-                  }
                 },
                 tooltip : {
                   callbacks: {
@@ -2861,163 +2601,507 @@
                         if (label) {
                             label += ': ';
                         }
-                        label += context.parsed.x + '%';
+                        if(target_type == 'volume')
+                          label += '$ ' + context.parsed.y ;
+                        else
+                          label += context.parsed.y ;
                         return label;
                     }
                   }
-                }
+                },
               },
               scales: {
-                y: {
-                  display: true,
-                  title: {
-                    display: true,
-                    text: 'Dimension',
-                  },
-                  ticks: {
-                    // Shorten the label If it has more than 10 characters
-                    callback: function(value, index) {
-                      return this.getLabelForValue(value).length > 10 ?
-                              this.getLabelForValue(value).substr(0,10) : this.getLabelForValue(value) ;
-                    }
-                  }
-                },
                 x: {
-                  display: true ,
+                  display: true,
                   title: {
                     display: true,
                     text: '',
                   },
+                },
+                y: {
+                  display: true ,
+                  title: {
+                    display: true,
+                    text: y_label,
+                  },
                   ticks:{
                     callback: function(value, index) {
-                      return value + '%'
-                    }
+                      if(target_type == 'volume')
+                        return '$ ' + value;
+                      else
+                        return value;
+                    },
+                    beginAtZero: true,
+                    max: Math.round(max_value_on_y_axis + 0.20*max_value_on_y_axis)
                   }
                 }
               },
             },
           }
-          global_my_optimizer_bar_chart = new Chart(ctx, config);
-          console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
-
-
-      }
-      {% comment %} End : Populate Donut Chart {% endcomment %}
-
-     {% comment %} optimizer_save_the_plan  {% endcomment %}
-      function optimizer_save_the_plan(){
-        plan_name = $('#plan_name').val();
-        $.ajax({
-          url: '/optimizer/ajax/optimizer_save_the_plan/',
-          data: {
-            //testing data change late
-            plan_name : plan_name,
-            json_table_data : JSON.stringify(json_table_1_data),
-            donut_chart_data : JSON.stringify(dict_donut_chart_data),
-            left_hand_panel_data : JSON.stringify(global_optimizer_left_pannel_data),
-            discarded_dimensions_json : JSON.stringify(discarded_dimensions_json)
-            //testing data change late
-          },
-          success: function (data) {
-              console.log("Success optimizer_save_the_plan", data)
-              alert(data.message)
-          },
-          error : function(error){
-              alert(error.responseJSON.message)
-          }
-      });
-      }
-      // get is_weekly_selected variable
-      function get_is_weekly_selected(){
-        let is_weekly_selected
-        console.log("get_is_weekly_selected")
-        $.ajax({
-          async: false,
-          url: '/predictor/ajax/is_weekly_selected/',
-          success: function (data) {
-             is_weekly_selected = data.is_weekly_selected;
-            },
-          error: function (error_data) {
-            console.log(
-              "error in '/predictor/ajax/is_weekly_selected/'",
-              error_data
-            );
-            return 0;
-          },
-      })
-      return is_weekly_selected;
-    }
-      // get convert_to_weekly_data
-      function get_convert_to_weekly_data(){
-        let convert_to_weekly_data
-        console.log("get_convert_to_weekly_data")
-        $.ajax({
-          async: false,
-          url: '/predictor/ajax/convert_to_weekly_data/',
-          success: function (data) {
-             convert_to_weekly_data = data.convert_to_weekly_data;
-            },
-          error: function (error_data) {
-            console.log(
-              "error in '/predictor/ajax/convert_to_weekly_data/'",
-              error_data
-            );
-            return 0;
-          },
-      })
-      return convert_to_weekly_data;
-    }
-      // download json data
-      function download(content, fileName, contentType) {
-    		  const a = document.createElement("a");
-    		  const file = new Blob([content], { type: contentType });
-    		  a.href = URL.createObjectURL(file);
-    		  a.download = fileName;
-    		  a.click();
-    		}
-        function onDownload(){
-          params = {}
-          explorer_inputs = {};
-          predictor_inputs = {};
-          optimizer_inputs = {};
-          let is_weekly_selected  = get_is_weekly_selected()
-          let convert_to_weekly_data = get_convert_to_weekly_data()
-          explorer_inputs['date_selector'] = window.localStorage.getItem('date_selector');
-          explorer_inputs['use_impressions'] = window.localStorage.getItem('cpm_checkbox');
-          explorer_inputs['is_weekly_selected'] = is_weekly_selected;
-          explorer_inputs['convert_to_weekly_data'] = convert_to_weekly_data;
-          explorer_inputs['investment_selector'] = window.localStorage.getItem('investment_selector');
-          explorer_inputs['dimension_selector'] = window.localStorage.getItem('dimension_selector');
-          explorer_inputs['target_selector'] = window.localStorage.getItem('target_selector');
-          explorer_inputs['is_group_dimension_selected'] = flag_to_show_grouped_dimensions;
-          explorer_inputs['dimension_grouping_selector'] = window.localStorage.getItem('dimension_grouping_selector')
-          params['explorer_inputs'] = explorer_inputs;
-          predictor_inputs['seasonality'] = global_seasonality;
-          predictor_inputs['constraint_type'] = constraint_type;
-          if(global_seasonality !=1){
-            predictor_inputs['predictor_left_hand_dimensions_start_and_end_dates'] =  JSON.parse(
-              window.localStorage.getItem('predictor_left_hand_dimensions_start_and_end_dates')
-              )
-          }
-          params['predictor_inputs'] = predictor_inputs;
-          optimizer_inputs['left_panel_data'] = global_optimizer_left_pannel_data;
-          optimizer_inputs['discarded_dimensions'] = discarded_dimensions_json;
-          optimizer_inputs['total_budget'] = optimizer_left_panel_total_budget - global_sum_fixed_budget_values;
-          if(flag_to_show_grouped_dimensions == 1)
-            optimizer_inputs['dimension_capping_constraints'] = global_grouped_optimizer_left_panel_data
-          if(global_seasonality == 1){
-            optimizer_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
-            optimizer_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
-            optimizer_inputs['start_date_optimizer'] = optimizer_start_date;
-            optimizer_inputs['end_date_predictor'] = optimizer_end_date;
-          }
+          global_optimizer_cpa_bar_chart = new Chart(ctx, config);
+        }
+        // function to populate the summary metrics table
+        function populate_table_summary_metric(summary_metric_json,confidence_score){
+          // getting the value out of span
+          var total_budget_span_value = $('#total_budget_metric span');
+          var total_target_span_value = $('#total_target_metric span');
+          var roi_cpa_span_value = $('#roi_cpa_metric span');
+          var confidence_span_value = $('#confidence_metric span');
+          console.log($('#total_budget_metric span').text())
+          // appending the columns of table
+          total_budget_span_value.text(`$ ${summary_metric_json["Optimized Total Budget"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+          total_target_span_value.text(`${summary_metric_json["Optimized Total Target"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+          if(target_type=='volume')
+            roi_cpa_span_value.text("$ " + Math.round(summary_metric_json["Optimized CPA/ROI"]));
           else
-           optimizer_inputs['total_no_of_days'] = optimizer_left_panel_number_of_days;
-          params['optimizer_inputs'] = optimizer_inputs
-          download(JSON.stringify(params,null,"\t") ,"params.json", "application/json");
-    		}
-      {% comment %} {% if run_wondow_onload %}
-      window.onload = submit_predictor_chart_inputs;
-      {% endif %} {% endcomment %}
+          roi_cpa_span_value.text(Math.round(summary_metric_json["Optimized CPA/ROI"]));
+          confidence_span_value.text(`${confidence_score} %`) ;
+
+        }
+        {% comment %} Start : Populate Table  1 {% endcomment %}
+        function populate_table_1(json_table_1_data, constraint_type){
+          console.log("json_table_1_data")
+
+          table_body_1_optimizer.innerHTML = ""
+          for (const key in json_table_1_data) {
+            value = json_table_1_data[key]
+            // console.log(`${key} : ${value}`);
+            tableRow = document.createElement("tr");
+
+            td1 = document.createElement("td");
+            textNode1 = document.createTextNode(value["dimension"]);
+            td1.appendChild(textNode1);
+
+            td2 = document.createElement("td");
+            if(constraint_type == 'median')
+              textNode2 = document.createTextNode(`$ ${value["original_median_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+            else
+              textNode2 = document.createTextNode(`$ ${value["original_mean_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+            td2.appendChild(textNode2);
+
+            td3 = document.createElement("td");
+            textNode3 = document.createTextNode(`$ ${value["recommended_budget_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+            td3.appendChild(textNode3);
+
+            td4 = document.createElement("td");
+            if(value["dimension"] == "Total"){
+            textNode4 = document.createTextNode(Math.round(value["total_buget_allocation_old_%"],2)+" %");
+            td4.appendChild(textNode4);
+            }
+            else{
+              textNode4 = document.createTextNode(value["total_buget_allocation_old_%"]+" %");
+              td4.appendChild(textNode4);
+            }
+            td5 = document.createElement("td");
+            if(constraint_type == 'median')
+              textNode5 = document.createTextNode(value["median_buget_allocation_old_%"]+" %");
+            else
+              textNode5 = document.createTextNode(value["mean_buget_allocation_old_%"]+" %");
+            td5.appendChild(textNode5);
+
+            td6 = document.createElement("td");
+            textNode6 = document.createTextNode(value["buget_allocation_new_%"]+" %");
+            td6.appendChild(textNode6);
+
+            td7 = document.createElement("td");
+            textNode7 = document.createTextNode(`$ ${value["recommended_budget_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+            td7.appendChild(textNode7);
+
+            td8 = document.createElement("td");
+            if(value["estimated_return_per_day"]){
+              textNode8 = document.createTextNode(`${value["estimated_return_per_day"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+              td8.appendChild(textNode8);
+            }else{
+              textNode8 = document.createTextNode(`${value["estimated_return_per_day"]}`);
+              td8.appendChild(textNode8);
+            }
+            td9 = document.createElement("td");
+            if(value["estimated_return_for_n_days"]){
+              textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+              td9.appendChild(textNode9);
+            }else{
+              textNode9 = document.createTextNode(`${value["estimated_return_for_n_days"]}`);
+              td9.appendChild(textNode9);
+            }
+
+            td10 = document.createElement("td");
+            if(value["dimension"] == "Total"){
+              textNode10 = document.createTextNode(Math.round(value["estimated_return_%"],2)+" %");
+              td10.appendChild(textNode10);
+            }
+            else{
+              textNode10 = document.createTextNode(value["estimated_return_%"] +" %");
+              td10.appendChild(textNode10);
+            }
+            td11 = document.createElement("td");
+            if(value["current_projections_for_n_days"]){
+              textNode11 = document.createTextNode(`${value["current_projections_for_n_days"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
+              td11.appendChild(textNode11);
+            }else{
+              textNode11 = document.createTextNode(`${value["current_projections_for_n_days"]}`);
+              td11.appendChild(textNode11);
+            }
+            tableRow.appendChild(td1)
+            tableRow.appendChild(td2)
+            tableRow.appendChild(td3)
+            tableRow.appendChild(td4)
+            tableRow.appendChild(td5)
+            tableRow.appendChild(td6)
+            tableRow.appendChild(td7)
+            tableRow.appendChild(td8)
+            tableRow.appendChild(td9)
+            tableRow.appendChild(td10)
+            tableRow.appendChild(td11)
+            table_body_1_optimizer.appendChild(tableRow)
+
+
+          }
+        }
+      // populate the target bar chart
+      function populate_grouped_target_bar_chart(dict_target_chart_data){
+        console.log("populate_grouped_bar_chart")
+        let canvasElement = document.getElementById("optimizer_target_bar_chart")
+        height = "80";
+        width = "80";
+        ctx = resizeCanvas(canvasElement, width, height);
+        let xValues = dict_target_chart_data['dimension']
+        let target_allocation_old = dict_target_chart_data["current_projections_%"]
+        let target_allocation_new = dict_target_chart_data["estimated_return_%"]
+        let barColors = global_chart_colors
+        //ctx = "optimizer_target_bar_chart"
+        config = {
+          type: "bar",
+          data: {
+            labels: xValues,
+            datasets: [
+              {
+                label: 'Target Allocation Original',
+                data: target_allocation_old,
+                backgroundColor: '#a7a7a6',
+              },
+              {
+                label: 'Target Allocation New',
+                data: target_allocation_new,
+                backgroundColor: '#9A3334',
+              }],
+          },
+          options: {
+            responsive: true,
+            indexAxis: 'y',
+           /* interaction: {
+              mode: 'index',
+              intersect: false,
+            }, */
+            stacked: false,
+            plugins: {
+              title: {
+                display: true,
+                text: '',
+                position: 'bottom'
+              },
+              zoom: {
+                zoom: {
+                  wheel: {
+                    enabled: true,
+                  },
+                  pinch: {
+                    enabled: true
+                  },
+                  mode: 'y',
+                },pan:{
+                  enabled:true,
+                  mode:'y'
+                }
+              },
+              tooltip : {
+                callbacks: {
+                  label: function(context) {
+                      let label = context.dataset.label || '';
+
+                      if (label) {
+                          label += ': ';
+                      }
+                      label += context.parsed.x + '%';
+                      return label;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                display: true,
+                title: {
+                  display: true,
+                  text: 'Dimension',
+                },
+                ticks: {
+                  // Shorten the label If it has more than 10 characters
+                  callback: function(value, index) {
+                    return this.getLabelForValue(value).length > 10 ?
+                            this.getLabelForValue(value).substr(0,10) : this.getLabelForValue(value) ;
+                  }
+                }
+              },
+              x: {
+                display: true ,
+                title: {
+                  display: true,
+                  text: '',
+                },
+                ticks:{
+                  callback: function(value, index) {
+                    return value + '%'
+                  }
+                }
+              }
+            },
+
+          },
+        }
+        global_my_optimizer_target_bar_chart = new Chart(ctx, config);
+        console.log("global_my_optimizer_bar_chart", global_my_optimizer_target_bar_chart)
+    }
+    // function to resize canvas
+    function resizeCanvas(canvas, width, height) {
+      // Get the canvas context.
+      var ctx = canvas.getContext("2d");
+
+      // Set the canvas width and height.
+      canvas.width = width;
+      canvas.height = height;
+
+      // Clear the canvas.
+      ctx.clearRect(0, 0, width, height);
+      return ctx;
+    }
+        {% comment %} End : Populate Table  1 {% endcomment %}
+
+        {% comment %} Start : Populate Donut Chart{% endcomment %}
+        function populate_grouped_bar_chart(dict_donut_chart_data, constraint_type){
+            console.log("populate_grouped_bar_chart")
+            let canvasElement = document.getElementById("optimizer_bar_chart")
+            height = "80"
+            width = "80"
+            ctx = resizeCanvas(canvasElement, width, height)
+            let xValues = dict_donut_chart_data['dimension']
+            let buget_allocation_old = "";
+            if(constraint_type == 'median')
+              buget_allocation_old = dict_donut_chart_data['median_buget_allocation_old_%']
+            else
+              buget_allocation_old = dict_donut_chart_data['mean_buget_allocation_old_%']
+              let buget_allocation_new = dict_donut_chart_data['buget_allocation_new_%']
+            let barColors = global_chart_colors
+            // ctx = "optimizer_bar_chart"
+            config = {
+              type: "bar",
+              data: {
+                labels: xValues,
+                datasets: [
+                  {
+                    label: 'Buget Allocation Original',
+                    data: buget_allocation_old,
+                    backgroundColor: '#a7a7a6'
+
+                  },
+                  {
+                    label: 'Buget Allocation New',
+                    data: buget_allocation_new,
+                    backgroundColor: '#9A3334',
+                  }],
+              },
+              options: {
+                responsive: true,
+                indexAxis:'y',
+              /*  interaction: {
+                  mode: 'index',
+                  intersect: false,
+                }, */
+                stacked: false,
+                plugins: {
+                  title: {
+                    display: true,
+                    text: '',
+                    position: 'bottom'
+                  },
+                  zoom: {
+                    zoom: {
+                      wheel: {
+                        enabled: true,
+                      },
+                      pinch: {
+                        enabled: true
+                      },
+                      mode: 'y',
+                    },pan:{
+                      enabled:true,
+                      mode:'y'
+                    }
+                  },
+                  tooltip : {
+                    callbacks: {
+                      label: function(context) {
+                          let label = context.dataset.label || '';
+
+                          if (label) {
+                              label += ': ';
+                          }
+                          label += context.parsed.x + '%';
+                          return label;
+                      }
+                    }
+                  }
+                },
+                scales: {
+                  y: {
+                    display: true,
+                    title: {
+                      display: true,
+                      text: 'Dimension',
+                    },
+                    ticks: {
+                      // Shorten the label If it has more than 10 characters
+                      callback: function(value, index) {
+                        return this.getLabelForValue(value).length > 10 ?
+                                this.getLabelForValue(value).substr(0,10) : this.getLabelForValue(value) ;
+                      }
+                    }
+                  },
+                  x: {
+                    display: true ,
+                    title: {
+                      display: true,
+                      text: '',
+                    },
+                    ticks:{
+                      callback: function(value, index) {
+                        return value + '%'
+                      }
+                    }
+                  }
+                },
+              },
+            }
+            global_my_optimizer_bar_chart = new Chart(ctx, config);
+            console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
+
+
+        }
+        {% comment %} End : Populate Donut Chart {% endcomment %}
+
+       {% comment %} optimizer_save_the_plan  {% endcomment %}
+        function optimizer_save_the_plan(){
+          plan_name = $('#plan_name').val();
+          $.ajax({
+            url: '/optimizer/ajax/optimizer_save_the_plan/',
+            data: {
+              //testing data change late
+              plan_name : plan_name,
+              json_table_data : JSON.stringify(json_table_1_data),
+              donut_chart_data : JSON.stringify(dict_donut_chart_data),
+              left_hand_panel_data : JSON.stringify(global_optimizer_left_pannel_data),
+              discarded_dimensions_json : JSON.stringify(discarded_dimensions_json)
+              //testing data change late
+            },
+            success: function (data) {
+                console.log("Success optimizer_save_the_plan", data)
+                alert(data.message)
+            },
+            error : function(error){
+                alert(error.responseJSON.message)
+            }
+        });
+        }
+        // get is_weekly_selected variable
+        function get_is_weekly_selected(){
+          let is_weekly_selected
+          console.log("get_is_weekly_selected")
+          $.ajax({
+            async: false,
+            url: '/predictor/ajax/is_weekly_selected/',
+            success: function (data) {
+               is_weekly_selected = data.is_weekly_selected;
+              },
+            error: function (error_data) {
+              console.log(
+                "error in '/predictor/ajax/is_weekly_selected/'",
+                error_data
+              );
+              return 0;
+            },
+        })
+        return is_weekly_selected;
+      }
+        // get convert_to_weekly_data
+        function get_convert_to_weekly_data(){
+          let convert_to_weekly_data
+          console.log("get_convert_to_weekly_data")
+          $.ajax({
+            async: false,
+            url: '/predictor/ajax/convert_to_weekly_data/',
+            success: function (data) {
+               convert_to_weekly_data = data.convert_to_weekly_data;
+              },
+            error: function (error_data) {
+              console.log(
+                "error in '/predictor/ajax/convert_to_weekly_data/'",
+                error_data
+              );
+              return 0;
+            },
+        })
+        return convert_to_weekly_data;
+      }
+        // download json data
+        function download(content, fileName, contentType) {
+      		  const a = document.createElement("a");
+      		  const file = new Blob([content], { type: contentType });
+      		  a.href = URL.createObjectURL(file);
+      		  a.download = fileName;
+      		  a.click();
+      		}
+          function onDownload(){
+            params = {}
+            explorer_inputs = {};
+            predictor_inputs = {};
+            optimizer_inputs = {};
+            let is_weekly_selected  = is_weekly_selected
+            let convert_to_weekly_data = convert_to_weekly_data
+            explorer_inputs['date_selector'] = window.localStorage.getItem('date_selector');
+            explorer_inputs['use_impressions'] = window.localStorage.getItem('cpm_checkbox');
+            explorer_inputs['is_weekly_selected'] = is_weekly_selected;
+            explorer_inputs['convert_to_weekly_data'] = convert_to_weekly_data;
+            explorer_inputs['investment_selector'] = window.localStorage.getItem('investment_selector');
+            explorer_inputs['dimension_selector'] = window.localStorage.getItem('dimension_selector');
+            explorer_inputs['target_selector'] = window.localStorage.getItem('target_selector');
+            explorer_inputs['is_group_dimension_selected'] = flag_to_show_grouped_dimensions;
+            explorer_inputs['dimension_grouping_selector'] = window.localStorage.getItem('dimension_grouping_selector')
+            params['explorer_inputs'] = explorer_inputs;
+            predictor_inputs['seasonality'] = global_seasonality;
+            predictor_inputs['constraint_type'] = constraint_type;
+            if(global_seasonality !=1){
+              predictor_inputs['predictor_left_hand_dimensions_start_and_end_dates'] =  JSON.parse(
+                window.localStorage.getItem('predictor_left_hand_dimensions_start_and_end_dates')
+                )
+            }
+            params['predictor_inputs'] = predictor_inputs;
+            optimizer_inputs['left_panel_data'] = global_optimizer_left_pannel_data;
+            optimizer_inputs['discarded_dimensions'] = discarded_dimensions_json;
+            optimizer_inputs['total_budget'] = optimizer_left_panel_total_budget - global_sum_fixed_budget_values;
+            if(flag_to_show_grouped_dimensions == 1)
+              optimizer_inputs['dimension_capping_constraints'] = global_grouped_optimizer_left_panel_data
+            if(global_seasonality == 1){
+              optimizer_start_date =  $('#optimizer_date_picker_st_date').datepicker('getDate')
+              optimizer_end_date =$('#optimizer_date_picker_end_date').datepicker('getDate')
+              optimizer_inputs['start_date_optimizer'] = optimizer_start_date;
+              optimizer_inputs['end_date_predictor'] = optimizer_end_date;
+            }
+            else
+             optimizer_inputs['total_no_of_days'] = optimizer_left_panel_number_of_days;
+            params['optimizer_inputs'] = optimizer_inputs
+            download(JSON.stringify(params,null,"\t") ,"params.json", "application/json");
+      		}
+        {% comment %} {% if run_wondow_onload %}
+        window.onload = submit_predictor_chart_inputs;
+        {% endif %} {% endcomment %}
 </script>
 {%endblock%}
