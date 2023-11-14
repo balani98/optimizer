@@ -787,6 +787,7 @@
             >
           </div>
           <div style="margin: auto">
+            <p id= "no_of_weeks_days_text" style="color: #fff"></p>
             <p id="budget_per_day_text" style="color: #fff"></p>
             <button
               type="button"
@@ -2153,6 +2154,14 @@
     function update_number_of_days(value){
       $('#total_budget').val(null);
       optimizer_left_panel_number_of_days = parseInt(value)
+      if((is_weekly_selected == 1 || convert_to_weekly_data == 1) && global_seasonality == 1){
+        var optimizer_left_panel_number_of_weeks = optimizer_left_panel_number_of_days/7;
+        document.getElementById('no_of_weeks_days_text').innerText = 'No. of weeks selected : '
+                 +   `${Math.round(optimizer_left_panel_number_of_weeks).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
+        }else if(global_seasonality == 1){
+          document.getElementById('no_of_weeks_days_text').innerText = 'No. of days selected : '
+          +   `${Math.round(optimizer_left_panel_number_of_days).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
+        }
       update_global_optimizer_left_pannel_data()
       //total_budget.setAttribute('placeholder', `${range_min} - ${range_max}`)
      }
@@ -2214,7 +2223,13 @@
         return
       }
       var budget_per_day_week = optimizer_left_panel_total_budget/optimizer_left_panel_number_of_days;
-      if(is_weekly_selected == 1 || convert_to_weekly_data == 1)
+      if((is_weekly_selected == 1 || convert_to_weekly_data == 1) && global_seasonality == 1){
+      var optimizer_left_panel_number_of_weeks = optimizer_left_panel_number_of_days/7;
+      budget_per_day_week = optimizer_left_panel_total_budget/optimizer_left_panel_number_of_weeks;
+      
+      document.getElementById('budget_per_day_text').innerText = 'Investment per week : '
+               +   `$ ${Math.round(budget_per_day_week).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
+      }else if(is_weekly_selected == 1 || convert_to_weekly_data == 1)
         document.getElementById('budget_per_day_text').innerText = 'Investment per week : '
                +   `$ ${Math.round(budget_per_day_week).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
       else
@@ -2382,15 +2397,21 @@
           // re-initializing the variables
           if(global_seasonality){
             global_start_date = $('#optimizer_date_picker_st_date').datepicker('getDate').toLocaleDateString('en-US', {
-      year: '2-digit',
-      month: '2-digit',
-      day: '2-digit'
-  }).replace(/\//g, '-'); // Replace slashes with hyphens;
-        global_end_date = $('#optimizer_date_picker_end_date').datepicker('getDate').toLocaleDateString('en-US', {
-      year: '2-digit',
-      month: '2-digit',
-      day: '2-digit'
-  }).replace(/\//g, '-'); // Replace slashes with hyphens;
+               year: '2-digit',
+               month: '2-digit',
+               day: '2-digit'
+              }).replace(/\//g, '-'); // Replace slashes with hyphens;
+              var selectedDate = $('#optimizer_date_picker_end_date').datepicker('getDate');
+
+              // Subtract one day
+              selectedDate.setDate(selectedDate.getDate() - 1);
+              
+              // Format the date to 'YY-MM-DD'
+              global_end_date = selectedDate.toLocaleDateString('en-US', {
+                year: '2-digit',
+                month: '2-digit',
+                day: '2-digit'
+              }).replace(/\//g, '-');
 
           }
           stringified_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data).replaceAll('&amp;', '&'));

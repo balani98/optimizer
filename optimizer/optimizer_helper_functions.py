@@ -1389,7 +1389,7 @@ class optimizer_iterative:
 
 class optimizer_iterative_seasonality:
     
-    def __init__(self, df_param, constraint_type, target_type, is_weekly_selected):
+    def __init__(self, df_param, constraint_type, target_type, is_weekly_selected, convert_to_weekly_data):
         """initialization
 
         Args:
@@ -1403,7 +1403,7 @@ class optimizer_iterative_seasonality:
         self.constraint_type = constraint_type.lower()
         self.target_type = target_type.lower()
         self.is_weekly_selected = is_weekly_selected
-
+        self.convert_to_weekly_data = convert_to_weekly_data
         if "cpm" in df_param.columns:
             self.use_impression = True
             self.metric = 'impression'
@@ -2694,6 +2694,8 @@ class optimizer_iterative_seasonality:
             Dataframe:
                 Final Result Dataframe: Optimized Spend/Impression and Conversion for every dimension
         """
+        if self.convert_to_weekly_data == True:
+            self.is_weekly_selected = True 
         d_param_old=copy.deepcopy(self.d_param)
         df_param_temp= pd.DataFrame(self.d_param).T.reset_index(drop=False).rename({'index':'dimension'}, axis=1)
         df_param_temp=df_param_temp[df_param_temp['dimension'].isin(lst_dim)].reset_index(drop=True)
@@ -2727,7 +2729,8 @@ class optimizer_iterative_seasonality:
         budget_per_day = budget/days
         budget_per_day = (np.trunc(budget_per_day*100)/100)
         # budget_per_day = np.round((budget/days),2)
-
+        print('deeps',budget, budget_per_day, days)
+        print('deeps',self.is_weekly_selected, self.convert_to_weekly_data)
         # Update if group dimension constraint selected
         if group_constraint!=None:
             self.is_group_dimension_selected = True

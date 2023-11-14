@@ -224,6 +224,13 @@ def dimension_min_max(request):
         selected_dimensions = body['selected_dimensions'].split(",")
         is_group_dimension_selected = request.session.get("dimension_grouping_check")
         is_weekly_selected = request.session.get("is_weekly_selected")
+        convert_to_weekly_data_boolean = False
+        is_weekly_selected_boolean = False
+        if int(is_weekly_selected) == 1:
+            is_weekly_selected_boolean = True
+        convert_to_weekly_data = request.session.get("convert_to_weekly_data")
+        if int(convert_to_weekly_data) == 1:
+            convert_to_weekly_data_boolean = True
         df_score_final =  pd.DataFrame(request.session.get('df_score_final'))
         drop_dimension_from_session = request.session.get("drop_dimension")
         if is_group_dimension_selected == True:
@@ -245,7 +252,7 @@ def dimension_min_max(request):
             print(start_date, end_date)
             date_range = [start_date, end_date]
             optimizer_object = optimizer_iterative_seasonality(
-                df_predictor_page_latest_data, constraint_type, target_type, is_weekly_selected
+                df_predictor_page_latest_data, constraint_type, target_type, is_weekly_selected_boolean, convert_to_weekly_data_boolean
             )
             try:
                 (
