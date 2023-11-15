@@ -2281,8 +2281,15 @@
           })
           optimizer_left_panel_min_value = investment_ranges[0] + global_sum_fixed_budget_values
           optimizer_left_panel_max_value = investment_ranges[1] + global_sum_fixed_budget_values
+          if(is_weekly_selected == 1 || convert_to_weekly_data == 1){
+            var optimizer_left_panel_number_of_weeks = optimizer_left_panel_number_of_days/7;
+            global_range_min = parseInt(optimizer_left_panel_number_of_weeks * optimizer_left_panel_min_value)
+            global_range_max = parseInt(optimizer_left_panel_number_of_weeks * optimizer_left_panel_max_value)
+          }
+           else{
           global_range_min = parseInt(optimizer_left_panel_number_of_days * optimizer_left_panel_min_value)
           global_range_max = parseInt(optimizer_left_panel_number_of_days * optimizer_left_panel_max_value)
+           }
           total_budget.setAttribute('placeholder',
           `$${global_range_min.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")} -
            $${global_range_max.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`)
@@ -2341,8 +2348,15 @@
       })
       optimizer_left_panel_min_value = sum_min_values + global_sum_fixed_budget_values
       optimizer_left_panel_max_value = sum_max_values + global_sum_fixed_budget_values
+      if(is_weekly_selected == 1 || convert_to_weekly_data == 1){
+        var optimizer_left_panel_number_of_weeks = optimizer_left_panel_number_of_days/7;
+        global_range_min = parseInt(optimizer_left_panel_number_of_weeks * optimizer_left_panel_min_value)
+        global_range_max = parseInt(optimizer_left_panel_number_of_weeks * optimizer_left_panel_max_value)
+      }
+       else{
       global_range_min = parseInt(optimizer_left_panel_number_of_days * optimizer_left_panel_min_value)
       global_range_max = parseInt(optimizer_left_panel_number_of_days * optimizer_left_panel_max_value)
+       }
       total_budget.setAttribute('placeholder',
       `$${global_range_min.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")} -
        $${global_range_max.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`)
@@ -2415,8 +2429,9 @@
 
           }
           stringified_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data).replaceAll('&amp;', '&'));
+          stringified_global_grouped_optimizer_left_panel_data = JSON.parse(JSON.stringify(global_grouped_optimizer_left_panel_data).replaceAll('&amp;', '&'));
           if(flag_to_show_grouped_dimensions == 1){
-            stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(global_grouped_optimizer_left_panel_data)
+            stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(stringified_global_grouped_optimizer_left_panel_data)
             isolatedDimensions = getIsolatedDimensionsFromGroup()
           }
             var dimension_keys = Object.keys(stringified_global_optimizer_left_pannel_data)

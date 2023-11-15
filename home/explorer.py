@@ -4,7 +4,7 @@ import numpy as np
 from pandas.api.types import is_categorical_dtype
 from pandas.api.types import is_numeric_dtype, is_float_dtype
 import datetime
-
+import re
 
 class explorer:
     def __init__(self, df):
@@ -84,6 +84,16 @@ class explorer:
 
             if (is_numeric_dtype(self.df[dim])) | (is_float_dtype(self.df[dim])):
                 raise Exception(5003)
+            
+    def remove_special_characters(self, text):
+        """Replace non-alphanumeric characters (excluding '/') with an empty string and replace "&" with "and"
+        Returns:
+            str: post-processing text
+        """
+        text = text.replace('&', 'and')
+        cleaned_text = ''.join(e for e in text if e.isalnum() or e == '/'or e == ' ')
+        cleaned_text = re.sub(r'\s+', ' ', cleaned_text.strip())
+        return cleaned_text
 
     def data_aggregation(self):
         """data aggregation at selected dimension,day level
@@ -134,9 +144,8 @@ class explorer:
 
         if len(self.dimension) > 1:
             for dim in self.dimension:
-
                 dimension_data[dim] = list(df_grp[dim].unique())
-
+                df_grp[dim] = df_grp[dim].apply(self.remove_special_characters)
                 if count != len(self.dimension):
                     df_grp["_dimension_"] = df_grp["_dimension_"] + df_grp[dim] + "_"
                 else:
@@ -144,6 +153,7 @@ class explorer:
 
                 count += 1
         else:
+            df_grp[self.dimension[0]] = df_grp[self.dimension[0]].apply(self.remove_special_characters)
             dimension_data[self.dimension[0]] = list(df_grp[self.dimension[0]].unique())
             df_grp["_dimension_"] = df_grp[self.dimension[0]]
 

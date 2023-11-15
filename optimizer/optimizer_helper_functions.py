@@ -2694,153 +2694,154 @@ class optimizer_iterative_seasonality:
             Dataframe:
                 Final Result Dataframe: Optimized Spend/Impression and Conversion for every dimension
         """
-        if self.convert_to_weekly_data == True:
-            self.is_weekly_selected = True 
-        d_param_old=copy.deepcopy(self.d_param)
-        df_param_temp= pd.DataFrame(self.d_param).T.reset_index(drop=False).rename({'index':'dimension'}, axis=1)
-        df_param_temp=df_param_temp[df_param_temp['dimension'].isin(lst_dim)].reset_index(drop=True)
-        df_param_opt = df_param_temp.T
-        df_param_opt.columns = df_param_opt.iloc[0, :]
-        d_param = df_param_opt.iloc[1:, :].to_dict()
-        self.d_param=d_param
+        try:
+            if self.convert_to_weekly_data == True:
+                self.is_weekly_selected = True 
+            d_param_old=copy.deepcopy(self.d_param)
+            df_param_temp= pd.DataFrame(self.d_param).T.reset_index(drop=False).rename({'index':'dimension'}, axis=1)
+            df_param_temp=df_param_temp[df_param_temp['dimension'].isin(lst_dim)].reset_index(drop=True)
+            df_param_opt = df_param_temp.T
+            df_param_opt.columns = df_param_opt.iloc[0, :]
+            d_param = df_param_opt.iloc[1:, :].to_dict()
+            self.d_param=d_param
 
-        dimension_bound_old=copy.deepcopy(dimension_bound)
-        dim_bnd_temp= pd.DataFrame(dimension_bound).T.reset_index(drop=False).rename({'index':'dimension'}, axis=1)
-        dim_bnd_temp=dim_bnd_temp[dim_bnd_temp['dimension'].isin(lst_dim)].reset_index(drop=True)
-        dim_bnd_opt = dim_bnd_temp.T
-        dim_bnd_opt.columns = dim_bnd_opt.iloc[0, :]
-        dimension_bound = dim_bnd_opt.iloc[1:, :].to_dict()
+            dimension_bound_old=copy.deepcopy(dimension_bound)
+            dim_bnd_temp= pd.DataFrame(dimension_bound).T.reset_index(drop=False).rename({'index':'dimension'}, axis=1)
+            dim_bnd_temp=dim_bnd_temp[dim_bnd_temp['dimension'].isin(lst_dim)].reset_index(drop=True)
+            dim_bnd_opt = dim_bnd_temp.T
+            dim_bnd_opt.columns = dim_bnd_opt.iloc[0, :]
+            dimension_bound = dim_bnd_opt.iloc[1:, :].to_dict()
 
-        self.dimension_names = list(self.d_param.keys())
+            self.dimension_names = list(self.d_param.keys())
 
-        # Restricting dimensions budget to max conversion budget if enetered budget is greater for any dimension
-        dimension_bound_actual = copy.deepcopy(dimension_bound)
-        dimension_bound = self.dimension_bound_max_check(dimension_bound)
+            # Restricting dimensions budget to max conversion budget if enetered budget is greater for any dimension
+            dimension_bound_actual = copy.deepcopy(dimension_bound)
+            dimension_bound = self.dimension_bound_max_check(dimension_bound)
 
-        days = (pd.to_datetime(date_range[1]) - pd.to_datetime(date_range[0])).days + 1
-        if self.is_weekly_selected == True:
-            days = int(days/7)
-            day_name = pd.to_datetime(date_range[0]).day_name()[0:3]
-            freq_type = "W-"+day_name
-        else:
-            freq_type = "D"
-        
-        # Considering budget per day till 2 decimal points: truncting (and not rounding-off)
-        budget_per_day = budget/days
-        budget_per_day = (np.trunc(budget_per_day*100)/100)
-        # budget_per_day = np.round((budget/days),2)
-        print('deeps',budget, budget_per_day, days)
-        print('deeps',self.is_weekly_selected, self.convert_to_weekly_data)
-        # Update if group dimension constraint selected
-        if group_constraint!=None:
-            self.is_group_dimension_selected = True
-
-        # Transform grouped dimension dict for adding group level constarints/bounds
-        if self.is_group_dimension_selected == True:
-            if isolate_dim_list == None:
-                isolate_dim_list = {}
-            grouped_dimension_bound = self.transform_grouped_dimension_bound(dimension_bound, group_constraint, isolate_dim_list)
-        else:
-            grouped_dimension_bound = None
-
-        d_param_ = pd.DataFrame(self.d_param)
-        d_param_.loc["spend_%", :] = (
-            d_param_.loc["spend_%", :] / d_param_.loc["spend_%", :].sum()
-        )
-        self.d_param = d_param_.to_dict()
-
-        init_weekday = [0, 0, 0, 0, 0, 0]
-        init_month = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        d_weekday = {}
-        d_month = {}
-        count_day = 1
-        sol = {}
-        sol_check = {}
-                   
-        # Calculating increment budget for optimization
-        increment = self.increment_factor(df_grp)
-
-        dimScurveList, dimScurveWeights, ScurveElbowDim = self.get_s_curves(dimension_bound, df_grp)
-
-        """optimization process-
-            Initialization of minimum bounds or constraint entered by the user for each dimension
-            Optimzation on budget and constarints
-            """
-        
-        oldSpendVec, oldReturn, oldImpVec = self.initial_allocation(dimension_bound)
-        if self.use_impression:
-            result_df_, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, dimScurveList, dimScurveWeights, ScurveElbowDim, oldImpVec)
-            result_df_=result_df_[['dimension', 'spend', 'impression', 'return']]
-            result_df_[['spend', 'impression', 'return']]=result_df_[['spend', 'impression', 'return']].round()
-        else:
-            result_df_, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, dimScurveList, dimScurveWeights, ScurveElbowDim, None)
-            result_df_=result_df_[['dimension', 'spend', 'return']]
-            result_df_[['spend', 'return']]=result_df_[['spend', 'return']].round()
-
-        # print("##### Without Seasonality: ")
-        # print(result_df_)
-
-        # Checking distinct combination of daily and monthly for seasonality
-        seasonality_combination = []
-        for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both", freq=freq_type):
-            seasonality_combination = seasonality_combination + [str(day_.weekday())+"_"+str(day_.month)]
-        seasonality_combination = set(seasonality_combination)
-        # print()
-        # print("##### With Seasonality: ")
-        # print(seasonality_combination)
-        # Optimization for each combination of seasonality
-        for day_month in seasonality_combination:
+            days = (pd.to_datetime(date_range[1]) - pd.to_datetime(date_range[0])).days + 1
+            if self.is_weekly_selected == True:
+                days = int(days/7)
+                day_name = pd.to_datetime(date_range[0]).day_name()[0:3]
+                freq_type = "W-"+day_name
+            else:
+                freq_type = "D"
             
-            weekday = int(day_month.split('_')[0])
-            month = int(day_month.split('_')[1])
-                
-            if weekday != 0:
-                init_weekday[weekday - 1] = 1
+            # Considering budget per day till 2 decimal points: truncting (and not rounding-off)
+            budget_per_day = budget/days
+            budget_per_day = (np.trunc(budget_per_day*100)/100)
+            # budget_per_day = np.round((budget/days),2)
+            # Update if group dimension constraint selected
+            if group_constraint!=None:
+                self.is_group_dimension_selected = True
 
-            if month != 1:
-                init_month[month - 2] = 1
+            # Transform grouped dimension dict for adding group level constarints/bounds
+            if self.is_group_dimension_selected == True:
+                if isolate_dim_list == None:
+                    isolate_dim_list = {}
+                grouped_dimension_bound = self.transform_grouped_dimension_bound(dimension_bound, group_constraint, isolate_dim_list)
+            else:
+                grouped_dimension_bound = None
 
-            d_weekday[day_month] = init_weekday
-            d_month[day_month] = init_month
-
-            result_df_seasonality = self.get_seasonality_result(result_df_, dimension_bound, init_weekday, init_month)
-            
-            # print(day_month)
-            # print(result_df_seasonality)
-            # print()
-
-            sol[day_month] = result_df_seasonality.set_index('dimension').T.to_dict('dict')
-            # sol_check[day_month] = msg
+            d_param_ = pd.DataFrame(self.d_param)
+            d_param_.loc["spend_%", :] = (
+                d_param_.loc["spend_%", :] / d_param_.loc["spend_%", :].sum()
+            )
+            self.d_param = d_param_.to_dict()
 
             init_weekday = [0, 0, 0, 0, 0, 0]
             init_month = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            count_day += 1
-        # print(sol)
-        # for day_month in sol_check.keys():
+            d_weekday = {}
+            d_month = {}
+            count_day = 1
+            sol = {}
+            sol_check = {}
+                    
+            # Calculating increment budget for optimization
+            increment = self.increment_factor(df_grp)
 
-        #     if sol_check[day_month] != 4001:
-        #         raise Exception("Optimal solution not found")
+            dimScurveList, dimScurveWeights, ScurveElbowDim = self.get_s_curves(dimension_bound, df_grp)
 
-        # Aggregating results for entire date range
-        if self.use_impression:
-            result_df = pd.DataFrame(columns=['spend', 'impression', 'return'], index=self.dimension_names).fillna(0)
-        else:
-            result_df = pd.DataFrame(columns=['spend', 'return'], index=self.dimension_names).fillna(0)
+            """optimization process-
+                Initialization of minimum bounds or constraint entered by the user for each dimension
+                Optimzation on budget and constarints
+                """
+            
+            oldSpendVec, oldReturn, oldImpVec = self.initial_allocation(dimension_bound)
+            if self.use_impression:
+                result_df_, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, dimScurveList, dimScurveWeights, ScurveElbowDim, oldImpVec)
+                result_df_=result_df_[['dimension', 'spend', 'impression', 'return']]
+                result_df_[['spend', 'impression', 'return']]=result_df_[['spend', 'impression', 'return']].round()
+            else:
+                result_df_, result_itr_df, msg = self.budget_optimize(increment, oldSpendVec, oldReturn, budget_per_day, dimension_bound, dimension_bound_actual, grouped_dimension_bound, dimScurveList, dimScurveWeights, ScurveElbowDim, None)
+                result_df_=result_df_[['dimension', 'spend', 'return']]
+                result_df_[['spend', 'return']]=result_df_[['spend', 'return']].round()
 
-        for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both", freq=freq_type):
-            day_month = str(day_.weekday())+"_"+str(day_.month)
-            temp_df = pd.DataFrame(sol[day_month]).T
-            result_df = result_df.add(temp_df, fill_value=0)
-        result_df = result_df.rename_axis('dimension').reset_index()
-        
-        # Calculating other variables for optimization plan for front end
-        result_df=self.lift_cal(result_df, budget_per_day, df_spend_dis, days, dimension_bound)
-        result_df, summary_metrics_dic, check_discard_json = self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound_actual, budget_per_day, days, d_weekday, d_month, date_range, freq_type)
-        
-        # Df for iterative steps, not displayed in front end
-        result_itr_df=result_itr_df.round(2)
+            # print("##### Without Seasonality: ")
+            # print(result_df_)
 
-        # Optimization confidence score calculation
-        optimization_conf_score = self.confidence_score(result_df, df_score_final, df_grp, lst_dim, dimension_bound)
+            # Checking distinct combination of daily and monthly for seasonality
+            seasonality_combination = []
+            for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both", freq=freq_type):
+                seasonality_combination = seasonality_combination + [str(day_.weekday())+"_"+str(day_.month)]
+            seasonality_combination = set(seasonality_combination)
+            # print()
+            # print("##### With Seasonality: ")
+            # print(seasonality_combination)
+            # Optimization for each combination of seasonality
+            for day_month in seasonality_combination:
+                
+                weekday = int(day_month.split('_')[0])
+                month = int(day_month.split('_')[1])
+                    
+                if weekday != 0:
+                    init_weekday[weekday - 1] = 1
 
-        return result_df, summary_metrics_dic, optimization_conf_score, check_discard_json
+                if month != 1:
+                    init_month[month - 2] = 1
+
+                d_weekday[day_month] = init_weekday
+                d_month[day_month] = init_month
+
+                result_df_seasonality = self.get_seasonality_result(result_df_, dimension_bound, init_weekday, init_month)
+                
+                # print(day_month)
+                # print(result_df_seasonality)
+                # print()
+
+                sol[day_month] = result_df_seasonality.set_index('dimension').T.to_dict('dict')
+                # sol_check[day_month] = msg
+
+                init_weekday = [0, 0, 0, 0, 0, 0]
+                init_month = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                count_day += 1
+            # print(sol)
+            # for day_month in sol_check.keys():
+
+            #     if sol_check[day_month] != 4001:
+            #         raise Exception("Optimal solution not found")
+
+            # Aggregating results for entire date range
+            if self.use_impression:
+                result_df = pd.DataFrame(columns=['spend', 'impression', 'return'], index=self.dimension_names).fillna(0)
+            else:
+                result_df = pd.DataFrame(columns=['spend', 'return'], index=self.dimension_names).fillna(0)
+
+            for day_ in pd.date_range(date_range[0], date_range[1], inclusive="both", freq=freq_type):
+                day_month = str(day_.weekday())+"_"+str(day_.month)
+                temp_df = pd.DataFrame(sol[day_month]).T
+                result_df = result_df.add(temp_df, fill_value=0)
+            result_df = result_df.rename_axis('dimension').reset_index()
+            
+            # Calculating other variables for optimization plan for front end
+            result_df=self.lift_cal(result_df, budget_per_day, df_spend_dis, days, dimension_bound)
+            result_df, summary_metrics_dic, check_discard_json = self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound_actual, budget_per_day, days, d_weekday, d_month, date_range, freq_type)
+            
+            # Df for iterative steps, not displayed in front end
+            result_itr_df=result_itr_df.round(2)
+
+            # Optimization confidence score calculation
+            optimization_conf_score = self.confidence_score(result_df, df_score_final, df_grp, lst_dim, dimension_bound)
+
+            return result_df, summary_metrics_dic, optimization_conf_score, check_discard_json
+        except Exception as error: 
+            print('deeeps',error)

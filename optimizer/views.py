@@ -431,7 +431,7 @@ def dimension_min_max(request):
         context["dict_target_chart_data"] = dict_target_chart_data
         context["summary_metric_dic"] = summary_metric_dic
         context["target_type"] = target_type
-        context["confidence_score"] = confidence_score
+        context["confidence_score"] = round(confidence_score)
         context['discarded_dimensions'] = discarded_dimensions
         context["discarded_dim_considered_or_not"] = discarded_dim_considered_or_not
         context["drop_dimension_from_session"] = drop_dimension_from_session
