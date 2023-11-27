@@ -168,12 +168,24 @@
           </div>
           {% if seasonality %}
           <div class="tooltip_outer_div">
-            <input
-              class="optimiser-date-input"
-              type="text"
-              name="daterange"
-              id="optimizer_date_picker"
-            />
+            <div class="d-flex align-items-center" style="width: 13.9rem">
+              <input
+                class="optimiser-date-input"
+                type="text"
+                name="start_date"
+                id="optimizer_date_picker_st_date"
+                style="width: 50%"
+                placeholder="Enter start date"
+              />
+              <input
+                class="optimiser-date-input"
+                type="text"
+                name="end_date"
+                id="optimizer_date_picker_end_date"
+                style="width: 50%"
+                placeholder="Enter end date"
+              />
+            </div>
             <span class="tooltiptext"
               >This will populate the total conversion range. Select Dates :
               Start and End date</span
@@ -1382,13 +1394,61 @@
           $('.min_value , .max_value , .fixed_budget_input').each(function(i,obj){
             obj.value = '$' + obj.value.toString().replace("$","").replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
           })
-          $('#optimizer_date_picker').daterangepicker({
-              startDate: moment(),
-              endDate: moment().add(5, 'day'),
-              locale: {
-                  format: 'MM/DD/YYYY'
+                // Define a function to handle beforeShowDay logic for end date
+                function updateEndDatePickerBeforeShowDay(date) {
+                  var startDate = $('#optimizer_date_picker_st_date').datepicker('getDate');
+                  var daysDifference = Math.floor((date - startDate) / (24 * 60 * 60 * 1000));
+                  var today = new Date(); // Get today's date
+                  today.setHours(0, 0, 0, 0); // Set hours, minutes, seconds, and milliseconds to 0 for comparison
+      
+                if(is_weekly_selected || convert_to_weekly_data){
+                    if (date <= startDate || date.getTime() === today.getTime()) {
+                      return false;
+                  }else
+                    return daysDifference % 7 === 0; // Mark the date as valid if it's a multiple of 7
+                }else{
+                  if (date < startDate) {
+                    return false;
+                }else
+                  return true
+                }
               }
-            });
+              var currentDate = new Date()
+              currentDate.setHours(0, 0, 0, 0);
+              // Add 5 days to the current date
+              var currentEndDate = new Date()
+              currentEndDate.setHours(0, 0, 0, 0);
+              if(is_weekly_selected || convert_to_weekly_data)
+                currentEndDate.setDate(currentDate.getDate() + 5*7);
+              else
+              currentEndDate.setDate(currentDate.getDate() + 5);
+              $("#optimizer_date_picker_st_date").datepicker({
+                autoclose: true,
+                todayHighlight: true,
+                orientation:'auto',
+                startDate:currentDate,
+                toggleActive:true,
+                format:'mm/dd/yyyy'
+              }).datepicker('update', currentDate).on('changeDate', function (e) {
+                var newStartDate = e.date;
+                var newEndDate = new Date(newStartDate);
+                if(is_weekly_selected || convert_to_weekly_data)
+                  newEndDate.setDate(newEndDate.getDate() + 35); // Set end date to be 5 days after start date
+                else
+                 newEndDate.setDate(newEndDate.getDate() + 5);
+                  $("#optimizer_date_picker_end_date").datepicker('setBeforeShowDay', updateEndDatePickerBeforeShowDay);
+                $("#optimizer_date_picker_end_date").datepicker('update');
+                $("#optimizer_date_picker_end_date").datepicker('setDate',newEndDate);
+              });
+      
+              $("#optimizer_date_picker_end_date").datepicker({
+                autoclose: true,
+                startDate:currentDate,
+                orientation:'right',
+                toggleActive:true,
+                format:'mm/dd/yyyy',
+                beforeShowDay: updateEndDatePickerBeforeShowDay
+              }).datepicker('update',currentEndDate)
           // renaming the table column (conversion)
           var table_element0 = document.getElementById('table_1_optimizer').
                         children[0].children[0].children[7];
@@ -1407,19 +1467,21 @@
           table_element2.innerText = "% of "  + window.localStorage.getItem('target_selector');
           table_element3.innerText = window.localStorage.getItem('target_selector') + " at Original " + constraint_type +" Allocation %";
           document.getElementById('conversion_name').innerText = window.localStorage.getItem('target_selector')
-          $('#optimizer_date_picker').on("apply.daterangepicker", function (ev, picker) {
-            $('#total_conversion').val(null);
-            global_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
-            global_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
-            date_format_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate._d;
-            date_format_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate._d;
-            let diff_time = Math.abs(date_format_end_date - date_format_start_date)
-            let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
-            update_number_of_days(diff_days)
-            console.log(`\n global_start_date : ${global_start_date}
-                        \n global_end_date : ${global_end_date}
-                        \n diff_days : ${diff_days}`)
-          });
+          $('#optimizer_date_picker_end_date ,#optimizer_date_picker_st_date').datepicker()
+          .on('changeDate', function(e) {
+          // `e` here contains the extra attributes
+        $('#total_budget').val(null);
+        global_start_date = $('#optimizer_date_picker_st_date').datepicker('getDate')
+        global_end_date = $('#optimizer_date_picker_end_date').datepicker('getDate')
+        date_format_start_date = global_start_date.getTime() ;
+        date_format_end_date = global_end_date.getTime();
+        let diff_time = Math.abs(date_format_end_date - date_format_start_date)
+        let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
+        update_number_of_days(diff_days)
+        console.log(`\n global_start_date : ${global_start_date}
+                    \n global_end_date : ${global_end_date}
+                    \n diff_days : ${diff_days}`)
+      });
          })
 
 
@@ -1610,11 +1672,13 @@
         sum_min_values = 0
         sum_max_values = 0
         if(global_seasonality){
-          date_format_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate._d;
-            date_format_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate._d;
-            let diff_time = Math.abs( date_format_end_date - date_format_start_date)
-            let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
-            goalseek_left_panel_number_of_days = diff_days;
+          global_start_date = $('#optimizer_date_picker_st_date').datepicker('getDate')
+          global_end_date = $('#optimizer_date_picker_end_date').datepicker('getDate')
+          date_format_start_date = global_start_date.getTime() ;
+          date_format_end_date = global_end_date.getTime();
+          let diff_time = Math.abs( date_format_end_date - date_format_start_date)
+         let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
+         goalseek_left_panel_number_of_days = diff_days;
         }
         type_of_input = document.getElementById('customSwitch1').checked == true ? 'perc' : 'abs';
         for (let key in global_goalseek_left_pannel_data){
@@ -1644,7 +1708,10 @@
        }
        function update_conversion(this_value){
         goalseek_left_panel_total_conversion = parseInt(this_value.value.replace(/,/g, ''));
-        var conversion_per_day_week = goalseek_left_panel_total_conversion/goalseek_left_panel_number_of_days
+        var conversion_per_day_week = goalseek_left_panel_total_conversion/goalseek_left_panel_number_of_days;
+        if((is_weekly_selected == 1 || convert_to_weekly_data == 1) && global_seasonality == 1)
+          var goalseek_left_panel_number_of_weeks = goalseek_left_panel_number_of_days/7;
+          conversion_per_day_week = goalseek_left_panel_total_conversion/goalseek_left_panel_number_of_weeks;
         console.log("goalseek_left_panel_total_conversion",goalseek_left_panel_total_conversion)
         if(goalseek_left_panel_total_conversion < global_range_min || goalseek_left_panel_total_conversion > global_range_max){
           this_value.value = global_range_min
@@ -1786,8 +1853,23 @@
            return
           }
           if(global_seasonality){
-            global_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
-            global_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
+            global_start_date = $('#optimizer_date_picker_st_date').datepicker('getDate').toLocaleDateString('en-US', {
+              year: '2-digit',
+              month: '2-digit',
+              day: '2-digit'
+             }).replace(/\//g, '-'); // Replace slashes with hyphens;
+             var selectedDate = $('#optimizer_date_picker_end_date').datepicker('getDate');
+
+             // Subtract one day
+             selectedDate.setDate(selectedDate.getDate() - 1);
+             
+             // Format the date to 'YY-MM-DD'
+             global_end_date = selectedDate.toLocaleDateString('en-US', {
+               year: '2-digit',
+               month: '2-digit',
+               day: '2-digit'
+             }).replace(/\//g, '-');
+
           }
           if(global_seasonality){
           data_to_send = {
@@ -1964,8 +2046,23 @@
         }
         // re-initializing the variables
         if(global_seasonality){
-          global_start_date = $('#optimizer_date_picker').data('daterangepicker').startDate.format('MM-DD-YY');
-          global_end_date = $('#optimizer_date_picker').data('daterangepicker').endDate.format('MM-DD-YY');
+          global_start_date = $('#optimizer_date_picker_st_date').datepicker('getDate').toLocaleDateString('en-US', {
+             year: '2-digit',
+             month: '2-digit',
+             day: '2-digit'
+            }).replace(/\//g, '-'); // Replace slashes with hyphens;
+            var selectedDate = $('#optimizer_date_picker_end_date').datepicker('getDate');
+
+            // Subtract one day
+            selectedDate.setDate(selectedDate.getDate() - 1);
+            
+            // Format the date to 'YY-MM-DD'
+            global_end_date = selectedDate.toLocaleDateString('en-US', {
+              year: '2-digit',
+              month: '2-digit',
+              day: '2-digit'
+            }).replace(/\//g, '-');
+
         }
         stringified_global_goalseek_left_pannel_data = JSON.parse(JSON.stringify(global_goalseek_left_pannel_data).replaceAll('&amp;', '&'));
         var dimension_keys = Object.keys(stringified_global_goalseek_left_pannel_data)

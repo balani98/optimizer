@@ -122,14 +122,23 @@ def conversion_range(request):
     selected_dimensions = body['selected_dimensions'].split(",")
     seasonality_from_session = request.session.get("seasonality")
     is_weekly_selected = request.session.get("is_weekly_selected")
+    is_weekly_selected_boolean = False
+    convert_to_weekly_data_boolean = False
+    if int(is_weekly_selected) == 1:
+        is_weekly_selected_boolean = True
+    convert_to_weekly_data = request.session.get("convert_to_weekly_data")
+    if int(convert_to_weekly_data) == 1:
+         convert_to_weekly_data_boolean = True
     if seasonality_from_session == 1:
         start_date = body["start_date"]
         end_date = body["end_date"]
         date_range = [start_date, end_date]
-        conv_bound = conversion_bound(df_predictor_page_latest_data, scatter_plot_df, dimension_min_max, selected_dimensions, seasonality_from_session, date_range, is_weekly_selected)
+        if int(seasonality_from_session) == 1:
+            seasonality_from_session = True
+        conv_bound = conversion_bound(df_predictor_page_latest_data, scatter_plot_df, dimension_min_max, selected_dimensions, seasonality_from_session, date_range, is_weekly_selected_boolean, convert_to_weekly_data_boolean)
     else:
         number_of_days = body['number_of_days']
-        conv_bound = conversion_bound(df_predictor_page_latest_data, scatter_plot_df, dimension_min_max, selected_dimensions, seasonality_from_session, number_of_days, is_weekly_selected)
+        conv_bound = conversion_bound(df_predictor_page_latest_data, scatter_plot_df, dimension_min_max, selected_dimensions, seasonality_from_session, number_of_days, False, False)
     context['conversion_bound'] = conv_bound
     print(conv_bound)
     return JsonResponse(context)
