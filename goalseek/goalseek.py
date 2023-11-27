@@ -108,13 +108,17 @@ def get_seasonality_conversions(d_param, init_weekday, init_month):
 
         return seasonality_conversion
 
-def conversion_bound(df_param, df_grp, df_bounds, lst_dim, is_seasonality, date_range, is_weekly_selected):
+def conversion_bound(df_param, df_grp, df_bounds, lst_dim, is_seasonality, date_range, is_weekly_selected, convert_to_weekly):
 
     """bounds for conversion optimizer
 
     Returns:
         array: max and min number conversions - max is only considered to be 95% of max conversions
     """
+   
+    if convert_to_weekly ==True:
+        is_weekly_selected = True
+    print(df_bounds, lst_dim, is_weekly_selected, is_seasonality, convert_to_weekly,date_range)
     if (len(lst_dim)==0):
         return [0, 0]
     df_bounds={dim: df_bounds[dim] for dim in lst_dim}
@@ -447,7 +451,7 @@ class optimizer_conversion:
                     
                 elif(itr_calibrate>500):
                     msg=4003
-                    # print("not inc - cal - cal not possible"," ",dim_idx," ",increment)
+                    print("not inc - cal - cal not possible"," ",dim_idx," ",increment)
                     result_itr_dict={'spend': sum(newSpendVec.values()), 'return' : sum(totalReturn.values())}
                     results_itr_df=results_itr_df.append(result_itr_dict, ignore_index=True)
                     results_itr_df=results_itr_df.reset_index(drop=True)
@@ -902,7 +906,6 @@ class optimizer_conversion:
                      
         increment = self.increment_factor(df_grp)
         # increment = round(inc_budget*0.075)
-
         if self.use_impression:
             oldSpendVec, oldImpVec = self.ini_start_value(df_grp, dimension_bound)
             oldReturn = self.initial_conversion(oldImpVec)
@@ -960,7 +963,7 @@ class optimizer_conversion_seasonality:
         # Precision used for optimization
         self.precision = 1e-0
         # Max iterations used for optimization
-        self.max_iter = 50000
+        self.max_iter = 5000000
 
     def s_curve_hill(self, X, a, b, c):
         """This method performs the scurve function on param X and
@@ -1818,8 +1821,7 @@ class optimizer_conversion_seasonality:
             count_day += 1            
         
         conv_goal_wo_seas = conv_goal - overall_seas_conv
-        returnGoal = np.round((conv_goal_wo_seas/days),2)
-                     
+        returnGoal = np.round((conv_goal_wo_seas/days),2)      
         increment = self.increment_factor(df_grp)
         # increment = round(inc_budget*0.075)
 
