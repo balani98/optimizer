@@ -1827,13 +1827,14 @@
 
   // function which works o updating no. of days
        function update_number_of_days(value){
-        $('#total_conversion').val(null);
+        $('#total_conversion').val(null)
         if((is_weekly_selected == 1 || convert_to_weekly_data == 1) && global_seasonality == 1){
           goalseek_left_panel_number_of_days = parseInt(value)
           var goalseek_left_panel_number_of_weeks = goalseek_left_panel_number_of_days/7;
           document.getElementById('no_of_weeks_days_text').innerText = 'No. of weeks selected : '
                    +   `${Math.round(goalseek_left_panel_number_of_weeks).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
           }else if(global_seasonality == 1){
+            goalseek_left_panel_number_of_days = parseInt(value)
             document.getElementById('no_of_weeks_days_text').innerText = 'No. of days selected : '
             +   `${Math.round(goalseek_left_panel_number_of_days).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
           }
