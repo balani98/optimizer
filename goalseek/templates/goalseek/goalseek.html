@@ -1710,9 +1710,10 @@
        function update_conversion(this_value){
         goalseek_left_panel_total_conversion = parseInt(this_value.value.replace(/,/g, ''));
         var conversion_per_day_week = goalseek_left_panel_total_conversion/goalseek_left_panel_number_of_days;
-        if((is_weekly_selected == 1 || convert_to_weekly_data == 1) && global_seasonality == 1)
+        if((is_weekly_selected == 1 || convert_to_weekly_data == 1) && global_seasonality == 1){
           var goalseek_left_panel_number_of_weeks = goalseek_left_panel_number_of_days/7;
           conversion_per_day_week = goalseek_left_panel_total_conversion/goalseek_left_panel_number_of_weeks;
+        }
         console.log("goalseek_left_panel_total_conversion",goalseek_left_panel_total_conversion)
         if(goalseek_left_panel_total_conversion < global_range_min || goalseek_left_panel_total_conversion > global_range_max){
           this_value.value = global_range_min
