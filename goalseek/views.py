@@ -184,6 +184,13 @@ def left_panel_submit(request):
         target_type = request.session.get("target_type")
         target_selector = request.session.get("TargetSelector")
         is_weekly_selected = request.session.get("is_weekly_selected")
+        is_weekly_selected_boolean = False
+        convert_to_weekly_data_boolean = False
+        if int(is_weekly_selected) == 1:
+            is_weekly_selected_boolean = True
+        convert_to_weekly_data = request.session.get("convert_to_weekly_data")
+        if int(convert_to_weekly_data) == 1:
+            convert_to_weekly_data_boolean = True
         df_spend_dis = pd.DataFrame(request.session.get('df_spend_dis'))
         df_score_final = pd.DataFrame(request.session.get('df_score_final'))
         drop_dimension_from_session = request.session.get("drop_dimension")
@@ -198,7 +205,7 @@ def left_panel_submit(request):
             end_date = datetime.strptime(body["end_date"], "%m-%d-%y").date()
             date_range = [start_date, end_date]
             df_optimizer_results_post_min_max = pd.DataFrame()
-            optimize_obj_seasonality = optimizer_conversion_seasonality(df_predictor_page_latest_data, constraint_type,target_type, is_weekly_selected)
+            optimize_obj_seasonality = optimizer_conversion_seasonality(df_predictor_page_latest_data, constraint_type,target_type, is_weekly_selected_boolean, convert_to_weekly_data_boolean)
             (df_optimizer_results_post_min_max,
             summary_metric_dic,
             confidence_score,
@@ -354,7 +361,7 @@ def left_panel_submit(request):
         context["targetSelector"] = target_selector
         context["target_type"] = target_type 
         context["dict_target_chart_data"] = dict_target_chart_data
-        context["confidence_score"] = confidence_score
+        context["confidence_score"] = round(confidence_score)
         context["summary_metric_dic"] = summary_metric_dic
         context["discarded_dim_considered_or_not"] = discarded_dim_considered_or_not
         context["drop_dimension_from_session"] = drop_dimension_from_session

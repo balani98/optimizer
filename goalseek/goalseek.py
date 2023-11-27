@@ -926,7 +926,7 @@ class optimizer_conversion:
         return result_df, summary_metrics_dic, optimization_conf_score, check_discard_json
 
 class optimizer_conversion_seasonality:
-    def __init__(self, df_param, constraint_type, target_type, is_weekly_selected):
+    def __init__(self, df_param, constraint_type, target_type, is_weekly_selected, convert_to_weekly_data):
         """initialization
 
         Args:
@@ -940,7 +940,7 @@ class optimizer_conversion_seasonality:
         self.constraint_type = constraint_type.lower()
         self.target_type = target_type.lower()
         self.is_weekly_selected = is_weekly_selected
-
+        self.convert_to_weekly_data = convert_to_weekly_data
         if "cpm" in df_param.columns:
             self.use_impression = True
             self.metric = 'impression'
@@ -1746,6 +1746,8 @@ class optimizer_conversion_seasonality:
             Dataframe:
                 Final Result Dataframe: Optimized Spend/Impression and Conversion for every dimension
         """
+        if self.convert_to_weekly_data == True:
+            self.is_weekly_selected = True
         d_param_old=copy.deepcopy(self.d_param)
         df_param_temp= pd.DataFrame(self.d_param).T.reset_index(drop=False).rename({'index':'dimension'}, axis=1)
         df_param_temp=df_param_temp[df_param_temp['dimension'].isin(lst_dim)].reset_index(drop=True)
