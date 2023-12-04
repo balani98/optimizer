@@ -140,7 +140,6 @@ def conversion_range(request):
         number_of_days = body['number_of_days']
         conv_bound = conversion_bound(df_predictor_page_latest_data, scatter_plot_df, dimension_min_max, selected_dimensions, seasonality_from_session, number_of_days, False, False)
     context['conversion_bound'] = conv_bound
-    print(conv_bound)
     return JsonResponse(context)
 
 
@@ -215,17 +214,20 @@ def left_panel_submit(request):
             date_range = [start_date, end_date]
             df_optimizer_results_post_min_max = pd.DataFrame()
             optimize_obj_seasonality = optimizer_conversion_seasonality(df_predictor_page_latest_data, constraint_type,target_type, is_weekly_selected_boolean, convert_to_weekly_data_boolean)
-            (df_optimizer_results_post_min_max,
-            summary_metric_dic,
-            confidence_score,
-            discarded_dim_considered_or_not) = optimize_obj_seasonality.execute(scatter_plot_df,
-                                                                         total_conversion, 
-                                                                         date_range,
-                                                                         df_spend_dis,
-                                                                         discarded_dimensions, 
-                                                                         dimension_min_max,
-                                                                         selected_dimensions,
-                                                                         df_score_final)
+            try:
+                (df_optimizer_results_post_min_max,
+                summary_metric_dic,
+                confidence_score,
+                discarded_dim_considered_or_not) = optimize_obj_seasonality.execute(scatter_plot_df,
+                                                                            total_conversion, 
+                                                                            date_range,
+                                                                            df_spend_dis,
+                                                                            discarded_dimensions, 
+                                                                            dimension_min_max,
+                                                                            selected_dimensions,
+                                                                            df_score_final)
+            except Exception as error:
+                return JsonResponse({"error": str(error)}, status=501)
         else:
             print(
                 f"\ndimension_min_max - seasonality:{seasonality}, Running optimizer_class"
@@ -234,18 +236,20 @@ def left_panel_submit(request):
             optimize_con_obj = optimizer_conversion(df_predictor_page_latest_data, constraint_type, target_type)
             df_spend_dis = pd.DataFrame(request.session.get('df_spend_dis'))
             df_optimizer_results_post_min_max = pd.DataFrame()
-            print('number_of_days',number_of_days)
-            (df_optimizer_results_post_min_max,
-             summary_metric_dic,
-             confidence_score,
-             discarded_dim_considered_or_not) = optimize_con_obj.execute(scatter_plot_df, 
-                                                                         total_conversion, 
-                                                                         number_of_days, 
-                                                                         df_spend_dis, 
-                                                                         discarded_dimensions, 
-                                                                         dimension_min_max , 
-                                                                         selected_dimensions,
-                                                                         df_score_final)
+            try:
+                (df_optimizer_results_post_min_max,
+                summary_metric_dic,
+                confidence_score,
+                discarded_dim_considered_or_not) = optimize_con_obj.execute(scatter_plot_df, 
+                                                                            total_conversion, 
+                                                                            number_of_days, 
+                                                                            df_spend_dis, 
+                                                                            discarded_dimensions, 
+                                                                            dimension_min_max , 
+                                                                            selected_dimensions,
+                                                                            df_score_final)
+            except Exception as error:
+                return JsonResponse({"error": str(error)}, status=501)
         print(
 
             "\n number_of_days",
@@ -359,7 +363,6 @@ def left_panel_submit(request):
             "estimated_return_%"
         ] = df_optimizer_results_post_min_max["estimated_return_%"].tolist()
         json_table_1_data = df_table_1_data.to_dict("records")
-        print("json_table_1_data", json_table_1_data)
         # print("json_donut_chart_data", json_donut_chart_data)
         print("dict_donut_chart_data", dict_donut_chart_data)
         # Table1
