@@ -2277,7 +2277,7 @@
           })
           optimizer_left_panel_min_value = investment_ranges[0] + global_sum_fixed_budget_values
           optimizer_left_panel_max_value = investment_ranges[1] + global_sum_fixed_budget_values
-          if(is_weekly_selected == 1 || convert_to_weekly_data == 1){
+          if((is_weekly_selected == 1 || convert_to_weekly_data == 1)&& global_seasonality == 1){
             var optimizer_left_panel_number_of_weeks = optimizer_left_panel_number_of_days/7;
             global_range_min = parseInt(optimizer_left_panel_number_of_weeks * optimizer_left_panel_min_value)
             global_range_max = parseInt(optimizer_left_panel_number_of_weeks * optimizer_left_panel_max_value)
@@ -2344,7 +2344,7 @@
       })
       optimizer_left_panel_min_value = sum_min_values + global_sum_fixed_budget_values
       optimizer_left_panel_max_value = sum_max_values + global_sum_fixed_budget_values
-      if(is_weekly_selected == 1 || convert_to_weekly_data == 1){
+      if((is_weekly_selected == 1 || convert_to_weekly_data == 1) && global_seasonality == 1){
         var optimizer_left_panel_number_of_weeks = optimizer_left_panel_number_of_days/7;
         global_range_min = parseInt(optimizer_left_panel_number_of_weeks * optimizer_left_panel_min_value)
         global_range_max = parseInt(optimizer_left_panel_number_of_weeks * optimizer_left_panel_max_value)

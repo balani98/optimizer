@@ -2170,7 +2170,7 @@
             $("body").css("background-color", "#fff");
             $('#container').css('pointer-events','auto');
             $('#spinner-optimizer').css('display','none');
-            alert("Error in sumission, please verify the inputs")
+            alert(error_object.responseJSON.error)
 
             // $('.dimension_error').css("display", "block");
             // $('.dimension_error').html(data.responseJSON.error); // add error to the dom

@@ -164,6 +164,11 @@ class predictor:
 
             print("progress_var ", progress_var)
 
+        if (bool(score)==False) and (len(drop_dimension)==self.df.dimension.nunique()):
+            raise Exception("All the dimensions in the data were discarded and model training could not be performed, please check the data and user inputs")
+        elif (bool(score)==False):
+            raise Exception("Model training could not be completed, please check the data and user inputs")
+
         # post-processing: model statistics and parameters
         df_score = (
             pd.DataFrame(score)
@@ -331,6 +336,9 @@ class predictor:
         # filter dimensions for selected dates and check both spend are target are not zero
         self.data_filter()
 
+        if self.df.shape[0]==0:
+            raise Exception("No data available for selected date range, please check the data and user inputs")
+        
         # outlier treatment, using z-score method
         outlier_obj = outlier_treatment(self.df, self.use_impression)
         self.df = outlier_obj.z_outlier()
@@ -424,6 +432,9 @@ class predictor:
         ].reset_index(drop=True)
 
         self.df_param = df_param
+
+        if (self.df_param.shape[0]==0):
+            raise Exception("All the dimensions in the data were discarded, please check the data and user inputs")
 
         # calculating CPA/ROI for spend and conversion rate for impression (caculating done based on logic provided by business)
         # cpm dataframe in case of impression and adding to parameter dataframe
@@ -967,6 +978,11 @@ class predictor_with_seasonality:
             ((monthly_seas_flag.count(0) == int(len(self.df.dimension.unique()))) and (self.is_weekly_selected == True))):
             raise Exception("Seasonality not available in data")
         
+        if (bool(score)==False) and (len(drop_dimension)==self.df.dimension.nunique()):
+            raise Exception("All the dimensions in the data were discarded and model training could not be performed, please check the data and user inputs")
+        elif (bool(score)==False):
+            raise Exception("Model training could not be completed, please check the data and user inputs")
+
         # post-processing: model statistics and parameters
         df_score = (
             pd.DataFrame(score)
@@ -1197,6 +1213,9 @@ class predictor_with_seasonality:
         # check both spend are target are not zero
         self.data_filter()
 
+        if self.df.shape[0]==0:
+            raise Exception("No data available for selected date range, please check the data and user inputs")
+
         # outlier treatment, using z-score method
         outlier_obj = outlier_treatment(self.df, self.use_impression)
         self.df = outlier_obj.z_outlier()
@@ -1335,6 +1354,11 @@ class predictor_with_seasonality:
         scatter_plot_df = scatter_plot_df[
             ~scatter_plot_df["dimension"].isin(drop_dimension)
         ].reset_index(drop=True)
+        
+        self.df_param = df_param
+        
+        if (self.df_param.shape[0]==0):
+            raise Exception("All the dimensions in the data were discarded, please check the data and user inputs")
 
         if self.use_impression == False:
             if self.target_type == "revenue":
@@ -1342,8 +1366,6 @@ class predictor_with_seasonality:
             else:
                 scatter_plot_df["spend_predictions_rate"] = (scatter_plot_df["spend"]/scatter_plot_df["predictions"]).round(decimals=2)
             scatter_plot_df["spend_predictions_rate"] = scatter_plot_df["spend_predictions_rate"].replace([np.inf, -np.inf, np.nan], 0)
-
-        self.df_param = df_param
 
         # calculating CPA/ROI for spend and conversion rate for impression (caculating done based on logic provided by business)
         # cpm dataframe in case of impression and adding to parameter dataframe

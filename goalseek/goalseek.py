@@ -118,7 +118,6 @@ def conversion_bound(df_param, df_grp, df_bounds, lst_dim, is_seasonality, date_
    
     if convert_to_weekly ==True:
         is_weekly_selected = True
-    print(df_bounds, lst_dim, is_weekly_selected, is_seasonality, convert_to_weekly,date_range)
     if (len(lst_dim)==0):
         return [0, 0]
     df_bounds={dim: df_bounds[dim] for dim in lst_dim}
@@ -763,7 +762,8 @@ class optimizer_conversion:
         df_res['buget_allocation_old_%']=df_res['buget_allocation_old_%'].round(1)
         df_res["spend_projection_constraint_for_n_day"]=df_res["spend_projection_constraint_for_n_day"].round()
         df_res['current_projections_for_n_days']=df_res['current_projections_for_n_days'].round()
-
+        if df_res['estimated_return_per_day'].sum()  < 1:
+            raise Exception('Cannot find Optimal solution')
         summary_metrics_dic = {"Optimized Total Budget" : sum(df_res['recommended_budget_for_n_days'].replace({np.nan: 0.0}).astype(float).round().astype(int)),
                                "Optimized Total Target" : sum(df_res['estimated_return_for_n_days'].replace({np.nan: 0.0}).astype(float).round().astype(int)),
                                "Current Projection Total Budget" : sum(df_res["spend_projection_constraint_for_n_day"].replace({np.nan: 0.0}).astype(float).round().astype(int)),
@@ -1565,7 +1565,8 @@ class optimizer_conversion_seasonality:
         df_res['buget_allocation_old_%']=df_res['buget_allocation_old_%'].round(1)
         df_res["spend_projection_constraint_for_n_day"]=df_res["spend_projection_constraint_for_n_day"].round()
         df_res['current_projections_for_n_days']=df_res['current_projections_for_n_days'].round()
-
+        if df_res['estimated_return_per_day'].sum()  < 1:
+            raise Exception('Cannot find Optimal solution')
         summary_metrics_dic = {"Optimized Total Budget" : sum(df_res['recommended_budget_for_n_days'].replace({np.nan: 0}).astype(float).round().astype(int)),
                                "Optimized Total Target" : sum(df_res['estimated_return_for_n_days'].replace({np.nan: 0}).astype(float).round().astype(int)),
                                "Current Projection Total Budget" : sum(df_res["spend_projection_constraint_for_n_day"].replace({np.nan: 0}).astype(float).round().astype(int)),
