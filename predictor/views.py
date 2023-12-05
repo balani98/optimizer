@@ -445,7 +445,7 @@ def predictor_ajax_left_panel_submit(request):
         global_multi_line_chart_data = multi_line_chart_data
         # setting the session for df_Score_final to be used in optimizer
         request.session["df_score_final"] = df_score_final.to_dict()
-        plot_curve(multi_line_chart_data, seasonality, cpm_checked, df_score_final, weekly_predictions_df, monthly_predictions_df, None, request)
+        #plot_curve(multi_line_chart_data, seasonality, cpm_checked, df_score_final, weekly_predictions_df, monthly_predictions_df, None, request)
         df_score_final = df_score_final[(df_score_final["dimension"] == default_dim)]
         if seasonality == 1:
             weekly_predictions_df = weekly_predictions_df[
@@ -994,6 +994,27 @@ def predictor_window_on_load(request):
 def download_predictor_curves_pdf(request):
     try:
         context = {}
+        seasonality = int(request.session.get("seasonality"))
+        cpm_checked = request.session.get("cpm_checked")
+        df_score_final = global_df_score_final
+        scatter_plot_df = global_scatter_plot_df
+        multi_line_chart_df = scatter_plot_df
+        weekly_predictions_df = global_weekly_predictions_df
+        monthly_predictions_df = global_monthly_predictions_df
+        
+        multi_line_chart_df = multi_line_chart_df[multi_line_chart_df["dimension"].isin(global_unique_dim)]
+        if cpm_checked == "True":
+            sort_multi = ['dimension', 'impression']
+            max_spend = multi_line_chart_df.loc[multi_line_chart_df["impression"].idxmax()]["impression"]
+        else:
+            sort_multi = ['dimension', 'spend']
+            max_spend = multi_line_chart_df.loc[multi_line_chart_df["spend"].idxmax()]["spend"]
+        multi_line_chart_df = multi_line_chart_df.sort_values(by=sort_multi)
+        max_predictions = multi_line_chart_df.loc[multi_line_chart_df["predictions"].idxmax()]["predictions"]
+        # multi_line_chart_df = multi_line_chart_df[(multi_line_chart_df["dimension"] == "SEM Brand")]
+        multi_line_chart_json = multi_line_chart_df.to_dict("records")
+        multi_line_chart_data = create_pdf_for_multiple_plots(multi_line_chart_json, seasonality, cpm_checked)
+        plot_curve(multi_line_chart_data, seasonality, cpm_checked, df_score_final, weekly_predictions_df, monthly_predictions_df, None, request)
          # Get the file path of the PDF file
         pdf_file = PREDICTOR_UPLOAD_FOLDER + "predictor_" + request.session.get("_uuid") + ".pdf"  
         pdf = open(pdf_file, 'rb')
