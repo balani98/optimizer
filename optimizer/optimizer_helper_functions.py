@@ -1174,9 +1174,7 @@ class optimizer_iterative:
 
         Returns:
             dataframe: recal of optimizer result for discarded dimension
-        """
-        discard_json = {chnl:discard_json[chnl] for chnl in discard_json.keys() if(discard_json[chnl]!=0)}
-        check_discard_json = bool(discard_json)
+        """        
         d_dis = df_spend_dis.set_index('dimension').to_dict()['spend']
 
         for dim_ in discard_json.keys():
@@ -1267,7 +1265,7 @@ class optimizer_iterative:
         for i in int_cols:
             df_res.loc[df_res[i].values != None, i]=df_res.loc[df_res[i].values != None, i].astype(float).round().astype(int)
 
-        return df_res, summary_metrics_dic, check_discard_json
+        return df_res, summary_metrics_dic
     
 
     def confidence_score(self, result_df, accuracy_df, df_grp, lst_dim, dimension_bound):
@@ -1343,6 +1341,14 @@ class optimizer_iterative:
         budget_per_day = (np.trunc(budget_per_day*100)/100)
         # budget_per_day = np.round((budget/days),2)
 
+        # Alert if budget for optimization is not allocated
+        discard_json = {chnl:discard_json[chnl] for chnl in discard_json.keys() if(discard_json[chnl]!=0)}
+        check_discard_json = bool(discard_json)
+        if budget_per_day < 1 and check_discard_json==True:
+            raise Exception("Please update optimization budget, the entered budget corresponds to discarded dimension budget only")
+        if budget_per_day < 1 and check_discard_json==False:
+            raise Exception("Please update optimization budget, the entered budget is less than $1/day or week")
+
         # Update if group dimension constraint selected
         if group_constraint!=None:
             self.is_group_dimension_selected = True
@@ -1376,7 +1382,7 @@ class optimizer_iterative:
 
         # Calculating other variables for optimization plan for front end
         result_df=self.lift_cal(result_df, budget_per_day, df_spend_dis, days, dimension_bound)
-        result_df, summary_metrics_dic, check_discard_json =self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound_actual, budget_per_day, days)
+        result_df, summary_metrics_dic =self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound_actual, budget_per_day, days)
         
         # Df for iterative steps, not displayed in front end
         result_itr_df=result_itr_df.round(2)
@@ -2501,8 +2507,6 @@ class optimizer_iterative_seasonality:
         Returns:
             dataframe: recal of optimizer result for discarded dimension
         """
-        discard_json = {chnl:discard_json[chnl] for chnl in discard_json.keys() if(discard_json[chnl]!=0)}
-        check_discard_json = bool(discard_json)
         d_dis = df_spend_dis.set_index('dimension').to_dict()['spend']
 
         for dim_ in discard_json.keys():
@@ -2607,7 +2611,7 @@ class optimizer_iterative_seasonality:
         for i in int_cols:
             df_res.loc[df_res[i].values != None, i]=df_res.loc[df_res[i].values != None, i].astype(float).round().astype(int)
 
-        return df_res, summary_metrics_dic,check_discard_json
+        return df_res, summary_metrics_dic
 
 
     def total_return_seasonality(self, Spend, dimension_bound, dim, init_weekday, init_month):
@@ -2719,6 +2723,7 @@ class optimizer_iterative_seasonality:
             dimension_bound = self.dimension_bound_max_check(dimension_bound)
 
             days = (pd.to_datetime(date_range[1]) - pd.to_datetime(date_range[0])).days + 1
+
             if self.is_weekly_selected == True:
                 days = int(days/7)
                 day_name = pd.to_datetime(date_range[0]).day_name()[0:3]
@@ -2730,6 +2735,16 @@ class optimizer_iterative_seasonality:
             budget_per_day = budget/days
             budget_per_day = (np.trunc(budget_per_day*100)/100)
             # budget_per_day = np.round((budget/days),2)
+
+            # Alert if budget for optimization is not allocated
+            discard_json = {chnl:discard_json[chnl] for chnl in discard_json.keys() if(discard_json[chnl]!=0)}
+            check_discard_json = bool(discard_json)
+
+            if budget_per_day < 1 and check_discard_json==True:
+                raise Exception("Please update optimization budget, the entered budget corresponds to discarded dimension budget only")
+            if budget_per_day < 1 and check_discard_json==False:
+                raise Exception("Please update optimization budget, the entered budget is less than $1/day or week")
+    
             # Update if group dimension constraint selected
             if group_constraint!=None:
                 self.is_group_dimension_selected = True
@@ -2834,7 +2849,7 @@ class optimizer_iterative_seasonality:
             
             # Calculating other variables for optimization plan for front end
             result_df=self.lift_cal(result_df, budget_per_day, df_spend_dis, days, dimension_bound)
-            result_df, summary_metrics_dic, check_discard_json = self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound_actual, budget_per_day, days, d_weekday, d_month, date_range, freq_type)
+            result_df, summary_metrics_dic = self.optimizer_result_adjust(discard_json, result_df, df_spend_dis, dimension_bound_actual, budget_per_day, days, d_weekday, d_month, date_range, freq_type)
             
             # Df for iterative steps, not displayed in front end
             result_itr_df=result_itr_df.round(2)
