@@ -1097,6 +1097,7 @@
         'X-CSRFToken': getCookie('csrftoken')
       },
       contentType: 'application/json; charset=utf-8',
+      timeout:600000,
       success: function (data) {
         // clear the running setInnterval if running
         clearInterval(progInterval);
