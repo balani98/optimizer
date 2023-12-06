@@ -1097,7 +1097,7 @@
         'X-CSRFToken': getCookie('csrftoken')
       },
       contentType: 'application/json; charset=utf-8',
-      timeout:600000,
+      timeout:660000,
       success: function (data) {
         // clear the running setInnterval if running
         clearInterval(progInterval);
@@ -1226,6 +1226,8 @@
           "error in '/predictor/ajax/left_panel_submit/'",
           error_data
         );
+        if(error_data.statusText == 'timeout' )
+          alert('Timeout due to large number of dimensions / line items')
         // clear the running setInnterval if running
         clearInterval(progInterval);
         $("#inner-progressbarDiv").animate(
