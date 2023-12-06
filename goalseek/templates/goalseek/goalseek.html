@@ -1428,7 +1428,7 @@
                 todayHighlight: true,
                 orientation:'auto',
                 startDate:currentDate,
-                toggleActive:true,
+                toggleActive:false,
                 format:'mm/dd/yyyy'
               }).datepicker('update', currentDate).on('changeDate', function (e) {
                 var newStartDate = e.date;
@@ -1446,7 +1446,7 @@
                 autoclose: true,
                 startDate:currentDate,
                 orientation:'right',
-                toggleActive:true,
+                toggleActive:false,
                 format:'mm/dd/yyyy',
                 beforeShowDay: updateEndDatePickerBeforeShowDay
               }).datepicker('update',currentEndDate)
