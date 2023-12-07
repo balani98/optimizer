@@ -2385,7 +2385,7 @@
             let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
             let diff_weeks = diff_days/7;
             optimizer_left_panel_total_budget = parseInt(optimizer_left_panel_total_budget) -
-            global_sum_fixed_budget_values*diff_days;
+            global_sum_fixed_budget_values*diff_weeks;
           }else if(global_seasonality){
             global_start_date = $('#optimizer_date_picker_st_date').datepicker('getDate')
             global_end_date = $('#optimizer_date_picker_end_date').datepicker('getDate')
