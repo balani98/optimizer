@@ -2376,7 +2376,17 @@
           if(!global_seasonality)
             optimizer_left_panel_total_budget = parseInt(optimizer_left_panel_total_budget) -
             global_sum_fixed_budget_values*optimizer_left_panel_number_of_days;
-          else {
+          else if((is_weekly_selected == 1 || convert_to_weekly_data == 1)&&(global_seasonality)){
+            global_start_date = $('#optimizer_date_picker_st_date').datepicker('getDate')
+            global_end_date = $('#optimizer_date_picker_end_date').datepicker('getDate')
+            date_format_start_date = global_start_date.getTime() ;
+            date_format_end_date = global_end_date.getTime();
+            let diff_time = Math.abs( date_format_end_date - date_format_start_date)
+            let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
+            let diff_weeks = diff_days/7;
+            optimizer_left_panel_total_budget = parseInt(optimizer_left_panel_total_budget) -
+            global_sum_fixed_budget_values*diff_days;
+          }else if(global_seasonality){
             global_start_date = $('#optimizer_date_picker_st_date').datepicker('getDate')
             global_end_date = $('#optimizer_date_picker_end_date').datepicker('getDate')
             date_format_start_date = global_start_date.getTime() ;
@@ -2426,7 +2436,7 @@
           }
           stringified_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data).replaceAll('&amp;', '&'));
           if(flag_to_show_grouped_dimensions == 1){
-            stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(stringified_global_grouped_optimizer_left_panel_data)
+            stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(JSON.parse(JSON.stringify(global_grouped_optimizer_left_panel_data))).replaceAll('&amp;', '&');
             isolatedDimensions = getIsolatedDimensionsFromGroup()
           }
             var dimension_keys = Object.keys(stringified_global_optimizer_left_pannel_data)
