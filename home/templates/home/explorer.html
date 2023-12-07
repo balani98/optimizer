@@ -814,7 +814,21 @@
 
 <!-- ajax on submit default dimension value selector for line chart -->
 <script>
-
+    // function to get cookies 
+    function getCookie(name) {
+      if (!document.cookie) {
+        return null;
+      }
+  
+      const xsrfCookies = document.cookie.split(';')
+        .map(c => c.trim())
+        .filter(c => c.startsWith(name + '='));
+  
+      if (xsrfCookies.length === 0) {
+        return null;
+      }
+      return decodeURIComponent(xsrfCookies[0].split('=')[1]);
+    }
   function submit_chart_inputs() {
     // start progress
     console.log("inputs submitted");
@@ -830,9 +844,14 @@
     //var endDate = $('#date').data('daterangepicker').endDate.format('MM-DD-YY');
     $.ajax({
       url: 'ajax/chart_filter/',
-      data: {
-        'type': "submit"
+      type : 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken')
       },
+      contentType: 'application/json; charset=utf-8',
+      data: JSON.stringify({
+        'type': "submit"
+      }),
       success: function (data) {
         document.getElementById('right_div').style.display = "block";
         // close
@@ -993,13 +1012,18 @@
     console.log("these are pie chart date range", startDate, endDate)
     $.ajax({
       url: 'ajax/chart_filter/',
-      data: {
+      type : 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      contentType: 'application/json; charset=utf-8',
+      data: JSON.stringify({
         'pie_dimension_check[]': piedimensionvalueselector,
         'type': 'onchange',
         'start_date': startDate,
         'end_date': endDate,
         'chart_type': 'piechart'
-      },
+      }),
       success: function (data) {
         console.log("pie chart dimension value selecctor is successfull");
         pie_chart_on_change(data)
@@ -1030,13 +1054,18 @@
 
     $.ajax({
       url: 'ajax/chart_filter/',
-      data: {
+      type : 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      contentType: 'application/json; charset=utf-8',
+      data: JSON.stringify({
         'dimension_value_selector': trendchart_dimensions,
         'start_date': startDate,
         'end_date': endDate,
         'type': "onchange",
         'chart_type': 'linechart'
-      },
+      }) ,
       success: function (data) {
         chart_on_change(data)
       }
@@ -1060,13 +1089,18 @@
 
     $.ajax({
       url: 'ajax/chart_filter/',
-      data: {
+      type : 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      contentType: 'application/json; charset=utf-8',
+      data: JSON.stringify({
         'pie_dimension_check[]': pie_array_text,
         'start_date': startDate,
         'end_date': endDate,
         'type': "onchange",
         'chart_type': "piechart"
-      },
+      }),
       success: function (data) {
         console.log("this is filtered data on pie change")
         pie_chart_on_change(data) //pie chart
@@ -1253,13 +1287,18 @@
     console.log(endDate, "this is chenged end date")
     $.ajax({
       url: 'ajax/chart_filter/',
-      data: {
+      type : 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      contentType: 'application/json; charset=utf-8',
+      data: JSON.stringify({
         'dimension_value_selector': trendchart_dimensions,
         'start_date': startDate,
         'end_date': endDate,
         'type': "onchange",
         'chart_type': 'linechart'
-      },
+      }),
       success: function (data) {
         console.log("this is filtered data")
         chart_on_change(data)

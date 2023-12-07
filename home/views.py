@@ -321,8 +321,10 @@ def chart_filter(request):
     request.session["is_predict_page_submit_success"] = 0
     context = {}
     # data = pd.DataFrame.from_dict(request.session.get('line_chart_agg_data'))
-    type = request.GET.get("type")
-    chart_type = request.GET.get("chart_type")
+    body = json.loads(request.body)
+    type = body['type']
+    if type != 'submit'  :
+        chart_type = body['chart_type']
     is_weekly_selected_from_session = request.session.get("is_weekly_selected")
 
     # start_date = datetime.strptime(request.GET.get("start_date"), "%m-%d-%y").date()
@@ -463,9 +465,8 @@ def chart_filter(request):
     # ************************onchange**********************************
     elif type == "onchange":
         print("changed")
-
-        start_date = datetime.strptime(request.GET.get("start_date"), "%m-%d-%y").date()
-        end_date = datetime.strptime(request.GET.get("end_date"), "%m-%d-%y").date()
+        start_date = datetime.strptime(body["start_date"], "%m-%d-%y").date()
+        end_date = datetime.strptime(body["end_date"], "%m-%d-%y").date()
 
         print(
             "Start Date",
@@ -485,7 +486,7 @@ def chart_filter(request):
         # for bar chart
         if chart_type == "linechart":
             # default_dim = request.GET.get("dimension_value_selector")
-            default_dimensions = request.GET.get("dimension_value_selector").split(",")
+            default_dimensions = body["dimension_value_selector"].split(",")
             # print("Before default_dim", default_dim)
             #if default_dim == "0":
                 #default_dim = list(agg_data["dimension"].unique())[0]
@@ -521,7 +522,7 @@ def chart_filter(request):
 
         elif chart_type == "piechart":
             print("piechart")
-            PieDimensionValueSelector = request.GET.get("pie_dimension_check[]")
+            PieDimensionValueSelector = body["pie_dimension_check[]"]
             PieDimensionValueSelector = list(PieDimensionValueSelector.split(", "))
             print("PieDimensionValueSelector", PieDimensionValueSelector)
             # PieDimensionValueSelector = PieDimensionValueSelector[:-1]
@@ -561,7 +562,7 @@ def chart_filter(request):
             return JsonResponse(context)
 
         elif chart_type == "barchart":
-            BarDimensionValueSelector = request.GET.get("bar_dimension_check[]")
+            BarDimensionValueSelector = body["bar_dimension_check[]"]
             print(BarDimensionValueSelector)
             BarDimensionValueSelector = list(BarDimensionValueSelector.split(", "))
             print(BarDimensionValueSelector)
