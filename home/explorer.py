@@ -144,8 +144,8 @@ class explorer:
 
         if len(self.dimension) > 1:
             for dim in self.dimension:
-                dimension_data[dim] = list(df_grp[dim].unique())
                 df_grp[dim] = df_grp[dim].apply(self.remove_special_characters)
+                dimension_data[dim] = list(df_grp[dim].unique())
                 if count != len(self.dimension):
                     df_grp["_dimension_"] = df_grp["_dimension_"] + df_grp[dim] + "_"
                 else:
