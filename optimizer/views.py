@@ -41,7 +41,6 @@ else:
     UPLOAD_FOLDER = "data/"
 TEMP_ERROR_DICT = {"4002": "Value Error"}
 
-
 @login_required
 def optimizer_home_page(request):
     print("optimizer_home_page")
@@ -86,10 +85,6 @@ def optimizer_home_page(request):
         stringified_optimizer_left_pannel_data = json.dumps(optimizer_left_pannel_data)
         
         print("optimizer_left_pannel_data", optimizer_left_pannel_data)
-        print(
-            "stringified_optimizer_left_pannel_data",
-            stringified_optimizer_left_pannel_data,
-        )  
         # Checking for CPM selection
         if request.session.get("cpm_checked") == "True":
             context["cpm_checked"] = 1
@@ -110,6 +105,8 @@ def optimizer_home_page(request):
           
             stringified_grouped_optimizer_left_pannel_data = json.dumps(grouped_optimizer_left_pannel_data)
             context['stringified_grouped_optimizer_left_pannel_data'] = stringified_grouped_optimizer_left_pannel_data
+            with open("sample.json", "w") as outfile:
+                outfile.write(json.dumps(grouped_optimizer_left_pannel_data))
         context['flag_to_show_grouped_dimensions'] = flag_to_show_grouped_dimensions
         context["seasonality"] = seasonality
         context["drop_dimension_from_session"] = drop_dimension_from_session

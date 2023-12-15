@@ -45,7 +45,6 @@ TEMP_ERROR_DICT = {"4002": "Value Error"}
 @login_required()
 def goalseek_home_page(request):
     maximum_of_minimum_value = -100
-    print("optimizer_home_page")
     context = {}
     # Get the required items from session
     # discarded_items = request.session["discarded_items"]
@@ -89,11 +88,9 @@ def goalseek_home_page(request):
         else:
             context["cpm_checked"] = 0
         if is_weekly_selected:
-            print(f"is_weekly_selected : {is_weekly_selected}")
             context["is_weekly_selected"] = int(is_weekly_selected)
         
         if convert_to_weekly_data:
-            print(f"convert_to_weekly_data : {convert_to_weekly_data}")
             context["convert_to_weekly_data"] = int(convert_to_weekly_data)
 
         context["seasonality"] = seasonality
@@ -363,8 +360,6 @@ def left_panel_submit(request):
             "estimated_return_%"
         ] = df_optimizer_results_post_min_max["estimated_return_%"].tolist()
         json_table_1_data = df_table_1_data.to_dict("records")
-        # print("json_donut_chart_data", json_donut_chart_data)
-        print("dict_donut_chart_data", dict_donut_chart_data)
         # Table1
         context["optimizer_download_csv_json"] = json_dumped_optimizer_download_csv
         context["json_table_1_data"] = json_table_1_data

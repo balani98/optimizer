@@ -64,7 +64,6 @@ def save_predictor_page_latest_data(df_predictor_page_latest_data, _uuid):
         UPLOAD_FOLDER + "scatter_plot_df_{}.pkl".format(_uuid)
     )
 
-
 @login_required
 def predictor_home_page(request):
     try:
@@ -415,8 +414,6 @@ def predictor_ajax_left_panel_submit(request):
             "df_score_final\n",
             df_score_final[["dimension", "data_points_post_outlier_treatment"]],
         )
-        # print("scatter_plot_df\n", scatter_plot_df)
-        # print("drop_dimension\n", drop_dimension)
         print("dimension_value_selector\n", dimension_value_selector)
         # scatter_plot_df = scatter_plot_df.sort()
         scatter_plot_df = scatter_plot_df.sort_values(by=[sort])
@@ -539,10 +536,6 @@ def predictor_ajax_date_dimension_onchange(request):
             weekly_predictions_df = global_weekly_predictions_df
             monthly_predictions_df = global_monthly_predictions_df
             unique_dim = global_unique_dim.copy()
-        print("df_param\n", df_param)
-        print("df_score_final\n", df_score_final)
-        print("scatter_plot_df\n", scatter_plot_df)
-        print("drop_dimension\n", drop_dimension)
 
         df_score_final.sort_values(
             by=["data_points_post_outlier_treatment"], ascending=False, inplace=True

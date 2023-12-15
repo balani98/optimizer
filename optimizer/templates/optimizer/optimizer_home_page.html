@@ -246,7 +246,7 @@
       style="width: 15rem"
     >
       <div
-        class="position-sticky pt-3 scrollbar hide_scroller y_scroll"
+        class="position-sticky pt-3 scrollbar"
         style="height: 100%"
         style="padding-right: 7px"
       >
@@ -1935,7 +1935,6 @@
       max_value = this_value.nextElementSibling.value.replace(/,/g, '').replace('$','');
       if(min_value < original_min_value || min_value >= original_max_value){
         alert("Min value lower than the given bound values or higer than the max value")
-        console.log("Min value lower than the given bound values or higer than the max value")
         this_value.value = original_min_value
       }else{
         global_grouped_optimizer_left_panel_data[key]["constraints"][0] = parseInt(min_value)
@@ -1969,7 +1968,7 @@
       max_value = this_value.nextElementSibling.value.replace(/,/g, '').replace('$','');
       median_spend = const_unchanged_global_optimizer_left_pannel_data[key][2]
       if(min_value < original_min_value || min_value >= original_max_value){
-        console.log("Min value lower than the given bound values or higer than the max value")
+        alert("Min value lower than the given bound values or higer than the max value")
         this_value.value = original_min_value
       }
       else{
@@ -1991,7 +1990,7 @@
       max_value = this_value.value.replace(/,/g, '').replace('$','');
       median_spend = const_unchanged_global_optimizer_left_pannel_data[key][2]
       if(max_value > original_max_value || max_value <= original_min_value){
-        console.log("Max value higer than the given bound values or lower than the min value")
+        alert("Max value higer than the given bound values or lower than the min value")
         this_value.value = original_max_value
       }
       else{
@@ -2068,8 +2067,6 @@
       $('#total_budget').val(null);
       cpm_value = this_value.value
       global_optimizer_left_pannel_data[key][5] = parseInt(cpm_value)
-      console.log("CPM updated global_optimizer_left_pannel_data", global_optimizer_left_pannel_data)
-      // console.log("CPM updated this_value", $(this_value).siblings())
      }
      // these functions will set the values of all min max percentages at once
      function change_all_max_perc_values(event,this_value){
@@ -2289,14 +2286,12 @@
           total_budget.setAttribute('placeholder',
           `$${global_range_min.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")} -
            $${global_range_max.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`)
-          console.log("success")
         },error:function(error){
             console.log(error)
         }
       })
      }
      function update_global_optimizer_left_pannel_data(investment_range_to_be_called = false){
-      //console.log("global_optimizer_left_pannel_data", global_optimizer_left_pannel_data)
       sum_min_values = 0
       sum_max_values = 0
       // get the selected checked dimensions
@@ -2476,7 +2471,6 @@
             data_to_submit["dimension_capping_constraints"] = stringified_global_grouped_optimizer_left_pannel_data
             data_to_submit["isolated_dimensions"] = isolatedDimensions.toString()
           }
-          console.log("sending data data_to_submit",data_to_submit )
           $.ajax({
             url: '/optimizer/ajax/left_pannel_dimension_min_max/',
             data: JSON.stringify(data_to_submit),
@@ -2485,7 +2479,6 @@
               'X-CSRFToken': getCookie('csrftoken')
             },
             success: function (data) {
-                console.log("From success", data)
                 $('#container').css('opacity',1);
                 $("body").css("background-color", "#fff");
                 $('#container').css('pointer-events','auto');
@@ -2507,14 +2500,11 @@
                 }else if(discarded_dim_considered_or_not == false && drop_dimension_from_session.length != 0){
                   document.getElementById('discarded_dimensions_note').style.display = 'none'
                 }
-                console.log("submit_predictor_left_pannel_chart_inputs", global_optimizer_download_csv_json)
                 console.log("json_table_1_data", json_table_1_data)
-                //console.log("json_donut_chart_data", json_donut_chart_data)
                 console.log("dict_donut_chart_data", dict_donut_chart_data)
                 populate_table_1(json_table_1_data, constraint_type)
                 populate_table_summary_metric(summary_metric_json,confidence_score)
                 if(global_my_optimizer_bar_chart != 0){
-                  console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
                   global_my_optimizer_bar_chart.destroy();
                 }
                 if(global_optimizer_cpa_bar_chart != 0){
@@ -2548,14 +2538,8 @@
         {% comment %} Download CSV  {% endcomment %}
         function optimizer_download_csv_fn(){
           console.log("optimizer_download_csv_fn");
-          // console.log(global_optimizer_download_csv_json);
-
-          //optimizer_download_csv_data = "test, fgsdg ,sdfgsd,fgsdf,gsgdfg"
-          //optimizer_download_csv_json = $("#or__csv-data").val()
           optimizer_download_csv_json = global_optimizer_download_csv_json
           optimizer_download_csv_data = JSON.parse(optimizer_download_csv_json)
-          //console.log("optimizer_download_csv_data", optimizer_download_csv_data)
-
           let element = document.createElement('a');
           element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(optimizer_download_csv_data));
           element.setAttribute('download', 'Optimized plan.csv');
@@ -2688,7 +2672,6 @@
           var total_target_span_value = $('#total_target_metric span');
           var roi_cpa_span_value = $('#roi_cpa_metric span');
           var confidence_span_value = $('#confidence_metric span');
-          console.log($('#total_budget_metric span').text())
           // appending the columns of table
           total_budget_span_value.text(`$ ${summary_metric_json["Optimized Total Budget"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
           total_target_span_value.text(`${summary_metric_json["Optimized Total Target"].toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`);
@@ -2701,12 +2684,9 @@
         }
         {% comment %} Start : Populate Table  1 {% endcomment %}
         function populate_table_1(json_table_1_data, constraint_type){
-          console.log("json_table_1_data")
-
           table_body_1_optimizer.innerHTML = ""
           for (const key in json_table_1_data) {
             value = json_table_1_data[key]
-            // console.log(`${key} : ${value}`);
             tableRow = document.createElement("tr");
 
             td1 = document.createElement("td");
@@ -2800,7 +2780,6 @@
         }
       // populate the target bar chart
       function populate_grouped_target_bar_chart(dict_target_chart_data){
-        console.log("populate_grouped_bar_chart")
         let canvasElement = document.getElementById("optimizer_target_bar_chart")
         height = "80";
         width = "80";
@@ -2900,7 +2879,6 @@
           },
         }
         global_my_optimizer_target_bar_chart = new Chart(ctx, config);
-        console.log("global_my_optimizer_bar_chart", global_my_optimizer_target_bar_chart)
     }
     // function to resize canvas
     function resizeCanvas(canvas, width, height) {
@@ -2919,7 +2897,6 @@
 
         {% comment %} Start : Populate Donut Chart{% endcomment %}
         function populate_grouped_bar_chart(dict_donut_chart_data, constraint_type){
-            console.log("populate_grouped_bar_chart")
             let canvasElement = document.getElementById("optimizer_bar_chart")
             height = "80"
             width = "80"
@@ -3023,9 +3000,6 @@
               },
             }
             global_my_optimizer_bar_chart = new Chart(ctx, config);
-            console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
-
-
         }
         {% comment %} End : Populate Donut Chart {% endcomment %}
 
@@ -3055,7 +3029,6 @@
         // get is_weekly_selected variable
         function get_is_weekly_selected(){
           let is_weekly_selected
-          console.log("get_is_weekly_selected")
           $.ajax({
             async: false,
             url: '/predictor/ajax/is_weekly_selected/',
@@ -3075,7 +3048,7 @@
         // get convert_to_weekly_data
         function get_convert_to_weekly_data(){
           let convert_to_weekly_data
-          console.log("get_convert_to_weekly_data")
+
           $.ajax({
             async: false,
             url: '/predictor/ajax/convert_to_weekly_data/',

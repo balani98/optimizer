@@ -38,6 +38,26 @@ TEMP_ERROR_DICT = {"4002": "Value Error"}
 # global_drop_dimension = NULL
 # d_cpm = NULL
 
+@login_required
+def explorer_user_guide(request):
+    context = {}
+    return render(request, "home/explorer_userguide.html", context)
+
+@login_required
+def predictor_user_guide(request):
+    context = {}
+    return render(request, "home/predictor_userguide.html", context)
+
+@login_required
+def optimizer_user_guide(request):
+    context = {}
+    return render(request, "home/optimizer_userguide.html", context)
+
+
+@login_required
+def goalseek_user_guide(request):
+    context = {}
+    return render(request, "home/goalseek_userguide.html", context)
 
 @login_required
 def explorer_home_page(request):
@@ -119,7 +139,6 @@ def download_sample_csv(request):
         json_dumped_sample_download_file = json.dumps(
             csv_sample_download_file, separators=(",", ":")
         )
-        # print("json_dumped_sample_download_file", json_dumped_sample_download_file)
         context["json_dumped_sample_download_file"] = json_dumped_sample_download_file
         return JsonResponse(context)
     except Exception as e:
@@ -183,9 +202,6 @@ def date_check(request):
         print(DateSelector, "selected date")
         request.session["DateSelector"] = DateSelector
         request.session["cpm_checked"] = "False"
-        # if request.session.get("cpm_checked") == True :
-        #     print("deleting cpm session")
-        #     del request.session['cpm_checked']
         print("date validated")
         return JsonResponse({"message": "Successfully published"}, status=200)
 
@@ -209,7 +225,6 @@ def dimension_grouping_check(request):
             eo.is_group_dimension_selected = dimension_grouping_check
             request.session["dimension_grouping_selector"] = dimension_grouping_selector
             request.session["dimension_grouping_check"] = dimension_grouping_check
-            print("dimension grouping check validated")
         else:
             eo.group_dimension = dimensionSelector[0]
             dimension_grouping_check = False
@@ -230,14 +245,10 @@ def dimension_check(request):
         # request.GET.getlist('fiel_name')
         DimensionSelector = request.GET.get("dimension_check[]")
         DimensionSelector = list(DimensionSelector.split(","))
-        # print(DimensionSelector, type(DimensionSelector))
         DimensionSelector = DimensionSelector[:-1]
         eo.dimension = DimensionSelector
         eo.dimension_check()
-        print(DimensionSelector, "selected dimension")
         request.session["DimensionSelector"] = DimensionSelector
-        print("DimensionSelector", request.session.get("DimensionSelector"))
-        print("dimension validated")
         return JsonResponse({"message": "Successfully published",
                              "dimensionSelector": DimensionSelector}, status=200)
 
@@ -255,7 +266,6 @@ def spent_check(request):
         SpentSelector = request.GET.get("spent_check")
         eo.spend = SpentSelector
         eo.numeric_check("spend")
-        print(SpentSelector, "selected spent")
         request.session["SpentSelector"] = SpentSelector
         return JsonResponse({"message": "Successfully published"}, status=200)
 
@@ -283,7 +293,6 @@ def target_check(request):
         TargetSelector = request.GET.get("target_check")
         eo.target = TargetSelector
         eo.numeric_check("target")
-        print(TargetSelector, "selected taret")
         request.session["TargetSelector"] = TargetSelector
         return JsonResponse({"message": "Successfully published"}, status=200)
 
@@ -604,11 +613,3 @@ def chart_filter(request):
             return JsonResponse(context)
 
         return JsonResponse(context)
-
-
-@login_required
-def user_guide(request):
-    try:
-        return render(request, "home/user_guide.html")
-    except Exception as e:
-        raise e
