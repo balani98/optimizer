@@ -174,7 +174,6 @@ function search_dimensions_table(this_value){
   tr = table.getElementsByTagName("tr");
   for(let i = 1 ; i < tr.length ; i++){
     td = tr[i].getElementsByTagName('td')[0];
-    console.log(td)
     txtValue = td.textContent || td.innerText;
     if(txtValue.indexOf(filter) > -1)
       tr[i].style.display = "table-row";
@@ -204,14 +203,8 @@ plan_id = {{plan_id}}
  {% comment %} Download CSV  {% endcomment %}
   function optimizer_download_csv_fn(){
     console.log("optimizer_download_csv_fn");
-    // console.log(global_optimizer_download_csv_json);
-    
-    //optimizer_download_csv_data = "test, fgsdg ,sdfgsd,fgsdf,gsgdfg"
-    //optimizer_download_csv_json = $("#or__csv-data").val()
     optimizer_download_csv_json = global_optimizer_download_csv_json
     optimizer_download_csv_data = JSON.parse(optimizer_download_csv_json)
-    //console.log("optimizer_download_csv_data", optimizer_download_csv_data)
-
     let element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(optimizer_download_csv_data));
     element.setAttribute('download', 'Optimized plan.csv');
@@ -234,7 +227,6 @@ plan_id = {{plan_id}}
     table_body_1_optimizer.innerHTML = ""
     for (const key in json_table_1_data) {
       value = json_table_1_data[key]
-      // console.log(`${key} : ${value}`);
       tableRow = document.createElement("tr");
 
       td1 = document.createElement("td");
@@ -288,7 +280,6 @@ plan_id = {{plan_id}}
   {% comment %} Start : Populate Donut Chart{% endcomment %}
   function populate_grouped_bar_chart(dict_donut_chart_data){
     dict_donut_chart_data = JSON.parse(dict_donut_chart_data)  
-    console.log("populate_grouped_bar_chart")
       let xValues = dict_donut_chart_data['dimension']
       let buget_allocation_old = dict_donut_chart_data['buget_allocation_old']
       let buget_allocation_new = dict_donut_chart_data['buget_allocation_new']
@@ -369,15 +360,12 @@ plan_id = {{plan_id}}
         },
       }
       global_my_optimizer_bar_chart = new Chart(ctx, config);
-      console.log("global_my_optimizer_bar_chart", global_my_optimizer_bar_chart)
     
       
   }
   {% comment %} End : Populate Donut Chart {% endcomment %}
 // run this function onload 
 function on_load_optimizer_view_results(){
-    // ajax call to get data for table and 
-    console.log("on_load_optimizer_view_results_plan_id",plan_id)
     $.ajax({
       url: '/optimizer_view_results/ajax/table_and_chart_results',
       data :{

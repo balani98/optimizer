@@ -32,7 +32,7 @@
   }
 
   .y_scroll{
-    overflow-y: scroll;
+    overflow-y: auto;
     height:10rem;
   }
 
@@ -155,7 +155,7 @@
                 <div class="overSelect "></div>
               </div>
 
-              <div id="checkBoxes" class="y_scroll hide_scroller">
+              <div id="checkBoxes" class="scrollbar" style=" height:10rem;">
                 {% for row in selector %}
                 <label>
                   <input class="checkbox_checked" type="checkbox" value="{{row}}">{{row}}
@@ -456,7 +456,6 @@
       $('.checkbox_checked:checked').each(function () {
         txt += $(this).val() + ','
         array_txt.length = 0
-        // console.log(txt, "this is string")
         array_txt.push(txt.split(','))
       })
 
@@ -469,8 +468,6 @@
       } else {
         $('#leftpanelDimensionValueSelector').html("");
       }
-
-      console.log(dimensionvalueselector, "this is dimension value selectpr")
       $('#container').css('opacity',0.5);
       $('#container').css('pointer-events','none');
       $('#container').css('z-index',1);
@@ -486,7 +483,6 @@
           $("body").css("background-color", "#fff");
           $('#container').css('pointer-events','auto');
           $('#spinner-optimizer').css('display','none');
-          console.log(data.message);
           dimensionSelector = data.dimensionSelector
           window.localStorage.setItem('dimension_selector',dimensionSelector)
           if(dimensionSelector.length >= 2){
@@ -514,8 +510,6 @@
           $("body").css("background-color", "#fff");
           $('#container').css('pointer-events','auto');
           $('#spinner-optimizer').css('display','none');
-          console.log(data.responseJSON.error);
-
           $('.dimension_error').css("display", "block");
           $('.dimension_error').html(data.responseJSON.error); // add error to the dom
 
@@ -540,7 +534,6 @@
     else 
       document.getElementById('exp__convert_to_weekly_data').disabled = false
     global_is_weekly_selected = is_weekly_selected;
-    console.log("fn_exp_is_weekly_input", is_weekly_selected)
     $.ajax({
       url: 'ajax/is_weekly_selected/',
       data: {
@@ -551,14 +544,12 @@
         $("body").css("background-color", "#fff");
         $('#container').css('pointer-events','auto');
         $('#spinner-optimizer').css('display','none');
-        console.log(`Success in 'ajax/is_weekly_selected/' : ${data.message}`);
       },
       error: function (data) {
         $('#container').css('opacity',1);
         $("body").css("background-color", "#fff");
         $('#container').css('pointer-events','auto');
         $('#spinner-optimizer').css('display','none');
-        console.log(`Success in 'ajax/is_weekly_selected/' : ${data.responseJSON.error}`);
       }
     });
   }
@@ -575,7 +566,6 @@
     else
       document.getElementById('exp__is_weekly_selected_input').disabled = false
     global_convert_to_weekly_data = convert_to_weekly_data;
-    console.log("fn_exp_convert_to_weekly_data", convert_to_weekly_data)
     $.ajax({
       url: 'ajax/is_convert_to_weekly_data/',
       data: {
@@ -583,11 +573,9 @@
       },
       success: function (data) {
         hideSpinner()
-        console.log(`Success in 'ajax/is_convert_to_weekly_data/' : ${data.message}`);
       },
       error: function (data) {
         hideSpinner()
-        console.log(`Success in 'ajax/is_convert_to_weekly_data/' : ${data.responseJSON.error}`);
       }
     });
   }
@@ -604,18 +592,14 @@
 
     {% comment %} Download Sample CSV  {% endcomment %}
     function explorer_download_sample_csv_fn(){
-      console.log("explorer_download_sample_csv_fn");
       $("#explorer__download_sample__file").text("Downloading.....").attr('disabled', true)
       
       $.ajax({
         url:'/ajax/download_sample_csv/',
         success: function(data){
-          console.log("From success", data)
           $( "#explorer__download_sample__file" ).text("Sample Upload File").attr('disabled', false)
           global_explorer_download_sample_csv_json = data.json_dumped_sample_download_file
           optimizer_download_csv_data = JSON.parse(global_explorer_download_sample_csv_json)
-          //console.log("optimizer_download_csv_data", optimizer_download_csv_data)
-      
           let element = document.createElement('a');
           element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(optimizer_download_csv_data));
           element.setAttribute('download', 'EXPLORER_DOWNLOAD_SAMPLE_CSV.csv');
@@ -647,21 +631,12 @@
 {% comment %} pie chart {% endcomment %}
 <script>
   function pie_chart_on_change(data) {
-    console.log('pie chart data printed on change success')
-
-
     const date = [];
     const spend = [];
     const target = [];
     const dimension = [];
     const cpa = [];
-
     var pie_json_aggdata_group = data.pie_chart_data_on_change
-    console.log("pie chart data")
-    console.log(pie_json_aggdata_group)
-    console.log("pie chart data end")
-
-
     pie_json_aggdata_group.forEach(function (item, index) {
       date.push(item.date)
       spend.push(Math.round(item.spend))
@@ -760,8 +735,6 @@
       },
     })
 
-    // console.log("second pie chart end")
-
   }
 
 </script>
@@ -787,7 +760,6 @@
 {% comment %} for displying CPM selector {% endcomment %}
 <script>
   function selectorDisplay() {
-    console.log("entered script")
     var checkBox = document.getElementById("flexCheckDefault")
     var selector = document.getElementById("cpm-Selector")
     var target_type_selector = document.getElementById("target_type_value")
@@ -799,7 +771,6 @@
     }
   }
   function selectorDimensionroupingDisplay() {
-    console.log("entered script")
     var checkBox = document.getElementById("flexCheckDefaultDimensionGrouping")
     var selector = document.getElementById("dimension-grouping-selector")
     window.localStorage.setItem('dimension_grouping_check',checkBox.checked);
@@ -831,7 +802,6 @@
     }
   function submit_chart_inputs() {
     // start progress
-    console.log("inputs submitted");
     displaySpinner()
     target_type_value = document.getElementById("target_type_value").value;
     if(target_type_value == "0"){
@@ -855,17 +825,12 @@
       success: function (data) {
         document.getElementById('right_div').style.display = "block";
         // close
-        console.log("this is the selected type");
         hideSpinner()
         let start_date = data.start_date
         let end_date = data.end_date
         // let default_dim = data.default_dim
         let unique_dimension =  data.unique_dimension
         let is_weekly_selected_from_session =  data.is_weekly_selected_from_session
-        console.log("start_date", start_date)
-        console.log("end_date", end_date)
-        //console.log("default_dim", default_dim)
-        console.log("unique_dimension", unique_dimension)
         
         // Weekly selction 
         if(is_weekly_selected_from_session == 1){
@@ -901,9 +866,6 @@
         checkboxes1.innerHTML = chart_filter_options
         checkboxes2.innerHTML = trendchart_filter_options
         pie_chart_view_render()
-        // console.log(chart_filter_options)
-
-
         pie_chart_on_change(data) //pie chart
         chart_on_change(data) //line chart
         // changing status of predictor and optimizer buttons
@@ -944,21 +906,16 @@
   // global variables
   // trend chart check boxes 
   function showPieChartCheckboxes(chart_type = 'pie') {
-    console.log("pie chart dropdown is working fine")
-    // console.log(chart_filter_options)
-    console.log("show pie chart dropdown")
     let checkboxex1
     if(chart_type == 'pie')
       checkboxes1 = document.getElementById("pieChartCheckboxes");
     else 
       checkboxes1 = document.getElementById("trendChartCheckboxes");
     if (!expanded) {
-      console.log("pie chart if condition ")
       checkboxes1.style.display = "block";
       expanded = true;
 
     } else {
-      console.log("pie chart else condition ")
       checkboxes1.style.display = "none";
       expanded = false;
     }
@@ -999,17 +956,15 @@
   }
 
   function pie_chart_view_render(){
+    displaySpinner()
     if (state_pie_dim_value.length > 0) {
       pie_array_txt = state_pie_dim_value.join(', ')
     }
     else
     pie_array_txt = "";
-    console.log("pie_array_txt", pie_array_txt)
     let piedimensionvalueselector = pie_array_txt
-    console.log("this is dimension value selectpr on submit", piedimensionvalueselector)
     var startDate = $('#piechartdate').data('daterangepicker').startDate.format('MM-DD-YY');
     var endDate = $('#piechartdate').data('daterangepicker').endDate.format('MM-DD-YY');
-    console.log("these are pie chart date range", startDate, endDate)
     $.ajax({
       url: 'ajax/chart_filter/',
       type : 'POST',
@@ -1025,11 +980,12 @@
         'chart_type': 'piechart'
       }),
       success: function (data) {
-        console.log("pie chart dimension value selecctor is successfull");
+        hideSpinner()
         pie_chart_on_change(data)
 
       },
       error: function (error_object) {
+        hideSpinner()
         console.log("From errors 'ajax/chart_filter/'", error_object);
 
       }
@@ -1045,11 +1001,9 @@
   $('input[name="daterange"]').daterangepicker();
 
   $('input[name="daterange"]').on("apply.daterangepicker", function (ev, picker) {
+    displaySpinner()
     var startDate = $('#date').data('daterangepicker').startDate.format('MM-DD-YY');
     var endDate = $('#date').data('daterangepicker').endDate.format('MM-DD-YY');
-
-    console.log(startDate, "this is changed daterange start date")
-    console.log(endDate, "this is chenged daterange end date")
     var trendchart_dimensions = trendchart_state_pie_dim_value.toString()
 
     $.ajax({
@@ -1067,6 +1021,7 @@
         'chart_type': 'linechart'
       }) ,
       success: function (data) {
+        hideSpinner()
         chart_on_change(data)
       }
     });
@@ -1076,11 +1031,9 @@
   $('input[name="daterange2"]').daterangepicker();
 
   $('input[name="daterange2"]').on("apply.daterangepicker", function (ev, picker) {
+    displaySpinner()
     var startDate = $('#piechartdate').data('daterangepicker').startDate.format('MM-DD-YY');
     var endDate = $('#piechartdate').data('daterangepicker').endDate.format('MM-DD-YY');
-
-    console.log(startDate, "this is changed daterange start date for pie chart")
-    console.log(endDate, "this is chenged daterange end date pie chart")
 
     // let piedimensionvalueselector = []
     // piedimensionvalueselector = pie_array_txt
@@ -1102,10 +1055,12 @@
         'chart_type': "piechart"
       }),
       success: function (data) {
+        hideSpinner()
         console.log("this is filtered data on pie change")
         pie_chart_on_change(data) //pie chart
       },
       error: function (data) {
+        hideSpinner()
         console.log(`Error in Pie Chart : ${data}`);
 
       }
@@ -1118,7 +1073,7 @@
 {% comment %} date validation check {% endcomment %}
 <script>
   function dateCheck(value) {
-    console.log(value)
+    displaySpinner()
     window.localStorage.setItem('date_selector',value);
     $.ajax({
       url: 'ajax/date_check/',
@@ -1126,12 +1081,11 @@
         'date_check': value,
       },
       success: function (data) {
-        console.log(data.message);
+        hideSpinner()
         $('.date_error').css("display", "none");
       },
       error: function (data) {
-        console.log(data.responseJSON.error);
-
+        hideSpinner()
         $('.date_error').css("display", "block");
         let error = data.responseJSON.error == 'Incorrect Date Format' 
         ? data.responseJSON.error + ' ( expecting YYYY-MM-DD format )' 
@@ -1158,8 +1112,6 @@
       },
       success : function(data){
         hideSpinner()
-        console.log(data.message)
-
       },
       error : function(error){
         hideSpinner()
@@ -1169,7 +1121,6 @@
   }
   
   function spentCheck(value) {
-    console.log(value)
     displaySpinner()
     window.localStorage.setItem('investment_selector',value)
     $.ajax({
@@ -1179,13 +1130,10 @@
       },
       success: function (data) {
         hideSpinner()
-        console.log(data.message);
         $('.spent_error').css("display", "none");
       },
       error: function (data) {
         hideSpinner()
-        console.log(data.responseJSON.error);
-
         $('.spent_error').css("display", "block");
         $('.spent_error').html(data.responseJSON.error); // add error to the dom
 
@@ -1227,7 +1175,6 @@
     });
   }
   function targetCheck(value) {
-    console.log(value)
     displaySpinner()
     window.localStorage.setItem('target_selector',value)
     $.ajax({
@@ -1237,7 +1184,6 @@
       },
       success: function (data) {
         hideSpinner()
-        console.log(data.message);
         $('.target_error').css("display", "none");
       },
       error: function (data) {
@@ -1255,7 +1201,6 @@
 <!-------------------CPM validation check------------------>
 <script>
   function cpmCheck(value) {
-    console.log(value)
     window.localStorage.setItem('cpm_selector',value)
     $.ajax({
       url: 'ajax/cpm_check/',
@@ -1263,7 +1208,6 @@
         'cpm_check': value,
       },
       success: function (data) {
-        console.log(data.message);
         $('.cpm_error').css("display", "none");
       },
       error: function (data) {
@@ -1280,11 +1224,10 @@
 
 <script>
   function dimension_value_selector() {
+    displaySpinner()
     var trendchart_dimensions = trendchart_state_pie_dim_value.toString()
     var startDate = $('#date').data('daterangepicker').startDate.format('MM-DD-YY');
     var endDate = $('#date').data('daterangepicker').endDate.format('MM-DD-YY');
-    console.log(startDate, "this is changed start date")
-    console.log(endDate, "this is chenged end date")
     $.ajax({
       url: 'ajax/chart_filter/',
       type : 'POST',
@@ -1300,7 +1243,7 @@
         'chart_type': 'linechart'
       }),
       success: function (data) {
-        console.log("this is filtered data")
+        hideSpinner()
         chart_on_change(data)
       }
     });
@@ -1310,18 +1253,12 @@
 <!-- line chart -->
 <script>
   function chart_on_change(data) {
-    console.log('line chart started')
-    // console.log(data.chart_data_on_change)
 
     const date = [];
     const spend = [];
     const target = [];
     const dimension = [];
-
-    console.log(data)
-    console.log("line chart data ")
     var json_aggdata = data.chart_data_on_change
-    // console.log(json_aggdata)
     json_aggdata.sort((a,b) => {return (new Date(a['date']) - new Date(b['date']))})
     json_aggdata.forEach(function (item, index) {
       date.push(item.date)
@@ -1333,8 +1270,6 @@
     // destroying old chart and creating new one
     document.getElementById("linechartcontainer").innerHTML = '&nbsp';
     document.getElementById("linechartcontainer").innerHTML = '<canvas id="linechart"></canvas>';
-
-    console.log("getting line chart element by id")
     let ctx = document.getElementById('linechart').getContext('2d');
 
     const lineChart = new Chart(ctx, {
@@ -1417,7 +1352,6 @@
         },
       },
     });
-    console.log("line chart generated")
   }
   function select_deselect(this_value) {
     if(this_value.checked == false)

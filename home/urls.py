@@ -3,12 +3,15 @@ from . import views
 
 urlpatterns = [
     path("", views.explorer_home_page, name="home"),
+    path("userguide", views.explorer_user_guide, name="explorer_userguide"),
+    path("userguide/goalseek", views.goalseek_user_guide, name="goalseek_userguide"),
+    path("userguide/predictor", views.predictor_user_guide, name="predictor_userguide"),
+    path("userguide/optimizer", views.optimizer_user_guide, name="optimizer_userguide"),
     path(
         "ajax/download_sample_csv/",
         views.download_sample_csv,
         name="download_sample_csv",
     ),
-    path("user_guide/", views.user_guide, name="user_guide"),
     # path("", views.explorer_upload_csv, name='explorer_upload_csv'),
     path(
         "ajax/is_weekly_selected/", views.is_weekly_selected, name="is_weekly_selected"

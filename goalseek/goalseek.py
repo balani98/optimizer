@@ -41,15 +41,15 @@ def dimension_bound(df_param, df_grp, constraint_type):
             const_var = "impression_mean"
 
         for dim in d_param.keys():
-            
-            dim_min_imp=int(round(df_grp[(df_grp['dimension']==dim) & (np.floor(df_grp['impression'])!=0)]['impression'].min()))
+            if df_grp[(df_grp['dimension']==dim) & (np.floor(df_grp['impression'])!=0)]['impression'].empty == False:
+                dim_min_imp=int(round(df_grp[(df_grp['dimension']==dim) & (np.floor(df_grp['impression'])!=0)]['impression'].min()))
+            else:
+                dim_min_imp=0
             dim_min_imp_per=-int(round((1-(dim_min_imp/d_param[dim][const_var]))*100))
+            dim_max_imp=(d_param[dim][const_var] * d_param[dim]["cpm"] / 1000)* threshold[1]
             dim_bound[dim] = [
                 int(dim_min_imp * d_param[dim]["cpm"] / 1000),
-                int(
-                    (d_param[dim][const_var] * d_param[dim]["cpm"] / 1000)
-                    * threshold[1]
-                ),
+                int(dim_max_imp) if dim_max_imp>1 else 1,
                 int(round(d_param[dim][const_var] * d_param[dim]["cpm"] / 1000)),
                 dim_min_imp_per,
                 200,
@@ -62,13 +62,15 @@ def dimension_bound(df_param, df_grp, constraint_type):
             const_var = "mean spend"
 
         for dim in d_param.keys():
-            
-            dim_min_budget=int(round(df_grp[(df_grp['dimension']==dim) & (np.floor(df_grp['spend'])!=0)]['spend'].min()))
+            if df_grp[(df_grp['dimension']==dim) & (np.floor(df_grp['spend'])!=0)]['spend'].empty == False:
+                dim_min_budget=int(round(df_grp[(df_grp['dimension']==dim) & (np.floor(df_grp['spend'])!=0)]['spend'].min()))
+            else:
+                dim_min_budget = 0            
             dim_min_budget_per=-int(round((1-(dim_min_budget/d_param[dim][const_var]))*100))
-            
+            dim_max_budget = d_param[dim][const_var] * threshold[1]
             dim_bound[dim] = [
                 dim_min_budget,
-                int(d_param[dim][const_var] * threshold[1]),
+                int(dim_max_budget) if dim_max_budget>1 else 1,
                 int(round(d_param[dim][const_var])),
                 dim_min_budget_per,
                 200
@@ -278,7 +280,10 @@ class optimizer_conversion:
         for dim in self.dimension_names:
             if self.use_impression:
                 df_grp_tmp_imp = df_grp[(df_grp['dimension']==dim) & (np.floor(df_grp['impression'])!=0)].copy()
-                start_value_imp = df_grp_tmp_imp[self.metric].min()
+                if df_grp_tmp_imp.empty == False:
+                    start_value_imp = df_grp_tmp_imp[self.metric].min()
+                else:
+                    start_value_imp = 0
                 start_value_spend=(start_value_imp*dimension_bound[dim][2])/1000
             
                 input_start_imp=((dimension_bound[dim][0] * 1000) / dimension_bound[dim][2])
@@ -298,7 +303,10 @@ class optimizer_conversion:
                     oldSpendVec[dim]=start_value_spend
             else:
                 df_grp_tmp_spend = df_grp[(df_grp['dimension']==dim) & (np.floor(df_grp['spend'])!=0)].copy()
-                start_value_spend = df_grp_tmp_spend['spend'].min()
+                if df_grp_tmp_spend.empty == False:
+                    start_value_spend = df_grp_tmp_spend['spend'].min()
+                else:
+                    start_value_spend = 0
                 
                 input_start_spend=dimension_bound[dim][0]
                 input_final_spend=dimension_bound[dim][1]
@@ -421,7 +429,8 @@ class optimizer_conversion:
         calibrate_flag=0
         msg=4001
         
-        while(returnGoal>sum(totalReturn.values())):                   
+        while(returnGoal>sum(totalReturn.values())):
+            # print(iteration, increment, sum(totalReturn.values()))                
             incReturns, incBudget = self.get_conversion_dimension(newSpendVec, dimension_bound, increment, newImpVec)    
             dim_idx=max(incReturns, key=incReturns.get)
             
@@ -450,7 +459,7 @@ class optimizer_conversion:
                     
                 elif(itr_calibrate>500):
                     msg=4003
-                    print("not inc - cal - cal not possible"," ",dim_idx," ",increment)
+                    # print("not inc - cal - cal not possible"," ",dim_idx," ",increment)
                     result_itr_dict={'spend': sum(newSpendVec.values()), 'return' : sum(totalReturn.values())}
                     results_itr_df=results_itr_df.append(result_itr_dict, ignore_index=True)
                     results_itr_df=results_itr_df.reset_index(drop=True)
@@ -521,7 +530,7 @@ class optimizer_conversion:
         itr_calibrate=0
         msg=4001
         while(returnGoal>sum(totalReturn.values())):
-            
+            # print(iteration, increment, sum(totalReturn.values()))
             incReturns, incBudget = self.get_conversion_dimension(newSpendVec, dimension_bound, increment, newImpVec)    
             dim_idx=max(incReturns, key=incReturns.get)
             
@@ -1067,7 +1076,10 @@ class optimizer_conversion_seasonality:
         for dim in self.dimension_names:
             if self.use_impression:
                 df_grp_tmp_imp = df_grp[(df_grp['dimension']==dim) & (np.floor(df_grp['impression'])!=0)].copy()
-                start_value_imp = df_grp_tmp_imp[self.metric].min()
+                if df_grp_tmp_imp.empty == False:
+                    start_value_imp = df_grp_tmp_imp[self.metric].min()
+                else:
+                    start_value_imp = 0
                 start_value_spend=(start_value_imp*dimension_bound[dim][2])/1000
             
                 input_start_imp=((dimension_bound[dim][0] * 1000) / dimension_bound[dim][2])
@@ -1087,7 +1099,10 @@ class optimizer_conversion_seasonality:
                     oldSpendVec[dim]=start_value_spend
             else:
                 df_grp_tmp_spend = df_grp[(df_grp['dimension']==dim) & (np.floor(df_grp['spend'])!=0)].copy()
-                start_value_spend = df_grp_tmp_spend['spend'].min()
+                if df_grp_tmp_spend.empty == False:
+                    start_value_spend = df_grp_tmp_spend['spend'].min()
+                else:
+                    start_value_spend = 0
                 
                 input_start_spend=dimension_bound[dim][0]
                 input_final_spend=dimension_bound[dim][1]
@@ -1098,6 +1113,8 @@ class optimizer_conversion_seasonality:
                     oldSpendVec[dim]=input_start_spend
                 else:
                     oldSpendVec[dim]=start_value_spend
+
+        # print("yes")
                 
         if self.use_impression:
             return oldSpendVec, oldImpVec
@@ -1111,11 +1128,15 @@ class optimizer_conversion_seasonality:
         Returns:
             Float value: Increment factor - always based on spend (irrespective of metric chosen)
         """
+        # print("increment_factor")
         # inc_factor =  df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby('date').agg({'spend':'sum','target':'sum'})['spend'].median()
         # increment = round(inc_budget*0.075)
         # increment = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':'median'})['spend'].median())
-        inc_factor = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':self.constraint_type})['spend'].min())
-        increment = round(inc_factor*0.50)
+        inc_factor = df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':self.constraint_type})['spend'].round()
+        # print(sorted(inc_factor))
+        inc_factor = min([x for x in inc_factor if x != 0])
+        increment = np.ceil(inc_factor*0.50)
+        # print(increment)
         return increment
     
     
@@ -1210,7 +1231,8 @@ class optimizer_conversion_seasonality:
         calibrate_flag=0
         msg=4001
         
-        while(returnGoal>sum(totalReturn.values())):                   
+        while(returnGoal>sum(totalReturn.values())):   
+            # print(sum(totalReturn.values()), iteration, increment)                
             incReturns, incBudget = self.get_conversion_dimension(newSpendVec, dimension_bound, increment, newImpVec)    
             dim_idx=max(incReturns, key=incReturns.get)
             
@@ -1834,7 +1856,9 @@ class optimizer_conversion_seasonality:
             result_df_[['spend', 'impression', 'return']]=result_df_[['spend', 'impression', 'return']].round(2)
         else:
             oldSpendVec = self.ini_start_value(df_grp, dimension_bound)
+            # print("ini_start_value: yes")
             oldReturn = self.initial_conversion(oldSpendVec)
+            # print("initial_conversion: yes")
             result_df_, result_itr_df, msg = self.conversion_optimize_spend(increment, oldSpendVec, oldReturn, returnGoal, dimension_bound)
             result_df_=result_df_[['dimension', 'spend', 'return']]
             result_df_[['spend', 'return']]=result_df_[['spend', 'return']].round(2)

@@ -747,7 +747,6 @@
 
   // Fuction to get start and End date
   function getPredictorStartAndEndDates() {
-    console.log("addStartAndEndDate");
      // Ajax Call
     // make the sppinner visible
     displaySpinner()
@@ -783,7 +782,6 @@
   function onChangeHelperFunction(discard_dimension=false) {
     // display the spinner
     displaySpinner()
-    console.log("onChangeHelperFunction");
     // if user discards some dimension , change the dimension to 2nd dimension
     dimension_to_be_discarded = null
     if(discard_dimension == true){
@@ -936,7 +934,6 @@
   // Function to select Seasonality
   function selectSeasonality(this_object) {
     let value = this_object.value;
-    console.log("Select seasonality", value);
     select_seasonality_userselection = value == "No" ? 0 : 1;
     select_seasonality_userselection
       ? $("#channel_grouping").hide()
@@ -1156,12 +1153,8 @@
         }
         // End : Updating Drop dimension
 
-        console.log("this is the selected type");
         console.log("drop_dimension", drop_dimension);
         enter_cpm ? console.log("enter_cpm", enter_cpm) : null;
-        console.log("default_dimension", default_dimension);
-        console.log("dimension_value_selector", dimension_value_selector);
-        console.log(data.predictor_table_data);
         var option = new Option(
           default_dimension,
           default_dimension,
@@ -1891,8 +1884,6 @@ function scatter_plot_chart(data) {
           predictions.push(item.predictions);
       });
     }
-
-    console.log(`this is spend/impression \n${x}`);
     scatterplotchartcontainer.innerHTML = "&nbsp;";
     scatterplotchartcontainer.innerHTML =
       '<canvas id="scatterplotchart"></canvas>';
@@ -2009,7 +2000,6 @@ function scatter_plot_chart(data) {
   $('input[name="daterange"]').on("apply.daterangepicker", function (ev, picker) {
       startDate = $('#predictor_predict_section_daterange').data('daterangepicker').startDate.format('MM-DD-YY');
       endDate = $('#predictor_predict_section_daterange').data('daterangepicker').endDate.format('MM-DD-YY');
-      console.log(startDate, endDate)
   })
 
   function get_seasonality_from_session(){
@@ -2082,7 +2072,6 @@ function scatter_plot_chart(data) {
           data: data_to_submit_onclick_predict,
           success: function (data) {
               let predicted_value = data.predicted_value
-              console.log("predicted_value", predicted_value)
               // displaying the value in commas with US format
               predicted_value_node.value = predicted_value.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
               value = enter_cpm
@@ -2117,8 +2106,6 @@ function scatter_plot_chart(data) {
         } else {
           console.log("Already selected " + dimension_value_selected_by_user);
       }
-
-      console.log("discarded_items",discarded_items)
          // set all the properties of screen back and hide the progress bar
    
       $.ajax({
@@ -2157,7 +2144,6 @@ function scatter_plot_chart(data) {
 
 
   function predictor_window_on_load_front_end() {
-    console.log("predictor_window_on_load_front_end");
     //Clear all the old Data
     //clearOldData();
   
@@ -2361,7 +2347,6 @@ $(window).on('load',function(){
   }
   function download_response_curve_eqn(){
     var params = {}
-    console.log(global_response_curve_eqn_dic)
     params['response curve formulation'] = global_response_curve_eqn_dic
     params['Note'] = 'Coefficients in the equations are rounded to two decimal places, so the results might vary when compared to the response curves'
     download(JSON.stringify(params,null,"\t") ,"response-curve-formulation.json", "application/json");
