@@ -333,8 +333,15 @@ class optimizer_conversion:
         # inc_factor =  df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby('date').agg({'spend':'sum','target':'sum'})['spend'].median()
         # increment = round(inc_budget*0.075)
         # increment = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':'median'})['spend'].median())
-        inc_factor = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':self.constraint_type})['spend'].min())
-        increment = round(inc_factor*0.50)
+        # inc_factor = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':self.constraint_type})['spend'].min())
+        # increment = round(inc_factor*0.50)
+        increment = 0
+        inc_factor = df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':self.constraint_type})['spend']
+        inc_factor = min([x for x in inc_factor if x >= 1])
+        increment = np.ceil(inc_factor*0.50)
+        if increment < 1:
+            increment = 1
+        # print(increment)
         return increment
     
     
@@ -1132,10 +1139,12 @@ class optimizer_conversion_seasonality:
         # inc_factor =  df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby('date').agg({'spend':'sum','target':'sum'})['spend'].median()
         # increment = round(inc_budget*0.075)
         # increment = round(df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':'median'})['spend'].median())
-        inc_factor = df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':self.constraint_type})['spend'].round()
-        # print(sorted(inc_factor))
-        inc_factor = min([x for x in inc_factor if x != 0])
+        increment = 0
+        inc_factor = df_grp[df_grp['dimension'].isin(self.dimension_names)].groupby(['dimension']).agg({'spend':self.constraint_type})['spend']
+        inc_factor = min([x for x in inc_factor if x >= 1])
         increment = np.ceil(inc_factor*0.50)
+        if increment < 1:
+            increment = 1
         # print(increment)
         return increment
     

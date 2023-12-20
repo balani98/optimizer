@@ -2475,6 +2475,8 @@
             url: '/optimizer/ajax/left_pannel_dimension_min_max/',
             data: JSON.stringify(data_to_submit),
             type : 'POST',
+            async:true,
+            timeout:660000,
             headers: {
               'X-CSRFToken': getCookie('csrftoken')
             },
@@ -2520,12 +2522,14 @@
                 //$("#optimizer__total_2_value").val(888)
             },
             error: function (error_object) {
-              console.log("From errors", error_object.responseJSON.error);
               $('#container').css('opacity',1);
               $("body").css("background-color", "#fff");
               $('#container').css('pointer-events','auto');
               $('#spinner-optimizer').css('display','none');
-              alert(error_object.responseJSON.error)
+              if(error_object.statusText == 'timeout' )
+                alert('Timeout due to large number of dimensions / line items')
+              else
+                alert(error_object.responseJSON.error)
 
               // $('.dimension_error').css("display", "block");
               // $('.dimension_error').html(data.responseJSON.error); // add error to the dom
