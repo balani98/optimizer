@@ -2418,7 +2418,8 @@
               }).replace(/\//g, '-'); // Replace slashes with hyphens;
               var selectedDate = $('#optimizer_date_picker_end_date').datepicker('getDate');
 
-              // Subtract one day
+              // Subtract one day only in case of weekly selected 
+            if((convert_to_weekly_data == 1 || is_weekly_selected == 1) && global_seasonality == 1)
               selectedDate.setDate(selectedDate.getDate() - 1);
               
               // Format the date to 'YY-MM-DD'

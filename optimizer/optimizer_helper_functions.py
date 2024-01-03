@@ -1304,6 +1304,7 @@ class optimizer_iterative:
         # Calculating % budget allocation by optimization over maximum historic spend for penalising such dimensions
         score_df['budget_allocated_over_max_%'] = np.where(score_df['recommended_budget_per_day']>score_df['max_spend'],
                                                            ((score_df['recommended_budget_per_day']-score_df['max_spend'])/score_df['max_spend']), 0)
+        score_df['budget_allocated_over_max_%'] = score_df['budget_allocated_over_max_%'].replace([np.inf, -np.inf], 0).fillna(0)
         
         # Adjusting accuracy based on above step
         # Formula used: ((Accuracy x 100%) - (% Budget Allocation over Max Spend x Penalization Weightage)) x % Recommended Budget Allocation
@@ -2694,6 +2695,7 @@ class optimizer_iterative_seasonality:
         # Calculating % budget allocation by optimization over maximum historic spend for penalising such dimensions
         score_df['budget_allocated_over_max_%'] = np.where(score_df['recommended_budget_per_day']>score_df['max_spend'],
                                                            ((score_df['recommended_budget_per_day']-score_df['max_spend'])/score_df['max_spend']), 0)
+        score_df['budget_allocated_over_max_%'] = score_df['budget_allocated_over_max_%'].replace([np.inf, -np.inf], 0).fillna(0)
         
         # Adjusting accuracy based on above step
         # Formula used: ((Accuracy x 100%) - (% Budget Allocation over Max Spend x Penalization Weightage)) x % Recommended Budget Allocation
