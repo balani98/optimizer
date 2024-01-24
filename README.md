@@ -1,61 +1,35 @@
-WINDOWS :
+# Media Spend Optimizer 
+## Description 
+**Optimizer Application :** Optimizer Application is a tool that helps businesses analyze historical data and make informed decisions on how to allocate budget or target across various dimensions based on various inputs . Based on historical data and machine learning model , the optimizer helps to detemine the most effective distribution of their budget or arget across these dimensions.
+### Modules in Application 
+**Explore :** Explore functionality lets the user upload the data file and select the required metrics like dimensions , investment and target on which optimization need to be performed . It provides visualization and Insights on Investment and Target variables for the selected date range and dimensions . 
 
-1. Steps to install Black in VS code : https://dev.to/adamlombard/how-to-use-the-black-python-code-formatter-in-vscode-3lo0#:~:text=Black%20is%20%22the%20uncompromising%20Python,save%20a%20file%20in%20VSCode.&text=Open%20your%20VSCode%20settings%2C%20by,%3E%20Preferences%20%2D%3E%20Settings'.&text=Black%20will%20now%20format%20your%20code%20whenever%20you%20save%20a%20*.
+**Predict :** Predict functionality lets the user perform the model building on Target for all the dimensions based on Investment.The user can consider seasonality or not in model building process . This tab shows statistics and charts for users to understand how well the model fitting took place for all dimensions.
 
-2. For Flake8 Linting explanation :
-   the 4th extension (Linter ) he installs is Flake8 : https://www.youtube.com/watch?v=Z3i04RoI9Fk
+**Optimize :** Optimize functionality lets the user perform budget optimization to get the maximum possible target for the desired budget. It displays the summary metrics and output of budget optimization process comparing budget and target allocation across various dimensions which took part in optimization.
 
-pip install pipenv
-pipenv install reqests
-python --version
-exit (not exit()) to come out of pipenv
-pipenv shell
-pipenv check
-pipenv graph
+**Goal Seek**: Goal Seek functionality lets the user perform target optimization to achieve the minimum possible budget for the desired target. It displays the output of target optimization process comparing budget and target allocation across various dimensions which took part in optimization. 
+### Requirements 
+* Python 3.9 (tested under python 3.9.3)
+* Django 4.2 ( tested under djnago 4.2.7)
+### Installation in local environment
+> Make sure Your Public IP address is added in AWS Security Groups . In case you are connected to your organization VPN. Then organization public IP addresses should be added in security groups.
 
-Updating python version
+* Clone the git repository : 
+https://github.com/CrossmediaHQ/xm-rb-optimizer.git  
+* Go Inside the folder :
+`cd xm-rb-optimizer`
+* Install all required dependencies : 
+`pip install -r requirements.txt`
+* Get the necessary files from Dev team ad these files to main directory of your project `/xm-rb-optimizer` :
+    + `confg.json:`  It contains necessary configurations related to test and production databases . 
+    + `Nabler_Django_Key.pem:` This is private key which helps to setup SSH tunnel with RDS database . 
+### Running the project 
+* set the variable `ENVIRONMENT` in your local environment :
+    + Local Environment: `export ENVIRONMENT=local`
+    + Test ENVIRONMENT: `export ENVIORNMENT=test`
+* Run the command on your CLI : `python manage.py runserver`
 
-1. Change the version on python in pipfile ex :
-   Please install that version from python webpage: https://www.python.org/downloads/ (The requiured version)
-   [requires]
-   python_version = "3.10"
-   in the shell run : pipenv --python 3.10
-
-2. pipenv install django
-
-3. Create a .env file to store all the secrect keys and add all of them in .gitignore files.
-
-To check the version in your virtual environment :
-pipenv run python
-import sys
-sys.executable
-exit()
-
-out side the environment
-
-pipenv run python
-import sys
-sys.executable
-exit()
-
-other imp commands :
-pipenv --venv
-
-Only while pushing to production or when all the testing is done with version present in pipenv:
-pipenv lock
-pipenv install --ignore-pipfile
-
-Push an existing folder
-cd existing_folder
-git init --initial-branch=main
-git remote add origin https://gitlab.com/yogesh-nabler/cross_media_optimizer.git
-git add .
-git commit -m "Initial commit"
-git push -u origin main
-
-Push an existing Git repository
-cd existing_repo
-git remote rename origin old-origin
-git remote add origin https://gitlab.com/yogesh-nabler/cross_media_optimizer.git
-git push -u origin --all
-git push -u origin --tags
+### Contributers
+* Mudit Kannodia 
+* Deepanshu Balani
