@@ -1120,6 +1120,9 @@
         global_response_curve_eqn_dic = data.response_curve_eqn_dic
         // there should not be any unchecked dimension after time of submit
         global_unchecked_dimensions = []
+        // redisplaying the mean median dots 
+        document.getElementById("median_dot_div").style.display = "flex";
+        document.getElementById("mean_dot_div").style.display = "flex";
         // make progress bar settings as before
         $("#inner-progressbarDiv").animate(
           {
