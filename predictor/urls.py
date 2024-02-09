@@ -1,6 +1,5 @@
 from django.urls import path
 from . import views
-
 urlpatterns = [
     path("", views.predictor_home_page, name="predictor_home_page"),
     path(
