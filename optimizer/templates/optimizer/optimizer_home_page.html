@@ -1581,8 +1581,8 @@
       var dimensionMinBudget = 0;
       var sub_dimension_array = [];
       var dimensionObjectSiblings = this_value.parentElement.parentElement.children;
-      var dimensionBudgetDiv = this_value.parentElement.parentElement.previousElementSibling.children[1].children[1]
-      var dimensionMinBudgetDiv = this_value.parentElement.parentElement.previousElementSibling.children[1].children[0]
+      var dimensionBudgetDiv = this_value.parentElement.parentElement.previousElementSibling.children[1].children[2]
+      var dimensionMinBudgetDiv = this_value.parentElement.parentElement.previousElementSibling.children[1].children[1]
       for(let i=0;i<dimensionObjectSiblings.length;i++){
           if(dimensionObjectSiblings[i].children[0].checked == true)
             sub_dimension_array.push(dimensionObjectSiblings[i].children[1].innerText)
@@ -2149,12 +2149,14 @@
       $('#total_budget').val(null);
       optimizer_left_panel_number_of_days = parseInt(value)
       if((is_weekly_selected == 1 || convert_to_weekly_data == 1) && global_seasonality == 1){
-        var optimizer_left_panel_number_of_weeks = optimizer_left_panel_number_of_days/7;
+        // converting to integer value becuase weekly selection has one day extra
+        var optimizer_left_panel_number_of_weeks = parseInt(optimizer_left_panel_number_of_days/7);
         document.getElementById('no_of_weeks_days_text').innerText = 'No. of weeks selected : '
                  +   `${Math.round(optimizer_left_panel_number_of_weeks).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
         }else if(global_seasonality == 1){
+          // adding 1 to Number of days because it gives 0 if start and end date are same but that also counts a day
           document.getElementById('no_of_weeks_days_text').innerText = 'No. of days selected : '
-          +   `${Math.round(optimizer_left_panel_number_of_days).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
+          +   `${Math.round(optimizer_left_panel_number_of_days + 1).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
         }
       update_global_optimizer_left_pannel_data()
       //total_budget.setAttribute('placeholder', `${range_min} - ${range_max}`)
@@ -2218,7 +2220,8 @@
       }
       var budget_per_day_week = optimizer_left_panel_total_budget/optimizer_left_panel_number_of_days;
       if((is_weekly_selected == 1 || convert_to_weekly_data == 1) && global_seasonality == 1){
-      var optimizer_left_panel_number_of_weeks = optimizer_left_panel_number_of_days/7;
+      // converting into integer because weekly selection has one date extra from week calculation
+      var optimizer_left_panel_number_of_weeks = parseInt(optimizer_left_panel_number_of_days/7);
       budget_per_day_week = optimizer_left_panel_total_budget/optimizer_left_panel_number_of_weeks;
       
       document.getElementById('budget_per_day_text').innerText = 'Investment per week : '
@@ -2251,7 +2254,11 @@
       })
       // re stringifiying the json
       stringified_global_optimizer_left_pannel_data = JSON.stringify(stringified_global_optimizer_left_pannel_data)
-      isolated_dimensions = getIsolatedDimensionsFromGroup()
+      stringified_global_grouped_optimizer_left_pannel_data  = {}
+          if(flag_to_show_grouped_dimensions == 1){
+            stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(JSON.parse(JSON.stringify(global_grouped_optimizer_left_panel_data))).replaceAll('&amp;', '&');
+          }
+          isolated_dimensions = getIsolatedDimensionsFromGroup()
       data_to_submit =  {
         dimension_capping_constraints:stringified_global_grouped_optimizer_left_pannel_data,
         dimension_min_max:stringified_global_optimizer_left_pannel_data,
@@ -2275,11 +2282,12 @@
           optimizer_left_panel_min_value = investment_ranges[0] + global_sum_fixed_budget_values
           optimizer_left_panel_max_value = investment_ranges[1] + global_sum_fixed_budget_values
           if((is_weekly_selected == 1 || convert_to_weekly_data == 1)&& global_seasonality == 1){
-            var optimizer_left_panel_number_of_weeks = optimizer_left_panel_number_of_days/7;
+            var optimizer_left_panel_number_of_weeks = parseInt(optimizer_left_panel_number_of_days/7);
             global_range_min = parseInt(optimizer_left_panel_number_of_weeks * optimizer_left_panel_min_value)
             global_range_max = parseInt(optimizer_left_panel_number_of_weeks * optimizer_left_panel_max_value)
           }
-           else{
+           else if(global_seasonality == 1){
+            optimizer_left_panel_number_of_days = optimizer_left_panel_number_of_days
           global_range_min = parseInt(optimizer_left_panel_number_of_days * optimizer_left_panel_min_value)
           global_range_max = parseInt(optimizer_left_panel_number_of_days * optimizer_left_panel_max_value)
            }
@@ -2306,7 +2314,8 @@
             date_format_end_date = global_end_date.getTime();
             let diff_time = Math.abs( date_format_end_date - date_format_start_date)
            let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
-           optimizer_left_panel_number_of_days = diff_days;
+            // adding 1 to Number of days because it gives 0 if start and end date are same but that also counts a day
+           optimizer_left_panel_number_of_days = diff_days+1;
         }
         type_of_input = document.getElementById('customSwitch1').checked == true ? 'perc' : 'abs';
         for (let key in global_optimizer_left_pannel_data){
@@ -2340,7 +2349,7 @@
       optimizer_left_panel_min_value = sum_min_values + global_sum_fixed_budget_values
       optimizer_left_panel_max_value = sum_max_values + global_sum_fixed_budget_values
       if((is_weekly_selected == 1 || convert_to_weekly_data == 1) && global_seasonality == 1){
-        var optimizer_left_panel_number_of_weeks = optimizer_left_panel_number_of_days/7;
+        var optimizer_left_panel_number_of_weeks = parseInt(optimizer_left_panel_number_of_days/7);
         global_range_min = parseInt(optimizer_left_panel_number_of_weeks * optimizer_left_panel_min_value)
         global_range_max = parseInt(optimizer_left_panel_number_of_weeks * optimizer_left_panel_max_value)
       }
@@ -2388,6 +2397,8 @@
             date_format_end_date = global_end_date.getTime();
             let diff_time = Math.abs( date_format_end_date - date_format_start_date)
             let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
+             // adding 1 to Number of days because it gives 0 if start and end date are same but that also counts a day
+            diff_days = diff_days+1
             optimizer_left_panel_total_budget = parseInt(optimizer_left_panel_total_budget) -
             global_sum_fixed_budget_values*diff_days;
           }
@@ -2431,6 +2442,7 @@
 
           }
           stringified_global_optimizer_left_pannel_data = JSON.parse(JSON.stringify(global_optimizer_left_pannel_data).replaceAll('&amp;', '&'));
+          stringified_global_grouped_optimizer_left_pannel_data  = {}
           if(flag_to_show_grouped_dimensions == 1){
             stringified_global_grouped_optimizer_left_pannel_data = JSON.stringify(JSON.parse(JSON.stringify(global_grouped_optimizer_left_panel_data))).replaceAll('&amp;', '&');
             isolatedDimensions = getIsolatedDimensionsFromGroup()
@@ -3083,8 +3095,8 @@
             explorer_inputs = {};
             predictor_inputs = {};
             optimizer_inputs = {};
-            let is_weekly_selected  = is_weekly_selected
-            let convert_to_weekly_data = convert_to_weekly_data
+            let is_weekly_selected  = get_is_weekly_selected()
+            let convert_to_weekly_data = get_convert_to_weekly_data()
             explorer_inputs['date_selector'] = window.localStorage.getItem('date_selector');
             explorer_inputs['use_impressions'] = window.localStorage.getItem('cpm_checkbox');
             explorer_inputs['is_weekly_selected'] = is_weekly_selected;

@@ -1432,7 +1432,9 @@ function plot_multi_line_chart_checkboxes(plotting_data, mean_median_plotting_ar
         svg.append("g")
             .call(d3.axisLeft(y)
             .tickFormat(function(d){
-               if(y_label != 'predictions' && target_type == 'volume')
+               if(y_label != 'predictions' && target_type == 'volume' && cpm_message != "cpm selected")
+                return "＄" + d.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+              else if(y_label != 'predictions' && target_type == 'revenue' && cpm_message == "cpm selected")
                 return "＄" + d.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
                else 
                 return d.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
