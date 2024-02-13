@@ -30,6 +30,15 @@ https://github.com/CrossmediaHQ/xm-rb-optimizer.git
     + Test ENVIRONMENT: `export ENVIORNMENT=test`
 * Run the command on your CLI : `python manage.py runserver`
 
+### For Test Server deployment 
+[Refer here](./Test_server_deployment.md)
+
+### For Production Server deployment 
+[Refer here](./Production_server_deployment.md)
+
+
+### CI-CD documentation for optimizer 
+[Refer here](https://docs.google.com/document/d/1Ug8ibrw-muOtOfmdcCbgOqkFJiU3QGY0U_zL0zYWWBA/edit)
 ### Contributers
 * Mudit Kannodia 
 * Deepanshu Balani
