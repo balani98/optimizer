@@ -9,7 +9,7 @@
 * Add the same necessary files as mentioned in setting up local environment .
 * Restart the apache2 server : 
 
-**Replacement of SSL certificates for production server :** If SSL certificates are expired , Get latest CRT file from Crossmedia IT and replace it with the existing CRT file located at `/etc/apache2/` . Change the path of CRT files at `etc/apache2/sites-enabled/` . Restart the apache2 server : ``. 
+**Replacement of SSL certificates for production server :** If SSL certificates are expired , Get latest CRT file from Crossmedia IT and replace it with the existing CRT file located at `/etc/apache2/certificates-prod-new/` . Change the path of CRT files at `etc/apache2/sites-enabled/000-default.conf` . Restart the apache2 server : `sudo systemctl restart apache2`. 
 
 **Checking the Logs in production server:** In case of any failures , you can check the apache2 logs at `/var/log/apache2/error.log`
 
@@ -39,6 +39,6 @@
 * Enable the WSGI on EC2 : `sudo a2enmod wsgi`
 * Install the cryptography module from pip : `python3 -m pip install cryptography==38.0.4`
 * Install the MySQL client : `sudo apt-get install libmysqlclient-dev && pip install mysqlclient`
-* Copy the CRT and key files  `/etc/apache2/`
-* Do edits in  `/etc/apache2/sites-enabled/`
+* Copy the CRT and key files  `/etc/apache2/certificates-prod-new`
+* Do edits in  `/etc/apache2/sites-enabled/000-default.conf`
 * Restart the apache2 server : `sudo systemctl restart apache2`
