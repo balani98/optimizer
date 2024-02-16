@@ -1670,8 +1670,8 @@
           date_format_end_date = global_end_date.getTime();
           let diff_time = Math.abs( date_format_end_date - date_format_start_date)
          let diff_days = Math.ceil(diff_time / (1000 * 60 * 60 * 24));
-         goalseek_left_panel_number_of_days = diff_days;
-        }
+         goalseek_left_panel_number_of_days = diff_days+1 ;
+       }
         type_of_input = document.getElementById('customSwitch1').checked == true ? 'perc' : 'abs';
         for (let key in global_goalseek_left_pannel_data){
           if (key in optimizer_left_panel_user_selected_final_dict){
@@ -1702,7 +1702,7 @@
         goalseek_left_panel_total_conversion = parseInt(this_value.value.replace(/,/g, ''));
         var conversion_per_day_week = goalseek_left_panel_total_conversion/goalseek_left_panel_number_of_days;
         if((is_weekly_selected == 1 || convert_to_weekly_data == 1) && global_seasonality == 1){
-          var goalseek_left_panel_number_of_weeks = goalseek_left_panel_number_of_days/7;
+          var goalseek_left_panel_number_of_weeks = parseInt(goalseek_left_panel_number_of_days/7);
           conversion_per_day_week = goalseek_left_panel_total_conversion/goalseek_left_panel_number_of_weeks;
         }
         if(goalseek_left_panel_total_conversion < global_range_min || goalseek_left_panel_total_conversion > global_range_max){
@@ -1820,11 +1820,12 @@
         $('#total_conversion').val(null)
         if((is_weekly_selected == 1 || convert_to_weekly_data == 1) && global_seasonality == 1){
           goalseek_left_panel_number_of_days = parseInt(value)
-          var goalseek_left_panel_number_of_weeks = goalseek_left_panel_number_of_days/7;
+          var goalseek_left_panel_number_of_weeks = parseInt(goalseek_left_panel_number_of_days/7);
           document.getElementById('no_of_weeks_days_text').innerText = 'No. of weeks selected : '
                    +   `${Math.round(goalseek_left_panel_number_of_weeks).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
           }else if(global_seasonality == 1){
             goalseek_left_panel_number_of_days = parseInt(value)
+            goalseek_left_panel_number_of_days = goalseek_left_panel_number_of_days + 1;
             document.getElementById('no_of_weeks_days_text').innerText = 'No. of days selected : '
             +   `${Math.round(goalseek_left_panel_number_of_days).toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")}`;
           }
@@ -1862,8 +1863,9 @@
              }).replace(/\//g, '-'); // Replace slashes with hyphens;
              var selectedDate = $('#optimizer_date_picker_end_date').datepicker('getDate');
 
-             // Subtract one day
-             selectedDate.setDate(selectedDate.getDate() - 1);
+             // Subtract one day in case of weekly selection and seasonality
+             if((is_weekly_selected == 1 || convert_to_weekly_data == 1)&&global_seasonality ==1)
+              selectedDate.setDate(selectedDate.getDate() - 1);
              
              // Format the date to 'YY-MM-DD'
              global_end_date = selectedDate.toLocaleDateString('en-US', {
