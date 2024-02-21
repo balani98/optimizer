@@ -105,8 +105,6 @@ def optimizer_home_page(request):
           
             stringified_grouped_optimizer_left_pannel_data = json.dumps(grouped_optimizer_left_pannel_data)
             context['stringified_grouped_optimizer_left_pannel_data'] = stringified_grouped_optimizer_left_pannel_data
-            with open("sample.json", "w") as outfile:
-                outfile.write(json.dumps(grouped_optimizer_left_pannel_data))
         context['flag_to_show_grouped_dimensions'] = flag_to_show_grouped_dimensions
         context["seasonality"] = seasonality
         context["drop_dimension_from_session"] = drop_dimension_from_session
